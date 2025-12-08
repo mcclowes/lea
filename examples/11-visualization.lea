@@ -1,0 +1,55 @@
+-- Visualization Example
+-- Run: npm run visualize -- examples/11-visualization.lea --html -o flow.html
+-- Then open flow.html in a browser to see the pipeline visualization
+
+-- Simple data transformation pipeline
+let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+let evenSquares = numbers
+  /> filter((x) -> x % 2 == 0)
+  /> map((x) -> x * x)
+  /> reduce(0, (acc, x) -> acc + x)
+
+"Sum of squares of even numbers:" /> print
+evenSquares /> print
+
+-- Parallel processing example
+-- This creates a fan-out/fan-in pattern in the visualization
+let stats = numbers
+  \> reduce(0, (acc, x) -> acc + x)    -- sum
+  \> length                             -- count
+  /> (sum, count) -> sum / count        -- average
+
+"Average:" /> print
+stats /> print
+
+-- Nested pipeline with multiple stages
+let transactions = [
+  { amount: 100, type: "credit" },
+  { amount: 50, type: "debit" },
+  { amount: 200, type: "credit" },
+  { amount: 75, type: "debit" },
+]
+
+let totalCredits = transactions
+  /> filter((t) -> t.type == "credit")
+  /> map((t) -> t.amount)
+  /> reduce(0, (acc, x) -> acc + x)
+
+"Total credits:" /> print
+totalCredits /> print
+
+-- Complex parallel branches with nested pipes
+let value = 100
+
+let complexResult = value
+  \> (x) -> x + 10
+    /> (y) -> y * 2
+  \> (x) -> x - 10
+    /> (y) -> y / 2
+  /> (a, b) -> a + b
+
+"Complex result:" /> print
+complexResult /> print
+
+"Done!" /> print

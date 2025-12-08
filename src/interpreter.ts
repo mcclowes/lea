@@ -68,6 +68,30 @@ export class RuntimeError extends Error {
   }
 }
 
+// ============================================
+// Trace Capture Types
+// ============================================
+
+export interface TraceEvent {
+  type: "pipe" | "parallel_start" | "parallel_end" | "call" | "return";
+  nodeId: number;
+  label: string;
+  input?: string;
+  output?: string;
+  timestamp: number;
+  depth: number;
+  branchIndex?: number;
+}
+
+export interface TraceCapture {
+  events: TraceEvent[];
+  startTime: number;
+}
+
+export interface InterpreterOptions {
+  trace?: boolean;
+}
+
 // Used for early return - not a real error, just control flow
 export class ReturnValue extends Error {
   constructor(public value: LeaValue) {
@@ -415,6 +439,11 @@ export class Interpreter {
   private contextRegistry = new Map<string, { default: LeaValue; current: LeaValue }>();
   private customDecorators = new Map<string, LeaFunction>();
 
+  // Trace capture state
+  private traceEnabled = false;
+  private traceCapture: TraceCapture | null = null;
+  private traceNodeCounter = 0;
+
   constructor() {
     this.globals = new Environment();
     for (const [name, fn] of Object.entries(builtins)) {
@@ -422,12 +451,49 @@ export class Interpreter {
     }
   }
 
-  interpret(program: Program): LeaValue {
+  interpret(program: Program, options?: InterpreterOptions): LeaValue {
+    // Initialize trace capture if enabled
+    if (options?.trace) {
+      this.traceEnabled = true;
+      this.traceCapture = { events: [], startTime: performance.now() };
+      this.traceNodeCounter = 0;
+    }
+
     let result: LeaValue = null;
     for (const stmt of program.statements) {
       result = this.executeStmt(stmt, this.globals);
     }
     return result;
+  }
+
+  /**
+   * Get the captured trace events (only available after interpret() with trace: true)
+   */
+  getTrace(): TraceCapture | null {
+    return this.traceCapture;
+  }
+
+  private emitTraceEvent(
+    type: TraceEvent["type"],
+    label: string,
+    input?: LeaValue,
+    output?: LeaValue,
+    branchIndex?: number
+  ): number {
+    if (!this.traceEnabled || !this.traceCapture) return -1;
+
+    const nodeId = this.traceNodeCounter++;
+    this.traceCapture.events.push({
+      type,
+      nodeId,
+      label,
+      input: input !== undefined ? stringify(input) : undefined,
+      output: output !== undefined ? stringify(output) : undefined,
+      timestamp: performance.now() - this.traceCapture.startTime,
+      depth: this.traceDepth,
+      branchIndex,
+    });
+    return nodeId;
   }
 
   // Async version of interpret for top-level await
@@ -654,7 +720,27 @@ export class Interpreter {
       );
     }
 
-    return this.evaluatePipeWithValue(pipedValue, right, env);
+    const result = this.evaluatePipeWithValue(pipedValue, right, env);
+
+    // Emit trace event for the pipe operation
+    this.emitTraceEvent("pipe", this.exprToLabel(right), pipedValue, result);
+
+    return result;
+  }
+
+  private exprToLabel(expr: Expr): string {
+    switch (expr.kind) {
+      case "Identifier":
+        return expr.name;
+      case "CallExpr":
+        return this.exprToLabel(expr.callee);
+      case "FunctionExpr":
+        return `(${expr.params.map(p => p.name).join(", ")}) -> ...`;
+      case "MemberExpr":
+        return `${this.exprToLabel(expr.object)}.${expr.member}`;
+      default:
+        return expr.kind;
+    }
   }
 
   private evaluatePipeWithValue(pipedValue: LeaValue, right: Expr, env: Environment): LeaValue {
@@ -745,18 +831,30 @@ export class Interpreter {
   }
 
   private evaluateParallelBranches(inputValue: LeaValue, branches: Expr[], env: Environment): LeaValue {
+    // Emit trace event for parallel start
+    this.emitTraceEvent("parallel_start", `fan-out (${branches.length} branches)`, inputValue);
+
     // Execute all branches in parallel
-    const branchPromises = branches.map(async (branch) => {
+    const branchPromises = branches.map(async (branch, index) => {
       const result = this.evaluatePipeWithValue(inputValue, branch, env);
-      return await unwrapPromise(result);
+      const unwrapped = await unwrapPromise(result);
+
+      // Emit trace event for each branch completion
+      this.emitTraceEvent("pipe", this.exprToLabel(branch), inputValue, unwrapped, index);
+
+      return unwrapped;
     });
 
     // Return a promise that resolves to a LeaParallelResult
     return wrapPromise(
-      Promise.all(branchPromises).then((values) => ({
-        kind: "parallel_result" as const,
-        values,
-      }))
+      Promise.all(branchPromises).then((values) => {
+        const result: LeaParallelResult = { kind: "parallel_result" as const, values };
+
+        // Emit trace event for parallel end
+        this.emitTraceEvent("parallel_end", "fan-in", undefined, result);
+
+        return result;
+      })
     );
   }
 

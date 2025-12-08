@@ -139,6 +139,8 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `src/ast.ts` — AST node types (Expr, Stmt, Program), helper constructors
 - `src/parser.ts` — Recursive descent parser
 - `src/interpreter.ts` — Tree-walk interpreter, Environment class
+- `src/visualizer.ts` — AST to Mermaid flowchart generator
+- `src/visualize.ts` — CLI for pipeline visualization
 - `src/repl.ts` — Interactive REPL
 - `src/index.ts` — File runner entry point
 
@@ -244,8 +246,38 @@ value
 
 ```bash
 npm run repl              # Interactive REPL
-npm run run file.lea      # Run a file
+npm run lea file.lea      # Run a file
+npm run visualize -- file.lea           # Output Mermaid flowchart
+npm run visualize -- file.lea --html    # Output HTML with embedded diagram
+npm run visualize -- file.lea --html -o flow.html  # Save to file
+npm run visualize -- file.lea --tb      # Top-to-bottom layout
 ```
+
+## Visualization
+
+Generate Mermaid flowcharts showing data flow through pipe chains:
+
+```bash
+npm run visualize -- examples/09-pipeline.lea --html -o flow.html
+```
+
+**Features:**
+- Visualizes pipe chains as connected flowchart nodes
+- Shows parallel pipe fan-out/fan-in patterns with diamond nodes
+- Groups named bindings into subgraphs
+- Outputs Mermaid markdown or self-contained HTML
+
+**Node Shapes:**
+- Stadium `([...])` — data values
+- Parallelogram `[/...\/]` — operations/functions
+- Diamond `{...}` — fan-out/fan-in branching
+- Subroutine `[[...]]` — await/return
+
+**Options:**
+- `--html` — Output HTML with embedded Mermaid.js
+- `--tb` — Top-to-bottom layout (default: left-to-right)
+- `-o <file>` — Write to file instead of stdout
+- `--expand` — Expand function bodies as subgraphs
 
 ## Example Program
 

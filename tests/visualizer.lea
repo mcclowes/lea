@@ -1,0 +1,24 @@
+-- Visualization test file
+-- This file tests various pipe patterns that should be visualized
+
+-- Simple pipe chain
+let simple = [1, 2, 3]
+  /> map((x) -> x * 2)
+  /> filter((x) -> x > 2)
+
+-- Multi-step pipeline
+let pipeline = [1, 2, 3, 4, 5]
+  /> filter((x) -> x > 2)
+  /> map((x) -> x * x)
+  /> reduce(0, (acc, x) -> acc + x)
+
+-- Parallel pipe test
+let parallel_result = 10
+  \> (x) -> x + 1
+  \> (x) -> x * 2
+  /> (a, b) -> a + b
+
+-- Print output
+simple /> print
+pipeline /> print
+parallel_result /> print
