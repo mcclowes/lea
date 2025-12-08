@@ -64,6 +64,36 @@
               "match": "\\\\."
             }
           ]
+        },
+        {
+          "comment": "Template string with interpolation",
+          "name": "string.template.lea",
+          "begin": "`",
+          "end": "`",
+          "patterns": [
+            {
+              "comment": "Interpolation expression",
+              "name": "meta.interpolation.lea",
+              "begin": "\\{",
+              "end": "\\}",
+              "beginCaptures": {
+                "0": { "name": "punctuation.definition.interpolation.begin.lea" }
+              },
+              "endCaptures": {
+                "0": { "name": "punctuation.definition.interpolation.end.lea" }
+              },
+              "patterns": [
+                { "include": "#comments" },
+                { "include": "#strings" },
+                { "include": "#numbers" },
+                { "include": "#keywords" },
+                { "include": "#operators" },
+                { "include": "#functions" },
+                { "include": "#constants" },
+                { "include": "#identifiers" }
+              ]
+            }
+          ]
         }
       ]
     },

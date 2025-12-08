@@ -548,6 +548,29 @@ function stringify(val: LeaValue): string {
   return String(val);
 }
 
+// Convert a LeaValue to a string for concatenation with ++
+// Similar to stringify but designed for user-facing string coercion
+function coerceToString(val: LeaValue): string {
+  if (val === null) return "null";
+  if (typeof val === "string") return val;
+  if (typeof val === "number") return String(val);
+  if (typeof val === "boolean") return String(val);
+  if (Array.isArray(val)) return `[${val.map(coerceToString).join(", ")}]`;
+  if (typeof val === "object" && "kind" in val) {
+    if (val.kind === "promise") return "<promise>";
+    if (val.kind === "parallel_result") return `[${val.values.map(coerceToString).join(", ")}]`;
+    if (val.kind === "tuple") return `(${val.elements.map(coerceToString).join(", ")})`;
+    if (val.kind === "record") {
+      const entries = Array.from(val.fields.entries())
+        .map(([k, v]) => `${k}: ${coerceToString(v)}`)
+        .join(", ");
+      return `{ ${entries} }`;
+    }
+    return "<function>";
+  }
+  return String(val);
+}
+
 export class Interpreter {
   private globals: Environment;
   private memoCache = new Map<string, Map<string, LeaValue>>();
@@ -695,6 +718,20 @@ export class Interpreter {
       case "StringLiteral":
         return expr.value;
 
+      case "TemplateStringExpr": {
+        // Evaluate template string parts and concatenate
+        let result = "";
+        for (const part of expr.parts) {
+          if (typeof part === "string") {
+            result += part;
+          } else {
+            const value = this.evaluateExpr(part, env);
+            result += coerceToString(value);
+          }
+        }
+        return result;
+      }
+
       case "BooleanLiteral":
         return expr.value;
 
@@ -840,10 +877,8 @@ export class Interpreter {
       case TokenType.PERCENT:
         return asNumber(left) % asNumber(right);
       case TokenType.CONCAT:
-        if (typeof left === "string" && typeof right === "string") {
-          return left + right;
-        }
-        throw new RuntimeError("++ requires two strings");
+        // String coercion: automatically convert non-strings to strings
+        return coerceToString(left) + coerceToString(right);
       case TokenType.EQEQ:
         return this.isEqual(left, right);
       case TokenType.NEQ:
@@ -1389,6 +1424,20 @@ export class Interpreter {
 
       case "StringLiteral":
         return expr.value;
+
+      case "TemplateStringExpr": {
+        // Evaluate template string parts and concatenate
+        let result = "";
+        for (const part of expr.parts) {
+          if (typeof part === "string") {
+            result += part;
+          } else {
+            const value = await this.evaluateExprAsync(part, env);
+            result += coerceToString(value);
+          }
+        }
+        return result;
+      }
 
       case "BooleanLiteral":
         return expr.value;

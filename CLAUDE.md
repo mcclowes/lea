@@ -110,8 +110,17 @@ await fetchData() /> print
 [1, 2, 3] /> filter((x) -> x > 1)
 [1, 2, 3] /> reduce(0, (acc, x) -> acc + x)
 
--- String concat
+-- String concatenation (with automatic type coercion)
 "Hello" ++ " World"
+"The answer is " ++ 42       -- "The answer is 42"
+"Done: " ++ true             -- "Done: true"
+(100 ++ 200)                 -- "100200" (numbers coerced)
+
+-- Template strings (backtick syntax with interpolation)
+let name = "World"
+`Hello {name}!`              -- "Hello World!"
+`Sum: {10 + 20}`             -- "Sum: 30"
+`Items: {[1, 2, 3]}`         -- "Items: [1, 2, 3]"
 
 -- Comparison
 x == y, x != y, x < y, x > y, x <= y, x >= y
@@ -201,7 +210,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 ## Token Types
 
 ```
-NUMBER, STRING, IDENTIFIER
+NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
 LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
 PIPE (/>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
 REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>)
@@ -217,7 +226,7 @@ NEWLINE, EOF
 ## AST Nodes
 
 **Expressions:**
-- NumberLiteral, StringLiteral, BooleanLiteral, Identifier
+- NumberLiteral, StringLiteral, TemplateStringExpr, BooleanLiteral, Identifier
 - BinaryExpr, UnaryExpr, PipeExpr, CallExpr
 - FunctionExpr (params, attachments, body, decorators, typeSignature?, isReverse?)
 - ListExpr, IndexExpr, PlaceholderExpr, TupleExpr

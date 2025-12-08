@@ -125,8 +125,27 @@ let items = [
 ## Strings
 
 ```lea
-"Hello" ++ " World"     -- Concatenation
+"Hello" ++ " World"               -- Concatenation
+"The answer is " ++ 42            -- Automatic type coercion: "The answer is 42"
+"Done: " ++ true                  -- "Done: true"
+(100 ++ 200)                      -- "100200" (numbers coerced to strings)
+("List: " ++ [1, 2, 3])           -- "List: [1, 2, 3]"
 ```
+
+Note: The `++` operator automatically converts non-strings to strings.
+
+## Template Strings
+
+```lea
+let name = "World"
+`Hello {name}!`                   -- "Hello World!"
+`Sum: {10 + 20}`                  -- "Sum: 30"
+`Items: {[1, 2, 3]}`              -- "Items: [1, 2, 3]"
+`User: {user.name}`               -- Access properties in interpolation
+`Result: {10 /> double}`          -- Pipe expressions in interpolation
+```
+
+Template strings use backticks and `{expr}` for interpolation. Any expression can be embedded and will be automatically converted to a string.
 
 ## Codeblocks
 
@@ -178,13 +197,14 @@ x >= y    -- Greater than or equal
 ## Token Types
 
 ```
-NUMBER, STRING, IDENTIFIER
+NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
 LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
-PIPE (/>), ARROW (->)
+PIPE (/>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
+DOUBLE_COLON (::), COLON_GT (:>)
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
-COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@)
+COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
 CODEBLOCK_OPEN (<>), CODEBLOCK_CLOSE (</>)
 NEWLINE, EOF
 ```

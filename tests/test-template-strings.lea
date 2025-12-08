@@ -1,0 +1,56 @@
+-- Test template strings with interpolation
+
+-- Basic interpolation
+let name = "World"
+`Hello {name}!` /> print
+
+-- Multiple interpolations
+let first = "Alice"
+let last = "Smith"
+`Name: {first} {last}` /> print
+
+-- Numeric interpolation
+let age = 25
+`Age: {age}` /> print
+
+-- Expression interpolation
+`Sum: {10 + 20}` /> print
+`Double: {5 * 2}` /> print
+
+-- Boolean interpolation
+let active = true
+`Active: {active}` /> print
+
+-- List interpolation
+let items = [1, 2, 3]
+`Items: {items}` /> print
+
+-- Record interpolation
+let user = { name: "Max", score: 100 }
+`User: {user}` /> print
+
+-- Nested property access
+`User name: {user.name}` /> print
+
+-- Function call in interpolation
+let double = (x) -> x * 2
+`Doubled: {double(5)}` /> print
+
+-- Chained function calls
+`Result: {10 /> double}` /> print
+
+-- Empty template string
+`` /> print
+
+-- Template string with no interpolation
+`Hello World!` /> print
+
+-- Tuple interpolation
+let point = (10, 20)
+`Point: {point}` /> print
+
+-- Complex expression
+let x = 5
+`Complex: {x > 3 ? "big" : "small"}` /> print
+
+"All template string tests passed!" /> print

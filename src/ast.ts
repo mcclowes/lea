@@ -4,6 +4,7 @@ import { Token } from "./token";
 export type Expr =
   | NumberLiteral
   | StringLiteral
+  | TemplateStringExpr
   | BooleanLiteral
   | Identifier
   | BinaryExpr
@@ -33,6 +34,13 @@ export interface NumberLiteral {
 export interface StringLiteral {
   kind: "StringLiteral";
   value: string;
+}
+
+// Template string with interpolation: `hello {name}`
+// parts alternates between string literals (even indices) and expressions (odd indices)
+export interface TemplateStringExpr {
+  kind: "TemplateStringExpr";
+  parts: (string | Expr)[];  // ["hello ", <Expr>, ", age: ", <Expr>, ""]
 }
 
 export interface BooleanLiteral {
@@ -247,6 +255,11 @@ export const numberLiteral = (value: number): NumberLiteral => ({
 export const stringLiteral = (value: string): StringLiteral => ({
   kind: "StringLiteral",
   value,
+});
+
+export const templateStringExpr = (parts: (string | Expr)[]): TemplateStringExpr => ({
+  kind: "TemplateStringExpr",
+  parts,
 });
 
 export const booleanLiteral = (value: boolean): BooleanLiteral => ({

@@ -12,6 +12,7 @@ import {
   PipelineStage,
   numberLiteral,
   stringLiteral,
+  templateStringExpr,
   booleanLiteral,
   identifier,
   binaryExpr,
@@ -41,6 +42,7 @@ import {
   reversePipeExpr,
   bidirectionalPipelineLiteral,
 } from "./ast";
+import { Lexer } from "./lexer";
 
 export class ParseError extends Error {
   constructor(message: string, public token: Token) {
@@ -549,6 +551,10 @@ export class Parser {
       return stringLiteral(this.previous().literal as string);
     }
 
+    if (this.match(TokenType.TEMPLATE_STRING)) {
+      return this.templateString();
+    }
+
     if (this.match(TokenType.TRUE)) {
       return booleanLiteral(true);
     }
@@ -592,6 +598,36 @@ export class Parser {
     throw new ParseError(`Unexpected token '${this.peek().lexeme}'`, this.peek());
   }
 
+  // Parse a template string: `hello {name}, you are {age} years old`
+  // The lexer stores parts as strings where even indices are literals and odd indices are expressions
+  private templateString(): Expr {
+    const rawParts = this.previous().literal as string[];
+    const parts: (string | Expr)[] = [];
+
+    for (let i = 0; i < rawParts.length; i++) {
+      if (i % 2 === 0) {
+        // Even indices are string literals
+        parts.push(rawParts[i]);
+      } else {
+        // Odd indices are expression source code - parse them
+        const exprSource = rawParts[i];
+        if (exprSource.length > 0) {
+          // Create a new lexer and parser for the embedded expression
+          const lexer = new Lexer(exprSource);
+          const tokens = lexer.scanTokens();
+          const parser = new Parser(tokens);
+          const expr = parser.expression();
+          parts.push(expr);
+        } else {
+          // Empty interpolation like `{}` - treat as empty string
+          parts.push("");
+        }
+      }
+    }
+
+    return templateStringExpr(parts);
+  }
+  
   // Parse a pipeline literal: /> fn1 /> fn2 /> fn3
   // Returns a PipelineLiteral with a list of stages
   private pipelineLiteral(): Expr {
