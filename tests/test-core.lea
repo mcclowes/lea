@@ -4,7 +4,7 @@
 let x = 10
 x /> print
 
-let mut counter = 0
+maybe counter = 0
 counter /> print
 
 -- Pipes with placeholder

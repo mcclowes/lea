@@ -10,7 +10,7 @@
 
 ```lea
 let x = 10              -- Immutable
-let mut counter = 0     -- Mutable
+maybe counter = 0       -- Mutable
 ```
 
 ## Functions
@@ -127,7 +127,7 @@ x >= y    -- Greater than or equal
 
 ```
 NUMBER, STRING, IDENTIFIER
-LET, MUT, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
+LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
 PIPE (/>), ARROW (->)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE

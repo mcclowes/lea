@@ -6,7 +6,7 @@ export enum TokenType {
 
   // Keywords
   LET = "LET",
-  MUT = "MUT",
+  MAYBE = "MAYBE",
   TRUE = "TRUE",
   FALSE = "FALSE",
   AWAIT = "AWAIT",
@@ -74,7 +74,7 @@ export interface Token {
 
 export const KEYWORDS: Record<string, TokenType> = {
   let: TokenType.LET,
-  mut: TokenType.MUT,
+  maybe: TokenType.MAYBE,
   true: TokenType.TRUE,
   false: TokenType.FALSE,
   await: TokenType.AWAIT,
