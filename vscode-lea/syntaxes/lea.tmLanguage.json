@@ -131,7 +131,7 @@
         {
           "comment": "Built-in decorators - standard decorator color",
           "name": "entity.name.function.decorator.builtin.lea",
-          "match": "#(log|memo|time|retry|timeout|pure|async|trace|tap|debug|profile)\\b"
+          "match": "#(log|log_verbose|memo|time|retry|timeout|pure|async|trace|tap|debug|profile)\\b"
         },
         {
           "comment": "Custom decorators",

@@ -1,17 +1,17 @@
 # todo
 
 - [ ] Refinement Types (Liquid Haskell, F*) — Types with predicates. Not just int, but int where x > 0 && x < 100. The compiler proves your code satisfies the constraints.
-- [ ] Improve Pipeline.visualize() function to show parallelisation
+- [x] Improve Pipeline.visualize() function to show parallelisation
 - [ ] Canvas visualisation of our 'pipeline's
-- [ ] Multi-line records and arrays in parser
-- [ ] Implement #log-verbose to log input, output, and all variable assignment, or the values passed between pipeline stages
+- [x] Multi-line records and arrays in parser
+- [x] Implement #log_verbose to log input, output, and all variable assignment, or the values passed between pipeline stages
 - [ ] Partitions
 - [ ] Explicit types for pipelines
 - [ ] List types syntax - ❌ List , ✅ [Int]
 - [ ] Array vs value handling - resolve ambiguity
-- [ ] Pattern matching
+- [x] Pattern matching
 - [ ] Record improvements
-- [ ] Split the interpreter up into smaller files
+- [x] Split the interpreter up into smaller files
 
 ## Partitions
 
