@@ -1,0 +1,55 @@
+-- Snail Sort in Lea
+-- https://www.codewars.com/kata/521c2db8ddc89b9b7a0000c1
+-- Traverses a 2D array in a clockwise spiral pattern
+
+-- Rotate matrix 90 degrees clockwise: zip columns then reverse
+let rotate = (matrix) ->
+  isEmpty(matrix) ? [] : matrix /> zip /> reverse
+
+-- Snail traversal: take first row, rotate remaining, recurse
+let snail = (matrix) ->
+  isEmpty(matrix) 
+    ? [] 
+    : matrix
+      \> head
+      \> tail
+        /> rotate
+        /> snail
+      /> concat
+
+<> -- Test cases
+"=== Snail Sort ===" /> print
+
+-- 2x2 matrix
+let m2x2 = [
+  [1, 2],
+  [3, 4],
+]
+m2x2 /> snail /> print
+-- [1, 2, 4, 3]
+
+-- 3x3 matrix
+let m3x3 = [
+  [1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 9],
+]
+m3x3 /> snail /> print
+-- [1, 2, 3, 6, 9, 8, 7, 4, 5]
+
+-- 4x4 matrix
+let m4x4 = [
+  [1,  2,  3,  4],
+  [5,  6,  7,  8],
+  [9,  10, 11, 12],
+  [13, 14, 15, 16],
+]
+m4x4 /> snail /> print
+-- [1, 2, 3, 4, 8, 12, 16, 15, 14, 13, 9, 5, 6, 7, 11, 10]
+
+-- Edge cases
+snail([[1]]) /> print  -- [1]
+snail([]) /> print     -- []
+
+"Done!" /> print
+</>

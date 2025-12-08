@@ -48,6 +48,7 @@ export class ParseError extends Error {
 export class Parser {
   private tokens: Token[];
   private current = 0;
+  private inParallelPipeBranch = false;  // Track if we're inside a parallel pipe branch
 
   constructor(tokens: Token[]) {
     this.tokens = tokens;
@@ -81,7 +82,7 @@ export class Parser {
     if (this.check(TokenType.DECORATOR)) {
       return this.decoratorDefStatement();
     }
-    if (this.check(TokenType.CODEBLOCK)) {
+    if (this.check(TokenType.CODEBLOCK_OPEN)) {
       return this.codeblockStatement();
     }
     return exprStmt(this.expression());
@@ -111,22 +112,20 @@ export class Parser {
   }
 
   private codeblockStatement(): Stmt {
-    const openToken = this.consume(TokenType.CODEBLOCK, "Expected '<>'");
+    const openToken = this.consume(TokenType.CODEBLOCK_OPEN, "Expected '<>'");
     const label = openToken.literal as string | null;
 
     this.skipNewlines();
 
-    // Parse statements until we hit a closing <> or EOF
+    // Parse statements until we hit a closing </> or EOF
     const statements: Stmt[] = [];
-    while (!this.check(TokenType.CODEBLOCK) && !this.isAtEnd()) {
+    while (!this.check(TokenType.CODEBLOCK_CLOSE) && !this.isAtEnd()) {
       statements.push(this.statement());
       this.skipNewlines();
     }
 
-    // Consume closing <>
-    if (this.check(TokenType.CODEBLOCK)) {
-      this.advance();
-    }
+    // Consume closing </>
+    this.consume(TokenType.CODEBLOCK_CLOSE, "Expected '</>' to close codeblock");
 
     return codeblockStmt(label, statements);
   }
@@ -147,56 +146,172 @@ export class Parser {
     return letStmt(name, mutable, value);
   }
 
-  // Precedence (low to high): pipe, ternary, equality, comparison, term, factor, unary, call, primary
+  // Precedence (low to high): ternary, equality, comparison, term, factor, pipe, unary, call, primary
   private expression(): Expr {
-    return this.pipe();
+    return this.ternary();
   }
 
-  private pipe(): Expr {
-    let expr = this.ternary();
-    // Track where this expression started - used to determine if parallel pipes belong here
-    const startColumn = this.previous().column;
+  // Variant that doesn't consume parallel pipes (\>) - used for single-line function bodies
+  // so that `5 \> (x) -> x + 1 \> (x) -> x * 2` parses the functions as separate branches
+  private ternaryNoParallelPipe(): Expr {
+    let expr = this.equalityNoParallelPipe();
+
+    const savedPos = this.current;
+    this.skipNewlines();
+
+    if (this.match(TokenType.QUESTION)) {
+      this.skipNewlines();
+      const thenBranch = this.ternaryNoParallelPipe();
+      this.skipNewlines();
+      this.consume(TokenType.COLON, "Expected ':' in ternary expression");
+      this.skipNewlines();
+      const elseBranch = this.ternaryNoParallelPipe();
+      expr = ternaryExpr(expr, thenBranch, elseBranch);
+    } else {
+      this.current = savedPos;
+    }
+
+    return expr;
+  }
+
+  private equalityNoParallelPipe(): Expr {
+    let expr = this.comparisonNoParallelPipe();
+
+    while (this.match(TokenType.EQEQ, TokenType.NEQ)) {
+      const operator = this.previous();
+      const right = this.comparisonNoParallelPipe();
+      expr = binaryExpr(operator, expr, right);
+    }
+
+    return expr;
+  }
+
+  private comparisonNoParallelPipe(): Expr {
+    let expr = this.termNoParallelPipe();
+
+    while (this.match(TokenType.LT, TokenType.GT, TokenType.LTE, TokenType.GTE)) {
+      const operator = this.previous();
+      const right = this.termNoParallelPipe();
+      expr = binaryExpr(operator, expr, right);
+    }
+
+    return expr;
+  }
+
+  private termNoParallelPipe(): Expr {
+    let expr = this.factorNoParallelPipe();
+
+    while (this.match(TokenType.PLUS, TokenType.MINUS, TokenType.CONCAT)) {
+      const operator = this.previous();
+      const right = this.factorNoParallelPipe();
+      expr = binaryExpr(operator, expr, right);
+    }
+
+    return expr;
+  }
+
+  // For single-line function bodies, don't consume parallel pipes (\>)
+  // but DO allow regular pipes (/>)
+  // This ensures `5 \> (x) -> x + 1 \> (x) -> x * 2` parses functions as separate branches
+  // while `(f, x) -> x /> f /> f` correctly includes pipes in the function body
+  private factorNoParallelPipe(): Expr {
+    let expr = this.pipeTermNoParallel();
+
+    while (this.match(TokenType.STAR, TokenType.SLASH, TokenType.PERCENT)) {
+      const operator = this.previous();
+      const right = this.pipeTermNoParallel();
+      expr = binaryExpr(operator, expr, right);
+    }
+
+    return expr;
+  }
+
+  // Only handles regular pipes (/>), not parallel pipes (\>)
+  private pipeTermNoParallel(): Expr {
+    let expr = this.unary();
 
     while (true) {
       const savedPos = this.current;
       this.skipNewlines();
 
-      // Check for parallel pipe \>
-      if (this.check(TokenType.PARALLEL_PIPE)) {
-        const pipeColumn = this.peek().column;
-        // Only collect parallel pipes if:
-        // - The \> is at the same or greater column than where we started
-        // This prevents inner expressions (like function bodies) from consuming
-        // parallel pipes that belong to outer expressions
-        if (pipeColumn >= startColumn) {
-          this.advance(); // consume \>
-          this.skipNewlines();
-          const branches: Expr[] = [this.equality()];
-
-          // Collect all consecutive \> branches at the same column
-          while (true) {
-            this.skipNewlines();
-            if (!this.check(TokenType.PARALLEL_PIPE)) break;
-            if (this.peek().column < pipeColumn) break; // Different indentation level
-            this.advance();
-            this.skipNewlines();
-            branches.push(this.equality());
-          }
-
-          expr = parallelPipeExpr(expr, branches);
-          continue;
-        } else {
-          // Backtrack - this parallel pipe belongs to an outer expression
-          this.current = savedPos;
-          break;
-        }
+      // Only check for regular pipe />, NOT parallel pipe \>
+      if (!this.match(TokenType.PIPE)) {
+        this.current = savedPos;
+        break;
       }
-
-      // Check for regular pipe />
-      if (!this.match(TokenType.PIPE)) break;
       this.skipNewlines();
-      const right = this.ternary();
+      const right = this.unary();
       expr = pipeExpr(expr, right);
+    }
+
+    return expr;
+  }
+
+  // Variant that doesn't consume any pipes at all - used for function bodies inside parallel pipe branches
+  private ternaryNoPipes(): Expr {
+    let expr = this.equalityNoPipes();
+
+    const savedPos = this.current;
+    this.skipNewlines();
+
+    if (this.match(TokenType.QUESTION)) {
+      this.skipNewlines();
+      const thenBranch = this.ternaryNoPipes();
+      this.skipNewlines();
+      this.consume(TokenType.COLON, "Expected ':' in ternary expression");
+      this.skipNewlines();
+      const elseBranch = this.ternaryNoPipes();
+      expr = ternaryExpr(expr, thenBranch, elseBranch);
+    } else {
+      this.current = savedPos;
+    }
+
+    return expr;
+  }
+
+  private equalityNoPipes(): Expr {
+    let expr = this.comparisonNoPipes();
+
+    while (this.match(TokenType.EQEQ, TokenType.NEQ)) {
+      const operator = this.previous();
+      const right = this.comparisonNoPipes();
+      expr = binaryExpr(operator, expr, right);
+    }
+
+    return expr;
+  }
+
+  private comparisonNoPipes(): Expr {
+    let expr = this.termNoPipes();
+
+    while (this.match(TokenType.LT, TokenType.GT, TokenType.LTE, TokenType.GTE)) {
+      const operator = this.previous();
+      const right = this.termNoPipes();
+      expr = binaryExpr(operator, expr, right);
+    }
+
+    return expr;
+  }
+
+  private termNoPipes(): Expr {
+    let expr = this.factorNoPipes();
+
+    while (this.match(TokenType.PLUS, TokenType.MINUS, TokenType.CONCAT)) {
+      const operator = this.previous();
+      const right = this.factorNoPipes();
+      expr = binaryExpr(operator, expr, right);
+    }
+
+    return expr;
+  }
+
+  private factorNoPipes(): Expr {
+    let expr = this.unary();
+
+    while (this.match(TokenType.STAR, TokenType.SLASH, TokenType.PERCENT)) {
+      const operator = this.previous();
+      const right = this.unary();
+      expr = binaryExpr(operator, expr, right);
     }
 
     return expr;
@@ -205,11 +320,21 @@ export class Parser {
   private ternary(): Expr {
     let expr = this.equality();
 
+    // Check for ? potentially on next line
+    const savedPos = this.current;
+    this.skipNewlines();
+
     if (this.match(TokenType.QUESTION)) {
+      this.skipNewlines();
       const thenBranch = this.ternary();
+      this.skipNewlines();
       this.consume(TokenType.COLON, "Expected ':' in ternary expression");
+      this.skipNewlines();
       const elseBranch = this.ternary();
       expr = ternaryExpr(expr, thenBranch, elseBranch);
+    } else {
+      // No ternary, restore position
+      this.current = savedPos;
     }
 
     return expr;
@@ -252,12 +377,96 @@ export class Parser {
   }
 
   private factor(): Expr {
-    let expr = this.unary();
+    let expr = this.pipeTerm();
 
     while (this.match(TokenType.STAR, TokenType.SLASH, TokenType.PERCENT)) {
       const operator = this.previous();
-      const right = this.unary();
+      const right = this.pipeTerm();
       expr = binaryExpr(operator, expr, right);
+    }
+
+    return expr;
+  }
+
+  // Pipe operators bind tighter than arithmetic, so `a /> b + c` means `(a /> b) + c`
+  private pipeTerm(): Expr {
+    let expr = this.unary();
+
+    while (true) {
+      const savedPos = this.current;
+      this.skipNewlines();
+
+      // Check for parallel pipe \>
+      if (this.check(TokenType.PARALLEL_PIPE)) {
+        const pipeColumn = this.peek().column;
+        this.advance(); // consume \>
+        this.skipNewlines();
+        // Parse branch with potential nested pipes (indented more than \>)
+        const branches: Expr[] = [this.parsePipeBranchTight(pipeColumn)];
+
+        // Collect all consecutive \> branches at same or greater column
+        while (true) {
+          this.skipNewlines();
+          if (!this.check(TokenType.PARALLEL_PIPE)) break;
+          if (this.peek().column < pipeColumn) break; // Less indented = belongs to outer
+          this.advance();
+          this.skipNewlines();
+          branches.push(this.parsePipeBranchTight(pipeColumn));
+        }
+
+        expr = parallelPipeExpr(expr, branches);
+        continue;
+      }
+
+      // Check for regular pipe />
+      if (!this.match(TokenType.PIPE)) {
+        this.current = savedPos;
+        break;
+      }
+      this.skipNewlines();
+      const right = this.unary();
+      expr = pipeExpr(expr, right);
+    }
+
+    return expr;
+  }
+
+  // Parse a branch within a parallel pipe at the tight precedence level
+  private parsePipeBranchTight(branchColumn: number): Expr {
+    const branchLine = this.previous().line;
+
+    // Set flag so function bodies inside branches don't consume pipes
+    const wasInParallelPipeBranch = this.inParallelPipeBranch;
+    this.inParallelPipeBranch = true;
+    let expr = this.unary();
+    this.inParallelPipeBranch = wasInParallelPipeBranch;
+
+    // Continue parsing /> pipes that are on a new line AND more indented than the \> branch
+    while (true) {
+      const savedPos = this.current;
+      this.skipNewlines();
+
+      // Check if next token is a pipe that's more indented than the branch
+      if (this.check(TokenType.PIPE)) {
+        const pipeCol = this.peek().column;
+        const pipeLine = this.peek().line;
+        // Only consume if:
+        // 1. On a new line (not same line as the \>)
+        // 2. More indented than the \> that started this branch
+        if (pipeLine > branchLine && pipeCol > branchColumn) {
+          this.advance(); // consume />
+          this.skipNewlines();
+          this.inParallelPipeBranch = true;
+          const right = this.unary();
+          this.inParallelPipeBranch = wasInParallelPipeBranch;
+          expr = pipeExpr(expr, right);
+          continue;
+        }
+      }
+
+      // Not a continuation of this branch, restore and stop
+      this.current = savedPos;
+      break;
     }
 
     return expr;
@@ -525,9 +734,11 @@ export class Parser {
       return { ...result, typeSignature };
     }
 
-    // Single expression on same line - use ternary() to allow conditionals
-    // but prevent consuming pipes that belong to outer expressions.
-    const body = this.ternary();
+    // Single expression on same line.
+    // If we're inside a parallel pipe branch, don't consume ANY pipes (regular or parallel)
+    // since those pipes belong to the outer parallel expression.
+    // Otherwise, allow regular pipes but not parallel pipes.
+    const body = this.inParallelPipeBranch ? this.ternaryNoPipes() : this.ternaryNoParallelPipe();
 
     // For single-line, type signature comes after body
     if (!typeSignature && this.check(TokenType.DOUBLE_COLON)) {

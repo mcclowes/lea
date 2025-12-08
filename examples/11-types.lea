@@ -118,7 +118,7 @@ makePair(3, 4) /> print  -- (3, 4)
 -- Tuple with validation
 let validatedPair = (x, y) -> (x, y) :: (Int, String) :> (Int, String) #validate
 validatedPair(42, "answer") /> print  -- (42, answer)
-<>
+</>
 
 -- ============================================
 -- DEFAULT PARAMETERS

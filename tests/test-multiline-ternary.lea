@@ -1,0 +1,40 @@
+-- Test multi-line ternary expressions
+
+-- Single line (should still work)
+let a = true ? "yes" : "no"
+a /> print
+
+-- Multi-line with ? on same line
+let b = false
+  ? "yes"
+  : "no"
+b /> print
+
+-- Multi-line with ? on next line
+let c = true
+  ? "yes"
+  : "no"
+c /> print
+
+-- Nested multi-line ternary
+let x = 5
+let d = x > 10
+  ? "big"
+  : x > 3
+    ? "medium"
+    : "small"
+d /> print
+
+-- In function body
+let check = (n) ->
+  n > 0
+    ? "positive"
+    : n < 0
+      ? "negative"
+      : "zero"
+
+check(5) /> print
+check(-3) /> print
+check(0) /> print
+
+"Done!" /> print

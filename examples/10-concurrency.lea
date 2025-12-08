@@ -98,6 +98,30 @@ delay(20, 5)
   /> print  -- 11
 
 -- ============================================
+-- NESTED PIPES IN PARALLEL BRANCHES
+-- ============================================
+
+-- Each parallel branch can contain its own pipe chain
+-- Nested pipes must be more indented than the \>
+"Nested pipes in branches:" /> print
+[1, 2, 3]
+  \> head
+  \> tail
+    /> head
+  /> (a, b) -> a + b
+  /> print  -- 3 (head is 1, tail is [2,3], head of that is 2, so 1+2=3)
+
+-- More complex example
+"Complex nested branches:" /> print
+5
+  \> (x) -> x + 1
+    /> (y) -> y * 2
+  \> (x) -> x * 2
+    /> (y) -> y + 1
+  /> (a, b) -> a + b
+  /> print  -- (5+1)*2 + (5*2)+1 = 12 + 11 = 23
+
+-- ============================================
 -- REAL-WORLD PATTERN: Fetch Multiple Resources
 -- ============================================
 

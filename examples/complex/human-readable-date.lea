@@ -1,0 +1,84 @@
+-- Human Readable Duration
+-- https://www.codewars.com/kata/52742f58faf5485cae000b9a
+--
+-- Formats a duration in seconds as a human-friendly string.
+-- Examples:
+--   0 -> "now"
+--   62 -> "1 minute and 2 seconds"
+--   3662 -> "1 hour, 1 minute and 2 seconds"
+
+-- Time unit constants
+let YEAR = 365 * 24 * 60 * 60
+let DAY = 24 * 60 * 60
+let HOUR = 60 * 60
+let MINUTE = 60
+
+-- Pluralize a unit name based on count
+let pluralize = (count, singular) ->
+  count == 1 ? singular : singular ++ "s"
+
+-- Format a single component (e.g., "2 hours")
+let formatComponent = (count, unit) ->
+  count /> toString ++ " " ++ pluralize(count, unit)
+
+-- Extract time components from seconds
+let extractComponents = (seconds) ->
+  let years = floor(seconds / YEAR)
+  let afterYears = seconds - (years * YEAR)
+  let days = floor(afterYears / DAY)
+  let afterDays = afterYears - (days * DAY)
+  let hours = floor(afterDays / HOUR)
+  let afterHours = afterDays - (hours * HOUR)
+  let minutes = floor(afterHours / MINUTE)
+  let secs = afterHours - (minutes * MINUTE)
+  [
+    (years, "year"),
+    (days, "day"),
+    (hours, "hour"),
+    (minutes, "minute"),
+    (secs, "second"),
+  ]
+
+-- Filter out zero components and format each
+let buildParts = (components) ->
+  components
+    /> filter((c) -> fst(c) > 0)
+    /> map((c) -> formatComponent(fst(c), snd(c)))
+
+-- Helper to join with commas and "and" for last item (3+ parts)
+let joinMany = (parts) ->
+  let len = length(parts)
+  let allButLast = parts /> take(len - 1)
+  let last = parts /> at(len - 1)
+  let commaPart = allButLast /> reduce("", (acc, p) ->
+    acc == "" ? p : acc ++ ", " ++ p
+  )
+  commaPart ++ " and " ++ last
+
+-- Join parts with commas and "and" for the last item
+let joinParts = (parts) ->
+  let len = length(parts)
+  len == 0
+    ? "now"
+    : len == 1
+      ? head(parts)
+      : len == 2
+        ? head(parts) ++ " and " ++ head(tail(parts))
+        : joinMany(parts)
+
+-- Main function
+let formatDuration = (seconds) ->
+  seconds == 0 
+    ? "now" 
+    : seconds
+      /> extractComponents
+      /> buildParts
+      /> joinParts
+
+-- Test cases
+0 /> formatDuration /> print
+1 /> formatDuration /> print
+62 /> formatDuration /> print
+120 /> formatDuration /> print
+3662 /> formatDuration /> print
+15731080 /> formatDuration /> print

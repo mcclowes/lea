@@ -98,6 +98,12 @@ await fetchData() /> print
 [1, 2, 3] /> filter((x) -> x > 1)
 [1, 2, 3] /> reduce(0, (acc, x) -> acc + x)
 
+-- Additional list operations
+[3, 1, 2] /> reverse        -- [2, 1, 3]
+[[1, 2], [3, 4]] /> zip     -- [[1, 3], [2, 4]]
+[] /> isEmpty               -- true
+[1] /> isEmpty              -- false
+
 -- Multi-line lists (trailing commas allowed)
 let items = [
   10,
@@ -110,6 +116,42 @@ let items = [
 
 ```lea
 "Hello" ++ " World"     -- Concatenation
+```
+
+## Codeblocks
+
+```lea
+-- Codeblocks group related code with <> and </>
+<> -- Section label (optional)
+let x = 10
+let y = 20
+</>
+
+-- Nested codeblocks are allowed
+<> -- Outer
+<> -- Inner
+let z = 30
+</>
+</>
+```
+
+## Ternary Expressions
+
+```lea
+-- Single line
+let result = condition ? "yes" : "no"
+
+-- Multi-line ternary
+let result = condition
+  ? "yes"
+  : "no"
+
+-- Nested multi-line
+let grade = score > 90
+  ? "A"
+  : score > 80
+    ? "B"
+    : "C"
 ```
 
 ## Comparison Operators
@@ -133,16 +175,20 @@ PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
 COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@)
+CODEBLOCK_OPEN (<>), CODEBLOCK_CLOSE (</>)
 NEWLINE, EOF
 ```
 
 ## Parser Precedence (low to high)
 
-1. Pipe (`/>`)
+1. Ternary (`? :`)
 2. Equality (`==`, `!=`)
 3. Comparison (`<`, `>`, `<=`, `>=`)
 4. Term (`+`, `-`, `++`)
 5. Factor (`*`, `/`, `%`)
-6. Unary (`-`)
-7. Call (function calls, indexing)
-8. Primary (literals, identifiers, grouping, functions)
+6. Pipe (`/>`, `\>`)
+7. Unary (`-`)
+8. Call (function calls, indexing)
+9. Primary (literals, identifiers, grouping, functions)
+
+Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(a /> b) ++ c`.

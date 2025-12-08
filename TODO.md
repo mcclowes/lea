@@ -9,6 +9,10 @@
 - [x] Additional syntax highlighting - \> operator, @Logger (orange colour?), #validate (a darker blue), the implicit or explicit return statement of a function
 - [x] Codeblocks
 - [x] Collapsing codeblocks (implicit, e.g. functions, and explicit) in the IDE, syntax highlighting (brown)
+- [ ] Implement #log-verbose to log input, output, and all variable assignment
+- [ ] Multi-line ternary
+- [ ] First-class citizen: Pipeline
+- [ ] Partitions
 
 ## Ternary (done)
 
@@ -61,4 +65,64 @@ let clamp = (x) ->
 clamp(10) /> print   -- 21 (no early return)
 clamp(60) /> print   -- 100 (early return triggered)
 <>
+```
+
+## Pipeline
+
+Before:
+```lea
+-- Filter out zero components and format each
+let buildParts = (components) ->
+  components
+    /> filter((c) -> fst(c) > 0)
+    /> map((c) -> formatComponent(fst(c), snd(c)))
+  
+buildParts([a, b, c])
+```
+
+After:
+```lea
+-- Filter out zero components and format each
+let buildParts = 
+  /> filter((c) -> fst(c) > 0)
+  /> map((c) -> formatComponent(fst(c), snd(c)))
+
+[a, b, c] /> buildParts
+```
+
+Inbuilt pipeline functionality:
+```lea
+let p = /> filter(even) /> map(double) /> take(5)
+
+p.stages        -- [filter, map, take]
+p.length        -- 3
+p.visualize()   -- prints ASCII diagram
+
+-- Add stages dynamically
+let extended = p /> sort
+```
+
+Pipelines can always compose.
+
+```lea
+let foo = /> reverse /> reverse
+let bar = /> reverse /> reverse
+let baz = /> foo /> bar
+```
+
+-- todo: define how types and pipes work together
+
+## Partitions
+
+```
+-- Split pipeline
+let [evens, odds] = /> partition((x) -> x % 2 == 0)
+```
+
+equivalent to
+```
+-- Split pipeline
+let [evens, odds] = 
+  \> filter((x) -> x % 2 == 0)
+  \> filter((x) -> x % 2 != 0)
 ```

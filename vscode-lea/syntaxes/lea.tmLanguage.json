@@ -28,13 +28,18 @@
     "codeblocks": {
       "patterns": [
         {
-          "comment": "Codeblock marker <> with optional label - brown/region color",
+          "comment": "Codeblock open <> with optional label - brown/region color",
           "name": "markup.heading.codeblock.lea",
           "match": "<>\\s*(--\\s*)?(.*)$",
           "captures": {
             "0": { "name": "markup.heading.codeblock.lea" },
             "2": { "name": "entity.name.section.codeblock.lea" }
           }
+        },
+        {
+          "comment": "Codeblock close </> - brown/region color",
+          "name": "markup.heading.codeblock.lea",
+          "match": "</>"
         }
       ]
     },

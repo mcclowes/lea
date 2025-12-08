@@ -107,9 +107,16 @@ export class Lexer {
         break;
 
       case "<":
-        if (this.match(">")) {
-          // Codeblock marker <> - capture optional label on same line
-          this.codeblock();
+        if (this.match("/")) {
+          // Codeblock close </>
+          if (this.match(">")) {
+            this.addToken(TokenType.CODEBLOCK_CLOSE);
+          } else {
+            throw new LexerError(`Expected '>' after '</'`, this.line, this.column);
+          }
+        } else if (this.match(">")) {
+          // Codeblock open <> - capture optional label on same line
+          this.codeblockOpen();
         } else if (this.match("-")) {
           this.addToken(TokenType.RETURN);
         } else if (this.match("=")) {
@@ -156,7 +163,7 @@ export class Lexer {
     }
   }
 
-  private codeblock(): void {
+  private codeblockOpen(): void {
     // Skip whitespace after <>
     while (this.peek() === " " || this.peek() === "\t") {
       this.advance();
@@ -185,7 +192,7 @@ export class Lexer {
       label = this.source.slice(labelStart, this.current).trim();
     }
 
-    this.addToken(TokenType.CODEBLOCK, label || null);
+    this.addToken(TokenType.CODEBLOCK_OPEN, label || null);
   }
 
   private string(): void {

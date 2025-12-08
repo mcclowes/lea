@@ -109,11 +109,21 @@ await fetchData() /> print
 -- Comparison
 x == y, x != y, x < y, x > y, x <= y, x >= y
 
+-- Parallel pipes (fan-out/fan-in)
+5 \> (x) -> x + 1 \> (x) -> x * 2 /> (a, b) -> a + b
+
+-- Nested pipes in parallel branches (indentation-based)
+value
+  \> head
+  \> tail
+    /> transform
+  /> combine
+
 -- Codeblocks (collapsible regions)
 <> -- Section name
 let x = 10
 let y = 20
-<>
+</>
 ```
 
 ## Architecture
@@ -143,7 +153,7 @@ EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 DOUBLE_COLON (::), COLON_GT (:>)
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
 COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
-CODEBLOCK (<>)
+CODEBLOCK_OPEN (<>), CODEBLOCK_CLOSE (</>)
 NEWLINE, EOF
 ```
 
@@ -167,14 +177,17 @@ NEWLINE, EOF
 
 ## Parser Precedence (low to high)
 
-1. Pipe (`/>`)
+1. Ternary (`? :`)
 2. Equality (`==`, `!=`)
 3. Comparison (`<`, `>`, `<=`, `>=`)
 4. Term (`+`, `-`, `++`)
 5. Factor (`*`, `/`, `%`)
-6. Unary (`-`)
-7. Call (function calls, indexing)
-8. Primary (literals, identifiers, grouping, functions)
+6. Pipe (`/>`, `\>`)
+7. Unary (`-`)
+8. Call (function calls, indexing)
+9. Primary (literals, identifiers, grouping, functions)
+
+Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(a /> b) ++ c`.
 
 ## Interpreter Details
 
@@ -199,7 +212,7 @@ NEWLINE, EOF
 **Builtins:**
 - `print` (returns first arg for chaining)
 - `sqrt`, `abs`, `floor`, `ceil`, `round`, `min`, `max`
-- `length`, `head`, `tail`, `push`, `concat`
+- `length`, `head`, `tail`, `push`, `concat`, `reverse`, `zip`, `isEmpty`
 - `map`, `filter`, `reduce`, `range`, `iterations`
 - `delay(ms, value)` — returns promise that resolves after ms
 - `parallel(list, fn, opts?)` — concurrent map with optional `{ limit: n }`
@@ -211,6 +224,16 @@ NEWLINE, EOF
 value \> fn1 \> fn2 /> combine
 ```
 Fan-out to run branches concurrently, fan-in to combine results.
+
+Branches can contain nested pipes (must be more indented):
+```
+value
+  \> head
+  \> tail
+    /> transform
+    /> process
+  /> combine
+```
 
 **Context System:**
 - `context Name = expr` — define context with default value
