@@ -201,6 +201,11 @@
         {
           "name": "constant.language.placeholder.lea",
           "match": "\\b_\\b"
+        },
+        {
+          "comment": "Global objects like Pipeline",
+          "name": "support.class.global.lea",
+          "match": "\\bPipeline\\b"
         }
       ]
     },

@@ -266,6 +266,9 @@ function wrapPromise(promise: Promise<LeaValue>): LeaPromise {
 }
 
 const builtins: Record<string, BuiltinFn> = {
+  // Identity function - returns its argument unchanged (used by Pipeline.identity)
+  __identity__: (args) => args[0] ?? null,
+
   print: (args) => {
     console.log(...args.map(stringify));
     return args[0] ?? null;
@@ -557,6 +560,49 @@ export class Interpreter {
     for (const [name, fn] of Object.entries(builtins)) {
       this.globals.define(name, { kind: "builtin", fn } as LeaBuiltin, false);
     }
+
+    // Define Pipeline global object with algebra operations
+    this.globals.define("Pipeline", this.createPipelineGlobal(), false);
+  }
+
+  // Create the Pipeline global object with static methods and properties
+  private createPipelineGlobal(): LeaRecord {
+    const fields = new Map<string, LeaValue>();
+
+    // Pipeline.identity - a no-op pipeline that passes values through unchanged
+    fields.set("identity", {
+      kind: "pipeline" as const,
+      stages: [{ expr: { kind: "Identifier" as const, name: "__identity__" } }],
+      closure: this.globals,
+    } as LeaPipeline);
+
+    // Pipeline.empty - a pipeline with no stages
+    fields.set("empty", {
+      kind: "pipeline" as const,
+      stages: [],
+      closure: this.globals,
+    } as LeaPipeline);
+
+    // Pipeline.from(list) - create pipeline from list of functions
+    fields.set("from", {
+      kind: "builtin" as const,
+      fn: (args: LeaValue[]): LeaValue => {
+        const list = asList(args[0]);
+        const stages: { expr: Expr }[] = list.map((item, i) => {
+          // Create a synthetic identifier that will resolve to this function
+          const syntheticName = `__pipeline_stage_${i}__`;
+          this.globals.define(syntheticName, item, false);
+          return { expr: { kind: "Identifier" as const, name: syntheticName } };
+        });
+        return {
+          kind: "pipeline" as const,
+          stages,
+          closure: this.globals,
+        } as LeaPipeline;
+      }
+    } as LeaBuiltin);
+
+    return { kind: "record", fields } as LeaRecord;
   }
 
   interpret(program: Program): LeaValue {
@@ -939,6 +985,25 @@ export class Interpreter {
     if (right.kind === "PipelineLiteral") {
       const pipeline = this.evaluateExpr(right, env) as LeaPipeline;
       return this.applyPipeline(pipeline, [pipedValue]);
+    }
+
+    // If right is a member expression, evaluate it and check if it's a pipeline or function
+    if (right.kind === "MemberExpr") {
+      const callee = this.evaluateExpr(right, env);
+      if (isPipeline(callee)) {
+        return this.applyPipeline(callee, [pipedValue]);
+      }
+      // If it's a function, call it with piped value
+      if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
+        return this.callFunction(callee as LeaFunction, [pipedValue]);
+      }
+      if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "builtin") {
+        const result = (callee as LeaBuiltin).fn([pipedValue]);
+        if (result instanceof Promise) {
+          return wrapPromise(result);
+        }
+        return result;
+      }
     }
 
     throw new RuntimeError("Right side of pipe must be a function or call");
@@ -1567,6 +1632,24 @@ export class Interpreter {
       return this.applyPipelineAsync(pipeline, [pipedValue]);
     }
 
+    // If right is a member expression, evaluate it and check if it's a pipeline or function
+    if (right.kind === "MemberExpr") {
+      const callee = await this.evaluateExprAsync(right, env);
+      if (isPipeline(callee)) {
+        return this.applyPipelineAsync(callee, [pipedValue]);
+      }
+      // If it's a function, call it with piped value
+      if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
+        return this.callFunctionAsync(callee as LeaFunction, [pipedValue]);
+      }
+      if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "builtin") {
+        const result = (callee as LeaBuiltin).fn([pipedValue]);
+        if (result instanceof Promise) return result;
+        if (isLeaPromise(result)) return result.promise;
+        return result;
+      }
+    }
+
     throw new RuntimeError("Right side of pipe must be a function or call");
   }
 
@@ -1683,7 +1766,7 @@ export class Interpreter {
     return current;
   }
 
-  // Get a member of a pipeline (.stages, .length, .visualize)
+  // Get a member of a pipeline (.stages, .length, .visualize, etc.)
   private getPipelineMember(pipeline: LeaPipeline, member: string, env: Environment): LeaValue {
     switch (member) {
       case "length":
@@ -1692,6 +1775,244 @@ export class Interpreter {
       case "stages": {
         // Return a list of stage descriptions
         return pipeline.stages.map(stage => this.describeStage(stage.expr));
+      }
+
+      case "first": {
+        // Return the first stage as a callable function
+        if (pipeline.stages.length === 0) {
+          return null;
+        }
+        return this.stageToFunction(pipeline.stages[0], pipeline.closure);
+      }
+
+      case "last": {
+        // Return the last stage as a callable function
+        if (pipeline.stages.length === 0) {
+          return null;
+        }
+        return this.stageToFunction(pipeline.stages[pipeline.stages.length - 1], pipeline.closure);
+      }
+
+      case "isEmpty": {
+        // Return a builtin that checks if pipeline has no stages
+        return {
+          kind: "builtin" as const,
+          fn: (): LeaValue => pipeline.stages.length === 0
+        } as LeaBuiltin;
+      }
+
+      case "equals": {
+        // Return a builtin that compares two pipelines structurally
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const other = args[0];
+            if (!isPipeline(other)) {
+              return false;
+            }
+            return this.pipelinesEqual(pipeline, other);
+          }
+        } as LeaBuiltin;
+      }
+
+      case "at": {
+        // Return a builtin that gets a stage at a specific index
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const index = asNumber(args[0]);
+            if (index < 0 || index >= pipeline.stages.length) {
+              return null;
+            }
+            return this.stageToFunction(pipeline.stages[index], pipeline.closure);
+          }
+        } as LeaBuiltin;
+      }
+
+      case "prepend": {
+        // Return a builtin that adds a stage at the start
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const fn = args[0];
+            const newStage = this.functionToStage(fn);
+            return {
+              kind: "pipeline" as const,
+              stages: [newStage, ...pipeline.stages],
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "append": {
+        // Return a builtin that adds a stage at the end
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const fn = args[0];
+            const newStage = this.functionToStage(fn);
+            return {
+              kind: "pipeline" as const,
+              stages: [...pipeline.stages, newStage],
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "reverse": {
+        // Return a builtin that reverses stage order
+        return {
+          kind: "builtin" as const,
+          fn: (): LeaValue => {
+            return {
+              kind: "pipeline" as const,
+              stages: [...pipeline.stages].reverse(),
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "slice": {
+        // Return a builtin that extracts a sub-pipeline
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const start = asNumber(args[0]);
+            const end = args[1] !== undefined && args[1] !== null ? asNumber(args[1]) : pipeline.stages.length;
+            return {
+              kind: "pipeline" as const,
+              stages: pipeline.stages.slice(start, end),
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "without": {
+        // Return a builtin that removes stages appearing in another pipeline
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const other = args[0];
+            if (!isPipeline(other)) {
+              throw new RuntimeError("without requires a pipeline argument");
+            }
+            const otherStageNames = new Set(other.stages.map(s => this.describeStage(s.expr)));
+            const filteredStages = pipeline.stages.filter(
+              s => !otherStageNames.has(this.describeStage(s.expr))
+            );
+            return {
+              kind: "pipeline" as const,
+              stages: filteredStages,
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "intersection": {
+        // Return a builtin that keeps only common stages
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const other = args[0];
+            if (!isPipeline(other)) {
+              throw new RuntimeError("intersection requires a pipeline argument");
+            }
+            const otherStageNames = new Set(other.stages.map(s => this.describeStage(s.expr)));
+            const commonStages = pipeline.stages.filter(
+              s => otherStageNames.has(this.describeStage(s.expr))
+            );
+            return {
+              kind: "pipeline" as const,
+              stages: commonStages,
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "union": {
+        // Return a builtin that combines all stages (deduplicated)
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const other = args[0];
+            if (!isPipeline(other)) {
+              throw new RuntimeError("union requires a pipeline argument");
+            }
+            const seenNames = new Set<string>();
+            const combinedStages: { expr: Expr }[] = [];
+
+            // Add all stages from this pipeline
+            for (const stage of pipeline.stages) {
+              const name = this.describeStage(stage.expr);
+              if (!seenNames.has(name)) {
+                seenNames.add(name);
+                combinedStages.push(stage);
+              }
+            }
+
+            // Add stages from other pipeline not already present
+            for (const stage of other.stages) {
+              const name = this.describeStage(stage.expr);
+              if (!seenNames.has(name)) {
+                seenNames.add(name);
+                combinedStages.push(stage);
+              }
+            }
+
+            return {
+              kind: "pipeline" as const,
+              stages: combinedStages,
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "difference": {
+        // Return a builtin that returns stages in this pipeline but not in other
+        // (same as 'without' - alias for clarity)
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const other = args[0];
+            if (!isPipeline(other)) {
+              throw new RuntimeError("difference requires a pipeline argument");
+            }
+            const otherStageNames = new Set(other.stages.map(s => this.describeStage(s.expr)));
+            const filteredStages = pipeline.stages.filter(
+              s => !otherStageNames.has(this.describeStage(s.expr))
+            );
+            return {
+              kind: "pipeline" as const,
+              stages: filteredStages,
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "concat": {
+        // Return a builtin that concatenates two pipelines (not deduplicated)
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const other = args[0];
+            if (!isPipeline(other)) {
+              throw new RuntimeError("concat requires a pipeline argument");
+            }
+            return {
+              kind: "pipeline" as const,
+              stages: [...pipeline.stages, ...other.stages],
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
       }
 
       case "visualize": {
@@ -1733,6 +2054,34 @@ export class Interpreter {
       default:
         throw new RuntimeError(`Pipeline has no property '${member}'`);
     }
+  }
+
+  // Compare two pipelines for structural equality
+  private pipelinesEqual(a: LeaPipeline, b: LeaPipeline): boolean {
+    if (a.stages.length !== b.stages.length) {
+      return false;
+    }
+    for (let i = 0; i < a.stages.length; i++) {
+      const aName = this.describeStage(a.stages[i].expr);
+      const bName = this.describeStage(b.stages[i].expr);
+      if (aName !== bName) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Convert a stage to a callable function value
+  private stageToFunction(stage: { expr: Expr }, closure: Environment): LeaValue {
+    return this.evaluateExpr(stage.expr, closure);
+  }
+
+  // Convert a function value to a pipeline stage
+  private functionToStage(fn: LeaValue): { expr: Expr } {
+    // Create a synthetic identifier for this function
+    const syntheticName = `__dynamic_stage_${Date.now()}_${Math.random().toString(36).slice(2)}__`;
+    this.globals.define(syntheticName, fn, false);
+    return { expr: { kind: "Identifier" as const, name: syntheticName } };
   }
 
   // Describe a stage expression for display purposes
