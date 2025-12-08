@@ -1,0 +1,110 @@
+-- Test concurrency features
+
+"=== Testing Async/Await ===" /> print
+
+-- Basic async function with await
+let fetchData = (id) ->
+  let data = await delay(50, id * 10)
+  data + 1
+#async
+
+-- Should return promise that resolves to 101
+let result1 = await fetchData(10)
+result1 /> print  -- 101
+
+"=== Testing Promise-aware Pipes ===" /> print
+
+-- Pipe should auto-await promises on left side
+delay(50, 5)
+  /> (x) -> x * 2
+  /> print  -- 10
+
+-- Chain of promise-aware pipes
+delay(20, 3)
+  /> (x) -> x + 1
+  /> (x) -> x * 2
+  /> print  -- 8
+
+"=== Testing Parallel Pipe Operator \\> ===" /> print
+
+-- Basic parallel pipe - execute two operations concurrently
+let input = 5
+input
+  \> (x) -> x + 1
+  \> (x) -> x * 2
+  /> print  -- [6, 10]
+
+-- Parallel pipe with fan-in - combine results
+10
+  \> (x) -> x + 1
+  \> (x) -> x * 2
+  /> (a, b) -> a + b
+  /> print  -- 31 (11 + 20)
+
+-- Three parallel branches
+4
+  \> (x) -> x + 1
+  \> (x) -> x * 2
+  \> (x) -> x * x
+  /> print  -- [5, 8, 16]
+
+-- Parallel pipe with async operations
+10
+  \> (x) -> delay(30, x + 1)
+  \> (x) -> delay(30, x * 2)
+  /> print  -- [11, 20]
+
+-- Parallel + fan-in with async
+5
+  \> (x) -> delay(20, x + 1)
+  \> (x) -> delay(20, x * 2)
+  /> (a, b) -> a + b
+  /> print  -- 16 (6 + 10)
+
+"=== Testing parallel() Builtin ===" /> print
+
+-- Basic parallel map
+let nums1 = [1, 2, 3]
+nums1 /> parallel((x) -> x * 2) /> print  -- [2, 4, 6]
+
+-- Parallel map with async function
+let slowDouble = (x) -> delay(30, x * 2)
+let nums2 = [1, 2, 3]
+nums2 /> parallel(slowDouble) /> print  -- [2, 4, 6]
+
+"=== Testing race() Builtin ===" /> print
+
+-- Race between two async operations (first one wins)
+let fast = () -> delay(20, "fast")
+let slow = () -> delay(100, "slow")
+let racers1 = [fast, slow]
+racers1 /> race /> print  -- "fast"
+
+-- Race with different delays
+let a = () -> delay(50, "a")
+let b = () -> delay(10, "b")
+let c = () -> delay(30, "c")
+let racers2 = [a, b, c]
+racers2 /> race /> print  -- "b"
+
+"=== Testing then() Builtin ===" /> print
+
+-- then() for chaining promises
+delay(30, 5) /> then((x) -> x * 2) /> print  -- 10
+
+-- Chained thens
+delay(20, 3)
+  /> then((x) -> x + 1)
+  /> then((x) -> x * 2)
+  /> print  -- 8
+
+"=== Testing Combined Patterns ===" /> print
+
+-- Fan-out to get user and posts concurrently, then combine
+"user1"
+  \> (id) -> delay(30, "User-" ++ id)
+  \> (id) -> delay(30, "Posts-" ++ id)
+  /> (user, posts) -> user ++ " with " ++ posts
+  /> print
+
+"=== All Concurrency Tests Passed! ===" /> print

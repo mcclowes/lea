@@ -15,7 +15,7 @@ let pureish = (x) -> x * 2 #pure
 
 -- #trace - deep logging with indentation
 let inner = (x) -> x * 2 #trace
-let outer = (x) -> x /> inner #trace
+let outer = (x) -> { x /> inner } #trace
 5 /> outer /> print
 
 -- Multiple decorators with arguments

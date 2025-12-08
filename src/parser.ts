@@ -15,6 +15,7 @@ import {
   binaryExpr,
   unaryExpr,
   pipeExpr,
+  parallelPipeExpr,
   callExpr,
   functionExpr,
   listExpr,
@@ -105,9 +106,45 @@ export class Parser {
 
   private pipe(): Expr {
     let expr = this.equality();
+    // Track where this expression started - used to determine if parallel pipes belong here
+    const startColumn = this.previous().column;
 
     while (true) {
+      const savedPos = this.current;
       this.skipNewlines();
+
+      // Check for parallel pipe \>
+      if (this.check(TokenType.PARALLEL_PIPE)) {
+        const pipeColumn = this.peek().column;
+        // Only collect parallel pipes if:
+        // - The \> is at the same or greater column than where we started
+        // This prevents inner expressions (like function bodies) from consuming
+        // parallel pipes that belong to outer expressions
+        if (pipeColumn >= startColumn) {
+          this.advance(); // consume \>
+          this.skipNewlines();
+          const branches: Expr[] = [this.equality()];
+
+          // Collect all consecutive \> branches at the same column
+          while (true) {
+            this.skipNewlines();
+            if (!this.check(TokenType.PARALLEL_PIPE)) break;
+            if (this.peek().column < pipeColumn) break; // Different indentation level
+            this.advance();
+            this.skipNewlines();
+            branches.push(this.equality());
+          }
+
+          expr = parallelPipeExpr(expr, branches);
+          continue;
+        } else {
+          // Backtrack - this parallel pipe belongs to an outer expression
+          this.current = savedPos;
+          break;
+        }
+      }
+
+      // Check for regular pipe />
       if (!this.match(TokenType.PIPE)) break;
       this.skipNewlines();
       const right = this.equality();
@@ -340,8 +377,10 @@ export class Parser {
       return this.parseIndentedBody();
     }
 
-    // Single expression on same line
-    const body = this.expression();
+    // Single expression on same line - use equality() to prevent consuming
+    // pipes that belong to outer expressions. For pipes in function bodies,
+    // use multi-line syntax with braces or indentation.
+    const body = this.equality();
     return { attachments: [], body };
   }
 

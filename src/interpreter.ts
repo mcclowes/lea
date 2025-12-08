@@ -27,12 +27,18 @@ export interface LeaRecord {
 
 export interface LeaBuiltin {
   kind: "builtin";
-  fn: (args: LeaValue[]) => LeaValue;
+  fn: (args: LeaValue[]) => LeaValue | Promise<LeaValue>;
 }
 
 export interface LeaPromise {
   kind: "promise";
   promise: Promise<LeaValue>;
+}
+
+// Special marker for results from parallel pipes, which should be spread when piped
+export interface LeaParallelResult {
+  kind: "parallel_result";
+  values: LeaValue[];
 }
 
 export type LeaValue =
@@ -44,6 +50,7 @@ export type LeaValue =
   | LeaBuiltin
   | LeaPromise
   | LeaRecord
+  | LeaParallelResult
   | null;
 
 export class RuntimeError extends Error {
@@ -89,7 +96,30 @@ export class Environment {
   }
 }
 
-type BuiltinFn = (args: LeaValue[]) => LeaValue;
+type BuiltinFn = (args: LeaValue[]) => LeaValue | Promise<LeaValue>;
+
+// Helper to check if a value is a LeaPromise
+function isLeaPromise(val: LeaValue): val is LeaPromise {
+  return val !== null && typeof val === "object" && "kind" in val && val.kind === "promise";
+}
+
+// Helper to check if a value is a LeaParallelResult
+function isParallelResult(val: LeaValue): val is LeaParallelResult {
+  return val !== null && typeof val === "object" && "kind" in val && val.kind === "parallel_result";
+}
+
+// Helper to unwrap a LeaPromise to its underlying value
+async function unwrapPromise(val: LeaValue): Promise<LeaValue> {
+  if (isLeaPromise(val)) {
+    return val.promise;
+  }
+  return val;
+}
+
+// Helper to wrap a Promise in a LeaPromise
+function wrapPromise(promise: Promise<LeaValue>): LeaPromise {
+  return { kind: "promise", promise };
+}
 
 const builtins: Record<string, BuiltinFn> = {
   print: (args) => {
@@ -158,6 +188,80 @@ const builtins: Record<string, BuiltinFn> = {
     const fn = asFunction(args[2]);
     return list.reduce((acc, item) => fn([acc, item]), initial);
   },
+  // New concurrency builtins
+  parallel: async (args) => {
+    const list = asList(args[0]);
+    const fn = asFunction(args[1]);
+    const options = args[2];
+
+    let limit = Infinity;
+    if (options && typeof options === "object" && "kind" in options && options.kind === "record") {
+      const record = options as LeaRecord;
+      const limitVal = record.fields.get("limit");
+      if (limitVal !== undefined && typeof limitVal === "number") {
+        limit = limitVal;
+      }
+    }
+
+    // Execute with concurrency limit
+    const results: LeaValue[] = [];
+    const executing: Promise<void>[] = [];
+
+    for (let i = 0; i < list.length; i++) {
+      const item = list[i];
+      const p = (async () => {
+        const result = fn([item]);
+        // If result is a promise, await it
+        const unwrapped = await unwrapPromise(result);
+        results[i] = unwrapped;
+      })();
+
+      executing.push(p);
+
+      if (executing.length >= limit) {
+        await Promise.race(executing);
+        // Remove completed promises
+        const completed = executing.filter(async (ep) => {
+          try {
+            await Promise.race([ep, Promise.resolve()]);
+            return false;
+          } catch {
+            return false;
+          }
+        });
+      }
+    }
+
+    await Promise.all(executing);
+    return results;
+  },
+  race: async (args) => {
+    const list = asList(args[0]);
+
+    // Each element should be a function (thunk)
+    const promises = list.map(async (item) => {
+      const fn = asFunction(item);
+      const result = fn([]);
+      return unwrapPromise(result);
+    });
+
+    return Promise.race(promises);
+  },
+  then: (args) => {
+    const promise = args[0];
+    const fn = asFunction(args[1]);
+
+    if (isLeaPromise(promise)) {
+      return wrapPromise(
+        promise.promise.then((val) => {
+          const result = fn([val]);
+          return unwrapPromise(result);
+        })
+      );
+    }
+    // If not a promise, just apply the function
+    return fn([promise]);
+  },
 };
 
 function asNumber(val: LeaValue): number {
@@ -186,6 +290,17 @@ function asFunction(val: LeaValue): (args: LeaValue[]) => LeaValue {
       return interp.evaluateExpr(fn.body, env);
     };
   }
+  if (val && typeof val === "object" && "kind" in val && val.kind === "builtin") {
+    const builtin = val as LeaBuiltin;
+    return (args: LeaValue[]) => {
+      const result = builtin.fn(args);
+      // Handle async builtins
+      if (result instanceof Promise) {
+        return wrapPromise(result);
+      }
+      return result;
+    };
+  }
   throw new RuntimeError("Expected function");
 }
 
@@ -200,6 +315,7 @@ function stringify(val: LeaValue): string {
   if (Array.isArray(val)) return `[${val.map(stringify).join(", ")}]`;
   if (typeof val === "object" && "kind" in val) {
     if (val.kind === "promise") return "<promise>";
+    if (val.kind === "parallel_result") return `[${val.values.map(stringify).join(", ")}]`;
     if (val.kind === "record") {
       const entries = Array.from(val.fields.entries())
         .map(([k, v]) => `${k}: ${stringify(v)}`)
@@ -228,6 +344,17 @@ export class Interpreter {
     let result: LeaValue = null;
     for (const stmt of program.statements) {
       result = this.executeStmt(stmt, this.globals);
+    }
+    return result;
+  }
+
+  // Async version of interpret for top-level await
+  async interpretAsync(program: Program): Promise<LeaValue> {
+    let result: LeaValue = null;
+    for (const stmt of program.statements) {
+      result = this.executeStmt(stmt, this.globals);
+      // If result is a promise at top level, await it
+      result = await unwrapPromise(result);
     }
     return result;
   }
@@ -310,6 +437,9 @@ export class Interpreter {
       case "PipeExpr":
         return this.evaluatePipe(expr.left, expr.right, env);
 
+      case "ParallelPipeExpr":
+        return this.evaluateParallelPipe(expr.input, expr.branches, env);
+
       case "CallExpr":
         return this.evaluateCall(expr, env);
 
@@ -318,10 +448,10 @@ export class Interpreter {
 
       case "AwaitExpr": {
         const operand = this.evaluateExpr(expr.operand, env);
-        if (operand && typeof operand === "object" && "kind" in operand && operand.kind === "promise") {
-          // Return a marker that we need async resolution
-          // The actual await is handled at the top level
-          throw new RuntimeError("await can only be used in async context - use #async decorator");
+        if (isLeaPromise(operand)) {
+          // Return a LeaPromise that will be resolved when we're in async context
+          // The actual awaiting happens at the call site or top level
+          return operand;
         }
         // If not a promise, just return the value
         return operand;
@@ -396,6 +526,61 @@ export class Interpreter {
   private evaluatePipe(left: Expr, right: Expr, env: Environment): LeaValue {
     const pipedValue = this.evaluateExpr(left, env);
 
+    // Promise-aware pipe: if left side is a promise, return a promise that awaits it
+    if (isLeaPromise(pipedValue)) {
+      return wrapPromise(
+        pipedValue.promise.then((resolved) => {
+          return this.evaluatePipeWithValue(resolved, right, env);
+        })
+      );
+    }
+
+    return this.evaluatePipeWithValue(pipedValue, right, env);
+  }
+
+  private evaluatePipeWithValue(pipedValue: LeaValue, right: Expr, env: Environment): LeaValue {
+    // If piped value is a parallel result, spread it as multiple arguments
+    if (isParallelResult(pipedValue)) {
+      // If right is a function expression, call it with spread values
+      if (right.kind === "FunctionExpr") {
+        const fn = this.createFunction(right, env);
+        return this.callFunction(fn, pipedValue.values);
+      }
+
+      // If right is just an identifier, call it with spread values
+      if (right.kind === "Identifier") {
+        const callee = this.evaluateExpr(right, env);
+        if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
+          return this.callFunction(callee as LeaFunction, pipedValue.values);
+        }
+        if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "builtin") {
+          const result = (callee as LeaBuiltin).fn(pipedValue.values);
+          if (result instanceof Promise) {
+            return wrapPromise(result);
+          }
+          return result;
+        }
+      }
+
+      // If right is a call expression, add spread values as additional args
+      if (right.kind === "CallExpr") {
+        const callee = this.evaluateExpr(right.callee, env);
+        const additionalArgs = right.args.map((arg) => this.evaluateExpr(arg, env));
+        const allArgs = [...pipedValue.values, ...additionalArgs];
+
+        if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
+          return this.callFunction(callee as LeaFunction, allArgs);
+        }
+        if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "builtin") {
+          const result = (callee as LeaBuiltin).fn(allArgs);
+          if (result instanceof Promise) {
+            return wrapPromise(result);
+          }
+          return result;
+        }
+      }
+    }
+
     // If right is just an identifier, call it with piped value
     if (right.kind === "Identifier") {
       return this.evaluateCall(
@@ -410,7 +595,44 @@ export class Interpreter {
       return this.evaluateCall(right, env, pipedValue);
     }
 
+    // If right is a function expression, call it with piped value
+    if (right.kind === "FunctionExpr") {
+      const fn = this.createFunction(right, env);
+      return this.callFunction(fn, [pipedValue]);
+    }
+
     throw new RuntimeError("Right side of pipe must be a function or call");
+  }
+
+  private evaluateParallelPipe(input: Expr, branches: Expr[], env: Environment): LeaValue {
+    const inputValue = this.evaluateExpr(input, env);
+
+    // If input is a promise, await it first
+    if (isLeaPromise(inputValue)) {
+      return wrapPromise(
+        inputValue.promise.then((resolved) => {
+          return this.evaluateParallelBranches(resolved, branches, env);
+        })
+      );
+    }
+
+    return this.evaluateParallelBranches(inputValue, branches, env);
+  }
+
+  private evaluateParallelBranches(inputValue: LeaValue, branches: Expr[], env: Environment): LeaValue {
+    // Execute all branches in parallel
+    const branchPromises = branches.map(async (branch) => {
+      const result = this.evaluatePipeWithValue(inputValue, branch, env);
+      return await unwrapPromise(result);
+    });
+
+    // Return a promise that resolves to a LeaParallelResult
+    return wrapPromise(
+      Promise.all(branchPromises).then((values) => ({
+        kind: "parallel_result" as const,
+        values,
+      }))
+    );
   }
 
   private evaluateCall(expr: CallExpr, env: Environment, pipedValue?: LeaValue): LeaValue {
@@ -437,7 +659,12 @@ export class Interpreter {
     // Built-in function
     if (callee && typeof callee === "object" && "kind" in callee && (callee as LeaBuiltin | LeaFunction).kind === "builtin") {
       const builtin = callee as LeaBuiltin;
-      return builtin.fn(args);
+      const result = builtin.fn(args);
+      // Handle async builtins
+      if (result instanceof Promise) {
+        return wrapPromise(result);
+      }
+      return result;
     }
 
     // User-defined function
@@ -462,6 +689,8 @@ export class Interpreter {
   }
 
   private callFunction(fn: LeaFunction, args: LeaValue[]): LeaValue {
+    const isAsync = fn.decorators.some((d) => d.name === "async");
+
     // Apply decorators
     let executor = (fnArgs: LeaValue[]): LeaValue => {
       const localEnv = new Environment(fn.closure);
@@ -479,6 +708,9 @@ export class Interpreter {
       }
 
       // Execute body
+      if (isAsync) {
+        return this.evaluateBodyAsync(fn.body, localEnv);
+      }
       return this.evaluateBody(fn.body, localEnv);
     };
 
@@ -501,6 +733,307 @@ export class Interpreter {
     }
     // Single expression
     return this.evaluateExpr(body, env);
+  }
+
+  private evaluateBodyAsync(body: Expr | BlockBody, env: Environment): LeaValue {
+    // For async functions, we need to handle await expressions properly
+    // Return a promise that executes the body
+    return wrapPromise(this.evaluateBodyAsyncImpl(body, env));
+  }
+
+  private async evaluateBodyAsyncImpl(body: Expr | BlockBody, env: Environment): Promise<LeaValue> {
+    if (body.kind === "BlockBody") {
+      // Execute statements in order, awaiting any promises
+      for (const stmt of body.statements) {
+        await this.executeStmtAsync(stmt, env);
+      }
+      // Return the result expression, awaiting if needed
+      let result = await this.evaluateExprAsync(body.result, env);
+      return result;
+    }
+    // Single expression
+    let result = await this.evaluateExprAsync(body, env);
+    return result;
+  }
+
+  private async executeStmtAsync(stmt: Stmt, env: Environment): Promise<LeaValue> {
+    switch (stmt.kind) {
+      case "LetStmt": {
+        const value = await this.evaluateExprAsync(stmt.value, env);
+        env.define(stmt.name, value, stmt.mutable);
+        return value;
+      }
+
+      case "ExprStmt":
+        return this.evaluateExprAsync(stmt.expression, env);
+
+      case "ContextDefStmt": {
+        const defaultValue = await this.evaluateExprAsync(stmt.defaultValue, env);
+        this.contextRegistry.set(stmt.name, { default: defaultValue, current: defaultValue });
+        return defaultValue;
+      }
+
+      case "ProvideStmt": {
+        const ctx = this.contextRegistry.get(stmt.contextName);
+        if (!ctx) {
+          throw new RuntimeError(`Context '${stmt.contextName}' is not defined`);
+        }
+        const newValue = await this.evaluateExprAsync(stmt.value, env);
+        ctx.current = newValue;
+        return newValue;
+      }
+    }
+  }
+
+  private async evaluateExprAsync(expr: Expr, env: Environment): Promise<LeaValue> {
+    switch (expr.kind) {
+      case "NumberLiteral":
+        return expr.value;
+
+      case "StringLiteral":
+        return expr.value;
+
+      case "BooleanLiteral":
+        return expr.value;
+
+      case "Identifier":
+        return env.get(expr.name);
+
+      case "PlaceholderExpr":
+        throw new RuntimeError("Placeholder '_' used outside of pipe context");
+
+      case "ListExpr": {
+        const elements: LeaValue[] = [];
+        for (const el of expr.elements) {
+          elements.push(await this.evaluateExprAsync(el, env));
+        }
+        return elements;
+      }
+
+      case "IndexExpr": {
+        const obj = await this.evaluateExprAsync(expr.object, env);
+        const idx = await this.evaluateExprAsync(expr.index, env);
+        if (Array.isArray(obj) && typeof idx === "number") {
+          return obj[idx] ?? null;
+        }
+        if (typeof obj === "string" && typeof idx === "number") {
+          return obj[idx] ?? null;
+        }
+        throw new RuntimeError("Invalid index operation");
+      }
+
+      case "UnaryExpr": {
+        const operand = await this.evaluateExprAsync(expr.operand, env);
+        if (expr.operator.type === TokenType.MINUS) {
+          return -asNumber(operand);
+        }
+        throw new RuntimeError(`Unknown unary operator: ${expr.operator.lexeme}`);
+      }
+
+      case "BinaryExpr": {
+        const left = await this.evaluateExprAsync(expr.left, env);
+        const right = await this.evaluateExprAsync(expr.right, env);
+        return this.evaluateBinary(expr.operator.type, left, right);
+      }
+
+      case "PipeExpr": {
+        const pipedValue = await this.evaluateExprAsync(expr.left, env);
+        return this.evaluatePipeWithValueAsync(pipedValue, expr.right, env);
+      }
+
+      case "ParallelPipeExpr": {
+        const inputValue = await this.evaluateExprAsync(expr.input, env);
+        return this.evaluateParallelBranchesAsync(inputValue, expr.branches, env);
+      }
+
+      case "CallExpr":
+        return this.evaluateCallAsync(expr, env);
+
+      case "FunctionExpr":
+        return this.createFunction(expr, env);
+
+      case "AwaitExpr": {
+        // In async context, properly await the promise
+        const operand = await this.evaluateExprAsync(expr.operand, env);
+        // Already unwrapped by evaluateExprAsync recursively, but if it's still a promise, unwrap it
+        return unwrapPromise(operand);
+      }
+
+      case "RecordExpr": {
+        const fields = new Map<string, LeaValue>();
+        for (const field of expr.fields) {
+          fields.set(field.key, await this.evaluateExprAsync(field.value, env));
+        }
+        return { kind: "record", fields } as LeaRecord;
+      }
+
+      case "MemberExpr": {
+        const obj = await this.evaluateExprAsync(expr.object, env);
+        if (obj && typeof obj === "object" && "kind" in obj && obj.kind === "record") {
+          const record = obj as LeaRecord;
+          if (!record.fields.has(expr.member)) {
+            throw new RuntimeError(`Record has no field '${expr.member}'`);
+          }
+          return record.fields.get(expr.member)!;
+        }
+        throw new RuntimeError("Member access requires a record");
+      }
+    }
+  }
+
+  private async evaluatePipeWithValueAsync(pipedValue: LeaValue, right: Expr, env: Environment): Promise<LeaValue> {
+    // If piped value is a parallel result, spread it as multiple arguments
+    if (isParallelResult(pipedValue)) {
+      // If right is a function expression, call it with spread values
+      if (right.kind === "FunctionExpr") {
+        const fn = this.createFunction(right, env);
+        return this.callFunctionAsync(fn, pipedValue.values);
+      }
+
+      // If right is just an identifier, call it with spread values
+      if (right.kind === "Identifier") {
+        const callee = await this.evaluateExprAsync(right, env);
+        if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
+          return this.callFunctionAsync(callee as LeaFunction, pipedValue.values);
+        }
+        if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "builtin") {
+          const result = (callee as LeaBuiltin).fn(pipedValue.values);
+          if (result instanceof Promise) return result;
+          if (isLeaPromise(result)) return result.promise;
+          return result;
+        }
+      }
+
+      // If right is a call expression, add spread values as additional args
+      if (right.kind === "CallExpr") {
+        const callee = await this.evaluateExprAsync(right.callee, env);
+        const additionalArgs: LeaValue[] = [];
+        for (const arg of right.args) {
+          additionalArgs.push(await this.evaluateExprAsync(arg, env));
+        }
+        const allArgs = [...pipedValue.values, ...additionalArgs];
+
+        if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
+          return this.callFunctionAsync(callee as LeaFunction, allArgs);
+        }
+        if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "builtin") {
+          const result = (callee as LeaBuiltin).fn(allArgs);
+          if (result instanceof Promise) return result;
+          if (isLeaPromise(result)) return result.promise;
+          return result;
+        }
+      }
+    }
+
+    // If right is just an identifier, call it with piped value
+    if (right.kind === "Identifier") {
+      return this.evaluateCallAsync(
+        { kind: "CallExpr", callee: right, args: [] },
+        env,
+        pipedValue
+      );
+    }
+
+    // If right is a call expression, check for placeholder
+    if (right.kind === "CallExpr") {
+      return this.evaluateCallAsync(right, env, pipedValue);
+    }
+
+    // If right is a function expression, call it with piped value
+    if (right.kind === "FunctionExpr") {
+      const fn = this.createFunction(right, env);
+      return this.callFunctionAsync(fn, [pipedValue]);
+    }
+
+    throw new RuntimeError("Right side of pipe must be a function or call");
+  }
+
+  private async evaluateParallelBranchesAsync(inputValue: LeaValue, branches: Expr[], env: Environment): Promise<LeaValue> {
+    // Execute all branches in parallel
+    const branchPromises = branches.map(async (branch) => {
+      return this.evaluatePipeWithValueAsync(inputValue, branch, env);
+    });
+
+    // Return LeaParallelResult
+    const values = await Promise.all(branchPromises);
+    return { kind: "parallel_result" as const, values };
+  }
+
+  private async evaluateCallAsync(expr: CallExpr, env: Environment, pipedValue?: LeaValue): Promise<LeaValue> {
+    const callee = await this.evaluateExprAsync(expr.callee, env);
+
+    // Handle piped value
+    let args: LeaValue[];
+    if (pipedValue !== undefined) {
+      // Check if any argument is a placeholder
+      const hasPlaceholder = expr.args.some((arg) => arg.kind === "PlaceholderExpr");
+      if (hasPlaceholder) {
+        // Substitute placeholder with piped value
+        const evaluatedArgs: LeaValue[] = [];
+        for (const arg of expr.args) {
+          if (arg.kind === "PlaceholderExpr") {
+            evaluatedArgs.push(pipedValue);
+          } else {
+            evaluatedArgs.push(await this.evaluateExprAsync(arg, env));
+          }
+        }
+        args = evaluatedArgs;
+      } else {
+        // Prepend piped value
+        const evaluatedArgs: LeaValue[] = [];
+        for (const arg of expr.args) {
+          evaluatedArgs.push(await this.evaluateExprAsync(arg, env));
+        }
+        args = [pipedValue, ...evaluatedArgs];
+      }
+    } else {
+      const evaluatedArgs: LeaValue[] = [];
+      for (const arg of expr.args) {
+        evaluatedArgs.push(await this.evaluateExprAsync(arg, env));
+      }
+      args = evaluatedArgs;
+    }
+
+    // Built-in function
+    if (callee && typeof callee === "object" && "kind" in callee && (callee as LeaBuiltin | LeaFunction).kind === "builtin") {
+      const builtin = callee as LeaBuiltin;
+      const result = builtin.fn(args);
+      // Handle async builtins
+      if (result instanceof Promise) {
+        return result;
+      }
+      if (isLeaPromise(result)) {
+        return result.promise;
+      }
+      return result;
+    }
+
+    // User-defined function
+    if (callee && typeof callee === "object" && "kind" in callee && (callee as LeaBuiltin | LeaFunction).kind === "function") {
+      const fn = callee as LeaFunction;
+      return this.callFunctionAsync(fn, args);
+    }
+
+    throw new RuntimeError("Can only call functions");
+  }
+
+  private async callFunctionAsync(fn: LeaFunction, args: LeaValue[]): Promise<LeaValue> {
+    const localEnv = new Environment(fn.closure);
+
+    // Bind parameters
+    fn.params.forEach((param, i) => localEnv.define(param.name, args[i] ?? null, false));
+
+    // Inject context attachments
+    for (const attachment of fn.attachments) {
+      const ctx = this.contextRegistry.get(attachment);
+      if (!ctx) {
+        throw new RuntimeError(`Context '${attachment}' is not defined`);
+      }
+      localEnv.define(attachment, ctx.current, false);
+    }
+
+    // Execute body asynchronously
+    return this.evaluateBodyAsyncImpl(fn.body, localEnv);
   }
 
   private applyDecorator(
@@ -641,32 +1174,26 @@ export class Interpreter {
         return (args: LeaValue[]) => {
           const result = executor(args);
           // If result is a promise, race with timeout
-          if (result && typeof result === "object" && "kind" in result && result.kind === "promise") {
+          if (isLeaPromise(result)) {
             const timeoutPromise = new Promise<LeaValue>((_, reject) => {
               setTimeout(() => reject(new RuntimeError(`[timeout] Function exceeded ${timeoutMs}ms`)), timeoutMs);
             });
-            return {
-              kind: "promise",
-              promise: Promise.race([result.promise, timeoutPromise]),
-            } as LeaPromise;
+            return wrapPromise(Promise.race([result.promise, timeoutPromise]));
           }
           return result;
         };
       }
 
       case "async": {
+        // Already handled in callFunction - this just ensures the result is wrapped
         return (args: LeaValue[]) => {
-          // Wrap the executor to handle await expressions
           const result = executor(args);
           // If already a promise, return as-is
-          if (result && typeof result === "object" && "kind" in result && result.kind === "promise") {
+          if (isLeaPromise(result)) {
             return result;
           }
           // Otherwise wrap in resolved promise
-          return {
-            kind: "promise",
-            promise: Promise.resolve(result),
-          } as LeaPromise;
+          return wrapPromise(Promise.resolve(result));
         };
       }
 
