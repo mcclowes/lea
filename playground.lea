@@ -1,8 +1,18 @@
-let foo = 
+let foo =
   /> map((x) -> x + 1)
-  \> (x) -> x
+  \> filter((x) -> x < 20)
+    /> map((x) -> x * 7)
   \> reverse
+    /> map((x) -> x * 2)
+    /> filter((x) -> x > 10)
   /> concat
-  /> print
+  #memo
+  #profile
 
+foo.visualize()
+
+[1,2, 3, 4, 5] /> foo /> print
+[1,2, 3, 4, 5] /> foo /> print
+[1,2, 3, 4, 5] /> foo /> print
+[1,2, 3, 4, 5] /> foo /> print
 [1,2, 3, 4, 5] /> foo /> print

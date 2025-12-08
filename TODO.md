@@ -1,6 +1,7 @@
 # todo
 
 - [ ] Refinement Types (Liquid Haskell, F*) — Types with predicates. Not just int, but int where x > 0 && x < 100. The compiler proves your code satisfies the constraints.
+- [ ] Improve Pipeline.visualize() function to show parallelisation
 - [ ] Canvas visualisation of our 'pipeline's
 - [ ] Multi-line records and arrays in parser
 - [ ] Implement #log-verbose to log input, output, and all variable assignment, or the values passed between pipeline stages
@@ -10,51 +11,7 @@
 - [ ] Array vs value handling - resolve ambiguity
 - [ ] Pattern matching
 - [ ] Record improvements
-
-## Pipeline
-
-Before:
-```lea
--- Filter out zero components and format each
-let buildParts = (components) ->
-  components
-    /> filter((c) -> fst(c) > 0)
-    /> map((c) -> formatComponent(fst(c), snd(c)))
-
-buildParts([a, b, c])
-```
-
-After:
-```lea
--- Filter out zero components and format each
-let buildParts =
-  /> filter((c) -> fst(c) > 0)
-  /> map((c) -> formatComponent(fst(c), snd(c)))
-
-[a, b, c] /> buildParts
-```
-
-Inbuilt pipeline functionality:
-```lea
-let p = /> filter(even) /> map(double) /> take(5)
-
-p.stages        -- [filter, map, take]
-p.length        -- 3
-p.visualize()   -- prints ASCII diagram
-
--- Add stages dynamically
-let extended = p /> sort
-```
-
-Pipelines can always compose.
-
-```lea
-let foo = /> reverse /> reverse
-let bar = /> reverse /> reverse
-let baz = /> foo /> bar
-```
-
--- todo: define how types and pipes work together
+- [ ] Split the interpreter up into smaller files
 
 ## Partitions
 

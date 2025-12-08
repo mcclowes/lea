@@ -62,6 +62,7 @@ export interface LeaPipeline {
   stages: AnyPipelineStage[];  // Each stage: regular expr or parallel branches
   closure: Environment;        // Captured environment for evaluating the stages
   decorators: Decorator[];     // Decorators applied to the pipeline
+  memoCache?: Map<string, LeaValue>;  // Optional cache for #memo decorator
 }
 
 // A bidirectional pipeline that can be applied in either direction
@@ -2376,7 +2377,11 @@ export class Interpreter {
         };
 
       case "memo": {
-        const cache = new Map<string, LeaValue>();
+        // Use persistent cache on pipeline object (created once, reused across calls)
+        if (!pipeline.memoCache) {
+          pipeline.memoCache = new Map<string, LeaValue>();
+        }
+        const cache = pipeline.memoCache;
         return (args: LeaValue[]) => {
           const key = JSON.stringify(args);
           if (cache.has(key)) {
@@ -2547,7 +2552,11 @@ export class Interpreter {
         };
 
       case "memo": {
-        const cache = new Map<string, LeaValue>();
+        // Use persistent cache on pipeline object (created once, reused across calls)
+        if (!pipeline.memoCache) {
+          pipeline.memoCache = new Map<string, LeaValue>();
+        }
+        const cache = pipeline.memoCache;
         return async (args: LeaValue[]) => {
           const key = JSON.stringify(args);
           if (cache.has(key)) {
