@@ -60,6 +60,13 @@ let square = (x) -> x * x
 let loggedPipeline = /> double /> addOne #log
 5 /> loggedPipeline /> print
 
+-- #memo on pipelines - caches results by input (persists across calls)
+"--- #memo on pipeline ---" /> print
+let memoPipeline = /> double /> addOne /> square #memo
+10 /> memoPipeline /> print
+10 /> memoPipeline /> print
+20 /> memoPipeline /> print
+
 -- #time on pipelines - measures total execution time
 "--- #time on pipeline ---" /> print
 let timedPipeline = /> double /> addOne /> square #time
