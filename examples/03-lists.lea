@@ -3,6 +3,14 @@
 let numbers = [1, 2, 3, 4, 5]
 numbers /> print
 
+-- Multi-line lists
+let items = [
+  10,
+  20,
+  30,
+]
+items /> print
+
 -- List builtins
 numbers /> length /> print
 numbers /> head /> print

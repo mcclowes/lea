@@ -4,14 +4,29 @@
 let user = { name: "Alice", age: 30 }
 user /> print
 
+-- Multi-line records
+let profile = {
+  name: "Bob",
+  age: 25,
+  active: true,
+}
+profile /> print
+
 -- Member access
 user.name /> print
 user.age /> print
 
--- Nested records
-let database = { host: "localhost", port: 5432 }
-let cache = { enabled: true, ttl: 3600 }
-let config = { database: database, cache: cache }
+-- Nested records (multi-line)
+let config = {
+  database: {
+    host: "localhost",
+    port: 5432,
+  },
+  cache: {
+    enabled: true,
+    ttl: 3600,
+  },
+}
 
 config.database.host /> print
 config.cache.ttl /> print

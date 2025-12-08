@@ -1,0 +1,44 @@
+-- Test multi-line arrays
+let numbers = [
+  1,
+  2,
+  3
+]
+numbers /> print
+
+-- Test multi-line records
+let user = {
+  name: "Alice",
+  age: 30,
+  active: true
+}
+user /> print
+
+-- Test nested multi-line
+let data = {
+  items: [
+    10,
+    20,
+    30
+  ],
+  meta: {
+    count: 3,
+    valid: true
+  }
+}
+data /> print
+
+-- Test trailing commas in arrays
+let withTrailing = [
+  "a",
+  "b",
+  "c",
+]
+withTrailing /> print
+
+-- Test trailing commas in records
+let recordTrailing = {
+  x: 1,
+  y: 2,
+}
+recordTrailing /> print

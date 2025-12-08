@@ -45,6 +45,12 @@ let user = { name: "Max", age: 30 }
 user.name /> print           -- "Max"
 user.age /> print            -- 30
 
+-- Multi-line records (trailing commas allowed)
+let config = {
+  host: "localhost",
+  port: 8080,
+}
+
 -- Nested records
 let data = { user: { name: "Max" }, count: 1 }
 data.user.name /> print      -- "Max"
@@ -91,6 +97,13 @@ await fetchData() /> print
 [1, 2, 3] /> map((x) -> x * 2)
 [1, 2, 3] /> filter((x) -> x > 1)
 [1, 2, 3] /> reduce(0, (acc, x) -> acc + x)
+
+-- Multi-line lists (trailing commas allowed)
+let items = [
+  10,
+  20,
+  30,
+]
 ```
 
 ## Strings

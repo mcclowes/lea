@@ -357,6 +357,8 @@ export class Parser {
     if (!this.check(TokenType.RBRACE)) {
       do {
         this.skipNewlines();
+        // Check for trailing comma (empty field before })
+        if (this.check(TokenType.RBRACE)) break;
         const key = this.consume(TokenType.IDENTIFIER, "Expected field name").lexeme;
         this.consume(TokenType.COLON, "Expected ':' after field name");
         const value = this.expression();
@@ -372,12 +374,17 @@ export class Parser {
   private list(): Expr {
     const elements: Expr[] = [];
 
+    this.skipNewlines();
     if (!this.check(TokenType.RBRACKET)) {
       do {
+        this.skipNewlines();
+        // Check for trailing comma (empty element before ])
+        if (this.check(TokenType.RBRACKET)) break;
         elements.push(this.expression());
+        this.skipNewlines();
       } while (this.match(TokenType.COMMA));
     }
-
+    this.skipNewlines();
     this.consume(TokenType.RBRACKET, "Expected ']' after list elements");
     return listExpr(elements);
   }

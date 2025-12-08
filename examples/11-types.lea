@@ -101,7 +101,6 @@ iterations(3) /> reduce(10, (acc, _) -> acc * 2) /> print  -- 80
 -- badReturn(5) /> print  -- Error: expected return type String, got int
 
 <> -- TUPLES
-
 "=== Tuples ===" /> print
 
 -- Tuple literal syntax

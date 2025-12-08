@@ -76,6 +76,17 @@ let clamp = (x) ->
 let user = { name: "Max", age: 30 }
 user.name /> print
 
+-- Multi-line records and lists (trailing commas allowed)
+let config = {
+  host: "localhost",
+  port: 8080,
+}
+let items = [
+  1,
+  2,
+  3,
+]
+
 -- Context system (dependency injection)
 context Logger = { log: (msg) -> print("[DEFAULT] " ++ msg) }
 provide Logger { log: (msg) -> print("[PROD] " ++ msg) }
