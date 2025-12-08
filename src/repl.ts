@@ -1,0 +1,59 @@
+import * as readline from "readline";
+import { Lexer, LexerError } from "./lexer";
+import { Parser, ParseError } from "./parser";
+import { Interpreter, RuntimeError } from "./interpreter";
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+const interpreter = new Interpreter();
+
+function run(source: string): void {
+  try {
+    const lexer = new Lexer(source);
+    const tokens = lexer.scanTokens();
+    const parser = new Parser(tokens);
+    const program = parser.parse();
+    const result = interpreter.interpret(program);
+    if (result !== null) {
+      console.log(formatValue(result));
+    }
+  } catch (err) {
+    if (err instanceof LexerError || err instanceof ParseError || err instanceof RuntimeError) {
+      console.error(`Error: ${err.message}`);
+    } else {
+      throw err;
+    }
+  }
+}
+
+function formatValue(val: unknown): string {
+  if (val === null) return "null";
+  if (Array.isArray(val)) return `[${val.map(formatValue).join(", ")}]`;
+  if (typeof val === "object" && val !== null && "kind" in val) {
+    return "<function>";
+  }
+  return String(val);
+}
+
+function prompt(): void {
+  rl.question("lea> ", (line) => {
+    if (line === null || line === ".exit" || line === "exit") {
+      console.log("Goodbye!");
+      rl.close();
+      return;
+    }
+
+    if (line.trim()) {
+      run(line);
+    }
+
+    prompt();
+  });
+}
+
+console.log("Lea Language REPL");
+console.log("Type expressions or statements. Type 'exit' to quit.\n");
+prompt();

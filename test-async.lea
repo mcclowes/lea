@@ -1,0 +1,15 @@
+-- Test async decorators
+
+-- delay builtin returns a promise
+let delayed = delay(100, 42)
+delayed /> print
+
+-- #async marks a function as returning a promise
+let asyncFn = (x) -> x * 2 #async
+10 /> asyncFn /> print
+
+-- #timeout with async (should succeed - 100ms < 500ms timeout)
+let quickFn = (x) -> delay(100, x * 2) #timeout(500)
+5 /> quickFn /> print
+
+"Done!" /> print

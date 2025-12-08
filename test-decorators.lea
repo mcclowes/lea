@@ -1,0 +1,27 @@
+-- Test new decorators
+
+-- #retry(n) - retry on failure
+let retryFn = (x) -> x * 2 #retry(3)
+5 /> retryFn /> print
+
+-- #validate - runtime type checking
+let validated = (x: Int): Int -> x * 2 #validate
+10 /> validated /> print
+
+-- #pure - detect side effects (warning only)
+-- This function calls print, triggering a warning
+let pureish = (x) -> x * 2 #pure
+5 /> pureish /> print
+
+-- #trace - deep logging with indentation
+let inner = (x) -> x * 2 #trace
+let outer = (x) -> x /> inner #trace
+5 /> outer /> print
+
+-- Multiple decorators with arguments
+let timedRetry = (x) -> x + 1 #time #retry(2)
+10 /> timedRetry /> print
+
+-- Test #validate type mismatch (uncomment to see error)
+-- let badValidate = (x: String): Int -> x #validate
+-- 42 /> badValidate /> print

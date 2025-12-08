@@ -1,0 +1,40 @@
+-- Test records
+let user = { name: "Max", age: 30 }
+user.name /> print
+user.age /> print
+
+-- Nested records
+let data = { user: { name: "Alice" }, count: 1 }
+data.user.name /> print
+
+-- Multi-statement body (brace delimited)
+let process = (x) -> {
+  let y = x * 2
+  let z = y + 1
+  z
+}
+10 /> process /> print
+
+-- Context definition
+context Logger = { log: (msg) -> print("[DEFAULT] " ++ msg) }
+
+-- Use context (before override)
+let greet1 = (name) -> {
+  @Logger
+  Logger.log("Hello " ++ name)
+  name
+}
+"World" /> greet1
+
+-- Override context
+provide Logger { log: (msg) -> print("[PROD] " ++ msg) }
+
+-- Use context (after override)
+let greet2 = (name) -> {
+  @Logger
+  Logger.log("Goodbye " ++ name)
+  name
+}
+"World" /> greet2
+
+"Done!" /> print

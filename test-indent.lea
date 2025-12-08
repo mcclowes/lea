@@ -1,0 +1,25 @@
+-- Test indentation-based multi-statement body
+let double = (x) -> x * 2
+
+-- Simple single expression still works
+5 /> double /> print
+
+-- Multi-statement with indentation
+let process = (x) ->
+  let y = x * 2
+  let z = y + 1
+  z
+
+10 /> process /> print
+
+-- Context with indentation
+context Config = { port: 8080 }
+
+let getPort = () -> {
+  @Config
+  Config.port
+}
+
+getPort() /> print
+
+"Done!" /> print
