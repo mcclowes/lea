@@ -1,0 +1,42 @@
+-- Test function overloading
+
+-- Define overloaded 'add' function with different type signatures
+let add = (a, b) -> a + b :: (Int, Int) :> Int
+let add = (a, b) -> a ++ b :: (String, String) :> String
+
+-- Test integer overload
+add(1, 2) /> print              -- Should print: 3
+
+-- Test string overload
+add("Hello, ", "World!") /> print  -- Should print: Hello, World!
+
+-- Define overloaded 'double' function
+let double = (x) -> x * 2 :: Int :> Int
+let double = (s) -> s ++ s :: String :> String
+
+-- Test double with integers
+double(5) /> print              -- Should print: 10
+
+-- Test double with strings
+double("ab") /> print           -- Should print: abab
+
+-- Test overloading with pipes
+3 /> double /> print            -- Should print: 6
+"x" /> double /> print          -- Should print: xx
+
+-- Test overloading with different arity
+let describe = (x) -> "Value: " ++ x :: String :> String
+let describe = (x, label) -> label ++ ": " ++ x :: (String, String) :> String
+
+describe("test") /> print       -- Should print: Value: test
+describe("42", "Number") /> print  -- Should print: Number: 42
+
+-- Test with list operations (using multiline syntax)
+let process = (n) -> n * 2 :: Int :> Int
+let process = (list) -> :: List :> List
+  list /> map((x) -> x + 1)
+
+process(5) /> print              -- Should print: 10
+process([1, 2, 3]) /> print      -- Should print: [2, 3, 4]
+
+print("All overloading tests passed!")

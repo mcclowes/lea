@@ -1,0 +1,49 @@
+-- ============================================
+-- Example 13: Function Overloading
+-- ============================================
+-- Define multiple functions with the same name but
+-- different type signatures. The correct overload
+-- is selected at runtime based on argument types.
+
+-- Basic overloading: same name, different types
+let add = (a, b) -> a + b :: (Int, Int) :> Int
+let add = (a, b) -> a ++ b :: (String, String) :> String
+
+"--- Numeric add ---" /> print
+add(10, 20) /> print           -- 30
+
+"--- String add ---" /> print
+add("Hello, ", "World!") /> print  -- Hello, World!
+
+-- Overloading with different arity
+let format = (value) -> "Value: " ++ value :: String :> String
+let format = (value, label) -> label ++ ": " ++ value :: (String, String) :> String
+let format = (value, label, suffix) -> label ++ ": " ++ value ++ suffix :: (String, String, String) :> String
+
+"--- Format overloads ---" /> print
+format("42") /> print                    -- Value: 42
+format("42", "Number") /> print          -- Number: 42
+format("42", "Number", "!") /> print     -- Number: 42!
+
+-- Overloading with pipes
+let double = (x) -> x * 2 :: Int :> Int
+let double = (s) -> s ++ s :: String :> String
+
+"--- Piped overloads ---" /> print
+5 /> double /> print           -- 10
+"ab" /> double /> print        -- abab
+
+-- Practical example: polymorphic stringify
+let stringify = (n) -> :: Int :> String
+  let result = n + 0
+  "Int(" ++ "number" ++ ")"
+let stringify = (s) -> "String(" ++ s ++ ")" :: String :> String
+let stringify = (b) -> :: Bool :> String
+  b ? "Bool(true)" : "Bool(false)"
+
+"--- Stringify overloads ---" /> print
+stringify(42) /> print         -- Int(number)
+stringify("hello") /> print    -- String(hello)
+stringify(true) /> print       -- Bool(true)
+
+"--- Done! ---" /> print

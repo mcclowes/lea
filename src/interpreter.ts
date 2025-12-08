@@ -48,6 +48,11 @@ export interface LeaTuple {
   elements: LeaValue[];
 }
 
+export interface LeaOverloadSet {
+  kind: "overload_set";
+  overloads: LeaFunction[];
+}
+
 export type LeaValue =
   | number
   | string
@@ -59,6 +64,7 @@ export type LeaValue =
   | LeaRecord
   | LeaParallelResult
   | LeaTuple
+  | LeaOverloadSet
   | null;
 
 export class RuntimeError extends Error {
@@ -86,6 +92,48 @@ export class Environment {
 
   define(name: string, value: LeaValue, mutable: boolean): void {
     this.values.set(name, { value, mutable });
+  }
+
+  // Add a function overload - creates or extends an overload set
+  addOverload(name: string, fn: LeaFunction): void {
+    const existing = this.values.get(name);
+
+    if (existing === undefined) {
+      // First definition with this name - create an overload set
+      const overloadSet: LeaOverloadSet = {
+        kind: "overload_set",
+        overloads: [fn],
+      };
+      this.values.set(name, { value: overloadSet, mutable: false });
+    } else if (
+      existing.value !== null &&
+      typeof existing.value === "object" &&
+      "kind" in existing.value &&
+      existing.value.kind === "overload_set"
+    ) {
+      // Already an overload set - add to it
+      (existing.value as LeaOverloadSet).overloads.push(fn);
+    } else if (
+      existing.value !== null &&
+      typeof existing.value === "object" &&
+      "kind" in existing.value &&
+      existing.value.kind === "function"
+    ) {
+      // Convert existing single function to an overload set
+      const existingFn = existing.value as LeaFunction;
+      const overloadSet: LeaOverloadSet = {
+        kind: "overload_set",
+        overloads: [existingFn, fn],
+      };
+      this.values.set(name, { value: overloadSet, mutable: false });
+    } else {
+      throw new RuntimeError(`Cannot overload '${name}' - existing binding is not a function`);
+    }
+  }
+
+  // Check if a name exists in this scope (not parent)
+  hasInCurrentScope(name: string): boolean {
+    return this.values.has(name);
   }
 
   get(name: string): LeaValue {
@@ -122,6 +170,11 @@ function isLeaPromise(val: LeaValue): val is LeaPromise {
 // Helper to check if a value is a LeaParallelResult
 function isParallelResult(val: LeaValue): val is LeaParallelResult {
   return val !== null && typeof val === "object" && "kind" in val && val.kind === "parallel_result";
+}
+
+// Helper to check if a value is a LeaOverloadSet
+function isOverloadSet(val: LeaValue): val is LeaOverloadSet {
+  return val !== null && typeof val === "object" && "kind" in val && val.kind === "overload_set";
 }
 
 // Helper to unwrap a LeaPromise to its underlying value
@@ -387,7 +440,18 @@ export class Interpreter {
     switch (stmt.kind) {
       case "LetStmt": {
         const value = this.evaluateExpr(stmt.value, env);
-        env.define(stmt.name, value, stmt.mutable);
+
+        // Check if this is a function overload
+        const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
+        const hasTypeSignature = isFunction && (value as LeaFunction).typeSignature !== undefined;
+
+        if (hasTypeSignature && env.hasInCurrentScope(stmt.name)) {
+          // This is a function with a type signature and the name already exists
+          // Add it as an overload
+          env.addOverload(stmt.name, value as LeaFunction);
+        } else {
+          env.define(stmt.name, value, stmt.mutable);
+        }
         return value;
       }
 
@@ -611,6 +675,10 @@ export class Interpreter {
       // If right is just an identifier, call it with spread values
       if (right.kind === "Identifier") {
         const callee = this.evaluateExpr(right, env);
+        if (isOverloadSet(callee)) {
+          const fn = this.resolveOverload(callee.overloads, pipedValue.values);
+          return this.callFunction(fn, pipedValue.values);
+        }
         if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
           return this.callFunction(callee as LeaFunction, pipedValue.values);
         }
@@ -629,6 +697,10 @@ export class Interpreter {
         const additionalArgs = right.args.map((arg) => this.evaluateExpr(arg, env));
         const allArgs = [...pipedValue.values, ...additionalArgs];
 
+        if (isOverloadSet(callee)) {
+          const fn = this.resolveOverload(callee.overloads, allArgs);
+          return this.callFunction(fn, allArgs);
+        }
         if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
           return this.callFunction(callee as LeaFunction, allArgs);
         }
@@ -726,6 +798,12 @@ export class Interpreter {
         return wrapPromise(result);
       }
       return result;
+    }
+
+    // Overload set - resolve the best matching overload
+    if (isOverloadSet(callee)) {
+      const fn = this.resolveOverload(callee.overloads, args);
+      return this.callFunction(fn, args);
     }
 
     // User-defined function
@@ -843,7 +921,18 @@ export class Interpreter {
     switch (stmt.kind) {
       case "LetStmt": {
         const value = await this.evaluateExprAsync(stmt.value, env);
-        env.define(stmt.name, value, stmt.mutable);
+
+        // Check if this is a function overload
+        const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
+        const hasTypeSignature = isFunction && (value as LeaFunction).typeSignature !== undefined;
+
+        if (hasTypeSignature && env.hasInCurrentScope(stmt.name)) {
+          // This is a function with a type signature and the name already exists
+          // Add it as an overload
+          env.addOverload(stmt.name, value as LeaFunction);
+        } else {
+          env.define(stmt.name, value, stmt.mutable);
+        }
         return value;
       }
 
@@ -1019,6 +1108,10 @@ export class Interpreter {
       // If right is just an identifier, call it with spread values
       if (right.kind === "Identifier") {
         const callee = await this.evaluateExprAsync(right, env);
+        if (isOverloadSet(callee)) {
+          const fn = this.resolveOverload(callee.overloads, pipedValue.values);
+          return this.callFunctionAsync(fn, pipedValue.values);
+        }
         if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
           return this.callFunctionAsync(callee as LeaFunction, pipedValue.values);
         }
@@ -1039,6 +1132,10 @@ export class Interpreter {
         }
         const allArgs = [...pipedValue.values, ...additionalArgs];
 
+        if (isOverloadSet(callee)) {
+          const fn = this.resolveOverload(callee.overloads, allArgs);
+          return this.callFunctionAsync(fn, allArgs);
+        }
         if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
           return this.callFunctionAsync(callee as LeaFunction, allArgs);
         }
@@ -1132,6 +1229,12 @@ export class Interpreter {
         return result.promise;
       }
       return result;
+    }
+
+    // Overload set - resolve the best matching overload
+    if (isOverloadSet(callee)) {
+      const fn = this.resolveOverload(callee.overloads, args);
+      return this.callFunctionAsync(fn, args);
     }
 
     // User-defined function
@@ -1427,5 +1530,90 @@ export class Interpreter {
     if (typeof t === "string") return t;
     const tupleStr = `(${t.tuple.join(", ")})`;
     return t.optional ? `?${tupleStr}` : tupleStr;
+  }
+
+  // Resolve the best matching overload from an overload set
+  resolveOverload(overloads: LeaFunction[], args: LeaValue[]): LeaFunction {
+    const candidates: { fn: LeaFunction; score: number }[] = [];
+
+    for (const fn of overloads) {
+      const score = this.scoreOverloadMatch(fn, args);
+      if (score >= 0) {
+        candidates.push({ fn, score });
+      }
+    }
+
+    if (candidates.length === 0) {
+      // No matching overload found - generate helpful error message
+      const argTypes = args.map((a) => this.getLeaType(a)).join(", ");
+      const availableSignatures = overloads
+        .map((fn) => {
+          if (fn.typeSignature) {
+            const paramTypes = fn.typeSignature.paramTypes.map((t) => this.formatType(t)).join(", ");
+            const returnType = fn.typeSignature.returnType ? this.formatType(fn.typeSignature.returnType) : "?";
+            return `  (${paramTypes}) :> ${returnType}`;
+          }
+          return `  (${fn.params.map((p) => p.name).join(", ")})`;
+        })
+        .join("\n");
+      throw new RuntimeError(
+        `No matching overload for arguments (${argTypes}).\nAvailable overloads:\n${availableSignatures}`
+      );
+    }
+
+    // Sort by score (higher is better - more specific match)
+    candidates.sort((a, b) => b.score - a.score);
+
+    // Check for ambiguity - if top two have same score, it's ambiguous
+    if (candidates.length > 1 && candidates[0].score === candidates[1].score) {
+      const argTypes = args.map((a) => this.getLeaType(a)).join(", ");
+      throw new RuntimeError(
+        `Ambiguous overload call for arguments (${argTypes}) - multiple overloads match equally well`
+      );
+    }
+
+    return candidates[0].fn;
+  }
+
+  // Score how well a function matches the given arguments
+  // Returns -1 if no match, higher positive score = better match
+  private scoreOverloadMatch(fn: LeaFunction, args: LeaValue[]): number {
+    const paramCount = fn.params.length;
+    const requiredParams = fn.params.filter((p) => !p.defaultValue).length;
+
+    // Check arity - args must be between required and total params
+    if (args.length < requiredParams || args.length > paramCount) {
+      return -1;
+    }
+
+    // If no type signature, this is a fallback overload (lowest priority)
+    if (!fn.typeSignature || fn.typeSignature.paramTypes.length === 0) {
+      // Return 0 for functions without type signatures - they match any types
+      // but with lowest priority
+      return 0;
+    }
+
+    // Score based on type matching
+    let score = 1; // Base score for having type annotations
+    const paramTypes = fn.typeSignature.paramTypes;
+
+    for (let i = 0; i < args.length; i++) {
+      const expectedType = paramTypes[i];
+      const arg = args[i];
+
+      if (expectedType === undefined) {
+        // More args than typed params - still ok if function accepts them
+        continue;
+      }
+
+      if (!this.matchesType(arg, expectedType)) {
+        return -1; // Type mismatch
+      }
+
+      // Exact type match gets bonus points
+      score += 10;
+    }
+
+    return score;
   }
 }
