@@ -40,7 +40,7 @@ let greet = (name) -> :: String :> String
   "Hello " ++ name
 -- Use #validate for runtime type checking
 let safe = (x) -> x * 2 :: Int :> Int #validate
--- Supported types: Int, String, Bool, List, Function, Tuple
+-- Supported types: Int, String, Bool, List, Function, Tuple, Pipeline
 -- Optional types with ?: ?Int allows null
 -- Tuple types: (Int, String) :> (Int, String)
 -- Underscore for ignored params
@@ -131,6 +131,21 @@ value
 let x = 10
 let y = 20
 </>
+
+-- Pipelines as first-class values
+-- Define a reusable pipeline (starts with />)
+let processNumbers = /> double /> addOne
+5 /> processNumbers         -- applies pipeline to 5
+
+-- Pipeline properties
+processNumbers.length       -- 2 (number of stages)
+processNumbers.stages       -- ["double", "addOne"]
+processNumbers.visualize()  -- prints ASCII diagram
+
+-- Pipeline composition
+let pipeA = /> filter((x) -> x > 0)
+let pipeB = /> map((x) -> x * 2)
+let combined = /> pipeA /> pipeB  -- compose pipelines
 ```
 
 ## Architecture
@@ -174,6 +189,7 @@ NEWLINE, EOF
 - RecordExpr, MemberExpr, AwaitExpr
 - BlockBody (multi-statement function body)
 - ReturnExpr (early return with <-)
+- PipelineLiteral (stages: list of expressions)
 
 **Statements:**
 - LetStmt (name, mutable, value)
@@ -254,6 +270,16 @@ value
 - More specific type matches are preferred over generic ones
 - Arity (number of arguments) is checked first, then types
 - Error if no overload matches or if call is ambiguous
+
+**Pipelines (First-Class):**
+- Define with `/>` at start: `let p = /> fn1 /> fn2`
+- Apply by piping: `value /> p`
+- Properties:
+  - `.length` — number of stages
+  - `.stages` — list of stage names
+  - `.visualize()` — prints ASCII diagram of pipeline flow
+- Compose pipelines: `let combined = /> pipeA /> pipeB`
+- Pipelines capture their closure (lexical scope)
 
 ## Usage
 

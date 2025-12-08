@@ -87,7 +87,7 @@
         },
         {
           "name": "storage.type.lea",
-          "match": "\\b(Int|String|Bool|List|Record|Function|Tuple)\\b"
+          "match": "\\b(Int|String|Bool|List|Record|Function|Tuple|Pipeline)\\b"
         }
       ]
     },
@@ -178,7 +178,7 @@
       "patterns": [
         {
           "name": "support.function.builtin.lea",
-          "match": "\\b(print|sqrt|abs|floor|ceil|round|min|max|length|head|tail|push|concat|map|filter|reduce|range|iterations|delay|parallel|race|then)\\b"
+          "match": "\\b(print|sqrt|abs|floor|ceil|round|min|max|length|head|tail|push|concat|reverse|zip|isEmpty|fst|snd|take|at|toString|map|filter|reduce|range|iterations|delay|parallel|race|then)\\b"
         }
       ]
     },

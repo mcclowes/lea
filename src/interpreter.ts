@@ -53,6 +53,13 @@ export interface LeaOverloadSet {
   overloads: LeaFunction[];
 }
 
+// A pipeline is a first-class value representing a composable chain of transformations
+export interface LeaPipeline {
+  kind: "pipeline";
+  stages: { expr: Expr }[];  // Each stage holds an AST expression to apply
+  closure: Environment;       // Captured environment for evaluating the stages
+}
+
 export type LeaValue =
   | number
   | string
@@ -65,6 +72,7 @@ export type LeaValue =
   | LeaParallelResult
   | LeaTuple
   | LeaOverloadSet
+  | LeaPipeline
   | null;
 
 export class RuntimeError extends Error {
@@ -175,6 +183,11 @@ function isParallelResult(val: LeaValue): val is LeaParallelResult {
 // Helper to check if a value is a LeaOverloadSet
 function isOverloadSet(val: LeaValue): val is LeaOverloadSet {
   return val !== null && typeof val === "object" && "kind" in val && val.kind === "overload_set";
+}
+
+// Helper to check if a value is a LeaPipeline
+function isPipeline(val: LeaValue): val is LeaPipeline {
+  return val !== null && typeof val === "object" && "kind" in val && val.kind === "pipeline";
 }
 
 // Helper to unwrap a LeaPromise to its underlying value
@@ -456,6 +469,9 @@ function stringify(val: LeaValue): string {
         .join(", ");
       return `{ ${entries} }`;
     }
+    if (val.kind === "pipeline") {
+      return `<pipeline[${val.stages.length}]>`;
+    }
     return "<function>";
   }
   return String(val);
@@ -638,7 +654,11 @@ export class Interpreter {
           }
           return record.fields.get(expr.member)!;
         }
-        throw new RuntimeError("Member access requires a record");
+        // Handle pipeline members: .stages, .length, .visualize
+        if (isPipeline(obj)) {
+          return this.getPipelineMember(obj, expr.member, env);
+        }
+        throw new RuntimeError("Member access requires a record or pipeline");
       }
 
       case "TernaryExpr": {
@@ -658,6 +678,15 @@ export class Interpreter {
       case "TupleExpr": {
         const elements = expr.elements.map((e) => this.evaluateExpr(e, env));
         return { kind: "tuple" as const, elements };
+      }
+
+      case "PipelineLiteral": {
+        // Create a pipeline value that captures the current environment
+        return {
+          kind: "pipeline" as const,
+          stages: expr.stages,
+          closure: env,
+        } as LeaPipeline;
       }
     }
   }
@@ -747,6 +776,10 @@ export class Interpreter {
           }
           return result;
         }
+        // If callee is a pipeline, run the parallel results through it
+        if (isPipeline(callee)) {
+          return this.applyPipeline(callee, pipedValue.values);
+        }
       }
 
       // If right is a call expression, add spread values as additional args
@@ -772,8 +805,14 @@ export class Interpreter {
       }
     }
 
-    // If right is just an identifier, call it with piped value
+    // If right is just an identifier, check if it resolves to a pipeline
     if (right.kind === "Identifier") {
+      const callee = this.evaluateExpr(right, env);
+      // If the identifier refers to a pipeline, apply the pipeline to the piped value
+      if (isPipeline(callee)) {
+        return this.applyPipeline(callee, [pipedValue]);
+      }
+      // Otherwise treat as a function call
       return this.evaluateCall(
         { kind: "CallExpr", callee: right, args: [] },
         env,
@@ -798,7 +837,38 @@ export class Interpreter {
       return this.evaluatePipeWithValue(intermediate, right.right, env);
     }
 
+    // If right is a pipeline literal, evaluate it and apply it
+    if (right.kind === "PipelineLiteral") {
+      const pipeline = this.evaluateExpr(right, env) as LeaPipeline;
+      return this.applyPipeline(pipeline, [pipedValue]);
+    }
+
     throw new RuntimeError("Right side of pipe must be a function or call");
+  }
+
+  // Apply a pipeline to an input value by running it through each stage
+  private applyPipeline(pipeline: LeaPipeline, args: LeaValue[]): LeaValue {
+    // Pipeline takes the first argument as input
+    let current: LeaValue = args[0];
+
+    for (const stage of pipeline.stages) {
+      // Evaluate the stage expression and pipe the current value into it
+      const stageExpr = stage.expr;
+
+      // If the stage is an identifier that refers to another pipeline, compose them
+      if (stageExpr.kind === "Identifier") {
+        const stageVal = this.evaluateExpr(stageExpr, pipeline.closure);
+        if (isPipeline(stageVal)) {
+          current = this.applyPipeline(stageVal, [current]);
+          continue;
+        }
+      }
+
+      // Otherwise pipe the value through the stage normally
+      current = this.evaluatePipeWithValue(current, stageExpr, pipeline.closure);
+    }
+
+    return current;
   }
 
   private evaluateParallelPipe(input: Expr, branches: Expr[], env: Environment): LeaValue {
@@ -1133,7 +1203,11 @@ export class Interpreter {
           }
           return record.fields.get(expr.member)!;
         }
-        throw new RuntimeError("Member access requires a record");
+        // Handle pipeline members: .stages, .length, .visualize
+        if (isPipeline(obj)) {
+          return this.getPipelineMember(obj, expr.member, env);
+        }
+        throw new RuntimeError("Member access requires a record or pipeline");
       }
 
       case "TernaryExpr": {
@@ -1153,6 +1227,15 @@ export class Interpreter {
       case "TupleExpr": {
         const elements = await Promise.all(expr.elements.map((e) => this.evaluateExprAsync(e, env)));
         return { kind: "tuple" as const, elements };
+      }
+
+      case "PipelineLiteral": {
+        // Create a pipeline value that captures the current environment
+        return {
+          kind: "pipeline" as const,
+          stages: expr.stages,
+          closure: env,
+        } as LeaPipeline;
       }
 
       default:
@@ -1185,6 +1268,10 @@ export class Interpreter {
           if (isLeaPromise(result)) return result.promise;
           return result;
         }
+        // If callee is a pipeline, run the parallel results through it
+        if (isPipeline(callee)) {
+          return this.applyPipelineAsync(callee, pipedValue.values);
+        }
       }
 
       // If right is a call expression, add spread values as additional args
@@ -1212,8 +1299,14 @@ export class Interpreter {
       }
     }
 
-    // If right is just an identifier, call it with piped value
+    // If right is just an identifier, check if it resolves to a pipeline
     if (right.kind === "Identifier") {
+      const callee = await this.evaluateExprAsync(right, env);
+      // If the identifier refers to a pipeline, apply the pipeline to the piped value
+      if (isPipeline(callee)) {
+        return this.applyPipelineAsync(callee, [pipedValue]);
+      }
+      // Otherwise treat as a function call
       return this.evaluateCallAsync(
         { kind: "CallExpr", callee: right, args: [] },
         env,
@@ -1238,7 +1331,107 @@ export class Interpreter {
       return this.evaluatePipeWithValueAsync(intermediate, right.right, env);
     }
 
+    // If right is a pipeline literal, evaluate it and apply it
+    if (right.kind === "PipelineLiteral") {
+      const pipeline = await this.evaluateExprAsync(right, env) as LeaPipeline;
+      return this.applyPipelineAsync(pipeline, [pipedValue]);
+    }
+
     throw new RuntimeError("Right side of pipe must be a function or call");
+  }
+
+  // Async version of applyPipeline
+  private async applyPipelineAsync(pipeline: LeaPipeline, args: LeaValue[]): Promise<LeaValue> {
+    let current: LeaValue = args[0];
+
+    for (const stage of pipeline.stages) {
+      const stageExpr = stage.expr;
+
+      // If the stage is an identifier that refers to another pipeline, compose them
+      if (stageExpr.kind === "Identifier") {
+        const stageVal = await this.evaluateExprAsync(stageExpr, pipeline.closure);
+        if (isPipeline(stageVal)) {
+          current = await this.applyPipelineAsync(stageVal, [current]);
+          continue;
+        }
+      }
+
+      // Otherwise pipe the value through the stage normally
+      current = await this.evaluatePipeWithValueAsync(current, stageExpr, pipeline.closure);
+    }
+
+    return current;
+  }
+
+  // Get a member of a pipeline (.stages, .length, .visualize)
+  private getPipelineMember(pipeline: LeaPipeline, member: string, env: Environment): LeaValue {
+    switch (member) {
+      case "length":
+        return pipeline.stages.length;
+
+      case "stages": {
+        // Return a list of stage descriptions
+        return pipeline.stages.map(stage => this.describeStage(stage.expr));
+      }
+
+      case "visualize": {
+        // Return a builtin function that prints an ASCII diagram
+        return {
+          kind: "builtin" as const,
+          fn: (): LeaValue => {
+            const lines: string[] = [];
+            lines.push("Pipeline:");
+            lines.push("  ┌─────────────┐");
+            lines.push("  │   input     │");
+            lines.push("  └──────┬──────┘");
+
+            for (let i = 0; i < pipeline.stages.length; i++) {
+              const stage = pipeline.stages[i];
+              const stageDesc = this.describeStage(stage.expr);
+              const padded = stageDesc.length > 11
+                ? stageDesc.substring(0, 11)
+                : stageDesc.padStart(Math.floor((11 + stageDesc.length) / 2)).padEnd(11);
+              lines.push("         │");
+              lines.push("         ▼");
+              lines.push("  ┌─────────────┐");
+              lines.push(`  │ ${padded} │`);
+              lines.push("  └──────┬──────┘");
+            }
+
+            lines.push("         │");
+            lines.push("         ▼");
+            lines.push("  ┌─────────────┐");
+            lines.push("  │   output    │");
+            lines.push("  └─────────────┘");
+
+            console.log(lines.join("\n"));
+            return null;
+          }
+        } as LeaBuiltin;
+      }
+
+      default:
+        throw new RuntimeError(`Pipeline has no property '${member}'`);
+    }
+  }
+
+  // Describe a stage expression for display purposes
+  private describeStage(expr: Expr): string {
+    switch (expr.kind) {
+      case "Identifier":
+        return expr.name;
+      case "CallExpr":
+        if (expr.callee.kind === "Identifier") {
+          return expr.callee.name;
+        }
+        return "call";
+      case "FunctionExpr":
+        return "λ";
+      case "PipelineLiteral":
+        return `pipe[${expr.stages.length}]`;
+      default:
+        return "expr";
+    }
   }
 
   private async evaluateParallelBranchesAsync(inputValue: LeaValue, branches: Expr[], env: Environment): Promise<LeaValue> {

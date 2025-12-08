@@ -1,0 +1,55 @@
+-- Pipelines as First-Class Data Types
+-- Pipelines can be defined as reusable transformations and composed together
+
+-- Define helper functions
+let double = (x) -> x * 2
+let addOne = (x) -> x + 1
+let square = (x) -> x * x
+
+-- Define a pipeline as a variable using /> at the start
+-- This creates a reusable transformation that can be applied to any input
+let processNumber = /> double /> addOne
+
+-- Apply the pipeline to different values
+"Applying processNumber pipeline:" /> print
+5 /> processNumber /> print   -- 11 (5 * 2 + 1)
+10 /> processNumber /> print  -- 21 (10 * 2 + 1)
+
+-- Pipeline properties
+"Pipeline properties:" /> print
+processNumber.length /> print   -- 2 (number of stages)
+processNumber.stages /> print   -- [double, addOne] (stage names)
+
+-- Compose pipelines together
+let step1 = /> double
+let step2 = /> addOne
+let combined = /> step1 /> step2
+
+"Composed pipeline:" /> print
+3 /> combined /> print  -- 7 (3 * 2 + 1)
+
+-- Pipelines work with list operations too
+let filterAndDouble = /> filter((x) -> x > 2) /> map((x) -> x * 2)
+
+"List pipeline:" /> print
+[1, 2, 3, 4, 5] /> filterAndDouble /> print  -- [6, 8, 10]
+
+-- Build complex data processing pipelines
+let sumPipeline = /> reduce(0, (acc, x) -> acc + x)
+let processData = /> filter((x) -> x % 2 == 0) /> map((x) -> x * 2) /> sumPipeline
+
+"Complex data pipeline:" /> print
+[1, 2, 3, 4, 5, 6] /> processData /> print  -- 24 ((2+4+6) * 2)
+
+-- Pipelines capture their closure
+let multiplier = 10
+let multiplyPipeline = /> (x) -> x * multiplier
+
+"Closure in pipeline:" /> print
+5 /> multiplyPipeline /> print  -- 50
+
+-- Demonstrate pipeline visualize (uncomment to see)
+-- "Visualizing processNumber:" /> print
+-- processNumber.visualize()
+
+"Pipeline datatype demo complete!" /> print
