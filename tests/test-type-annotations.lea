@@ -21,11 +21,11 @@ let greet = (name) -> "Hello, " ++ name :: String :> String #validate
 greet("Lea") /> print  -- Hello, Lea
 
 -- Mixed types
-let repeat = (s, n) -> :: (String, Int) :> String
+let repeatStr = (s, n) -> :: (String, Int) :> String
   iterations(n) /> reduce("", (acc, _) -> acc ++ s)
   #validate
 
-repeat("hi", 3) /> print  -- hihihi
+repeatStr("hi", 3) /> print  -- hihihi
 
 -- Type validation should catch wrong types
 let typed = (x) -> x + 1 :: Int :> Int #validate
