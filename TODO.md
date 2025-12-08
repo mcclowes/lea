@@ -3,7 +3,7 @@
 - [x] Linting for IDEs/VSCode
 - [ ] Refinement Types (Liquid Haskell, F*) — Types with predicates. Not just int, but int where x > 0 && x < 100. The compiler proves your code satisfies the constraints.
 - [ ] Canvas visualisation of our 'pipeline's
-- [ ] String interpolation / coercion (currently `++` only works with strings)
+- [x] String interpolation / coercion (currently `++` only works with strings)
 - [ ] Multi-line records and arrays in parser
 - [x] Early return
 - [x] Additional syntax highlighting - \> operator, @Logger (orange colour?), #validate (a darker blue), the implicit or explicit return statement of a function

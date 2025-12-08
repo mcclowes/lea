@@ -125,8 +125,14 @@ let items = [
 ## Strings
 
 ```lea
-"Hello" ++ " World"     -- Concatenation
+"Hello" ++ " World"               -- Concatenation
+"The answer is " ++ 42            -- Automatic type coercion: "The answer is 42"
+"Done: " ++ true                  -- "Done: true"
+(100 ++ 200)                      -- "100200" (numbers coerced to strings)
+("List: " ++ [1, 2, 3])           -- "List: [1, 2, 3]"
 ```
+
+Note: The `++` operator automatically converts non-strings to strings.
 
 ## Codeblocks
 

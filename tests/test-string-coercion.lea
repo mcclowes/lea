@@ -1,0 +1,44 @@
+-- Test string coercion with ++ operator
+-- Note: Pipe operators bind tighter than ++, so use parentheses for clarity
+
+-- Number to string (string on left)
+("The answer is " ++ 42) /> print
+
+-- Boolean to string
+("Is it true? " ++ true) /> print
+("Is it false? " ++ false) /> print
+
+-- Number on left side
+(42 ++ " is the answer") /> print
+
+-- Chained coercion
+("Sum: " ++ 10 ++ " + " ++ 20) /> print
+
+-- List to string
+let nums = [1, 2, 3]
+("Numbers: " ++ nums) /> print
+
+-- Tuple to string
+let point = (10, 20)
+("Point: " ++ point) /> print
+
+-- Record to string
+let user = { name: "Max", age: 30 }
+("User: " ++ user) /> print
+
+-- Nested structures
+let data = [1, [2, 3], 4]
+("Data: " ++ data) /> print
+
+-- Mixed concatenation (no parentheses needed - no pipe)
+let result = "Count: " ++ 5 ++ ", Done: " ++ true
+result /> print
+
+-- Pipe with string coercion inside function
+let showValue = (x) -> "Value: " ++ x
+42 /> showValue /> print
+
+-- Two numbers coerced to strings
+(100 ++ 200) /> print
+
+"All string coercion tests passed!" /> print

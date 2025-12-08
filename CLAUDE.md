@@ -110,8 +110,11 @@ await fetchData() /> print
 [1, 2, 3] /> filter((x) -> x > 1)
 [1, 2, 3] /> reduce(0, (acc, x) -> acc + x)
 
--- String concat
+-- String concatenation (with automatic type coercion)
 "Hello" ++ " World"
+"The answer is " ++ 42       -- "The answer is 42"
+"Done: " ++ true             -- "Done: true"
+(100 ++ 200)                 -- "100200" (numbers coerced)
 
 -- Comparison
 x == y, x != y, x < y, x > y, x <= y, x >= y

@@ -15,6 +15,11 @@ let version = 1
 -- String concatenation
 "Hello, " ++ name ++ "!" /> print
 
+-- String coercion (non-strings automatically converted)
+("Version: " ++ version) /> print
+("Is ready: " ++ true) /> print
+("Numbers: " ++ [1, 2, 3]) /> print
+
 -- Math builtins
 16 /> sqrt /> print
 -5 /> abs /> print
