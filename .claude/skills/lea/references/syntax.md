@@ -36,6 +36,16 @@ let process2 = (x) -> {
   let z = y + 1
   z
 }
+
+-- Type annotations (trailing :: syntax)
+let double = (x) -> x * 2 :: Int :> Int
+let add = (a, b) -> a + b :: (Int, Int) :> Int
+
+-- Function overloading (same name, different type signatures)
+let add = (a, b) -> a + b :: (Int, Int) :> Int
+let add = (a, b) -> a ++ b :: (String, String) :> String
+add(1, 2)         -- calls Int version: 3
+add("a", "b")     -- calls String version: "ab"
 ```
 
 ## Records

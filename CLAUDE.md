@@ -46,6 +46,13 @@ let safe = (x) -> x * 2 :: Int :> Int #validate
 -- Underscore for ignored params
 let ignoreSecond = (x, _) -> x
 
+-- Function overloading (multiple definitions with same name)
+-- Resolution based on argument types at runtime
+let add = (a, b) -> a + b :: (Int, Int) :> Int
+let add = (a, b) -> a ++ b :: (String, String) :> String
+add(1, 2)         -- calls Int version: 3
+add("a", "b")     -- calls String version: "ab"
+
 -- Tuples (immutable fixed-size collections)
 let point = (10, 20)
 let pair = (1, "hello")       -- mixed types allowed
@@ -239,6 +246,14 @@ value
 - `context Name = expr` — define context with default value
 - `provide Name expr` — override context value
 - `@Name` — attach context to function (inject into scope)
+
+**Function Overloading:**
+- Define multiple functions with the same name but different type signatures
+- Functions must have type annotations (`::`) to participate in overloading
+- Resolution is based on argument types at call time
+- More specific type matches are preferred over generic ones
+- Arity (number of arguments) is checked first, then types
+- Error if no overload matches or if call is ambiguous
 
 ## Usage
 
