@@ -333,10 +333,34 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 - `sqrt`, `abs`, `floor`, `ceil`, `round`, `min`, `max`
 - `length`, `head`, `tail`, `push`, `concat`, `reverse`, `zip`, `isEmpty`
 - `map`, `filter`, `reduce`, `range`, `iterations`
+- `fst`, `snd` — first/second element of tuple or list
+- `take(list, n)`, `at(list, index)` — list access
+- `toString` — convert value to string
 - `delay(ms, value)` — returns promise that resolves after ms
 - `parallel(list, fn, opts?)` — concurrent map with optional `{ limit: n }`
 - `race(fns)` — returns first promise to resolve
 - `then(promise, fn)` — chain promise transformations
+
+**String Builtins:**
+- `split(str, delimiter)` — split string into list
+- `lines(str)` — split string by newlines
+- `charAt(str, index)` — get character at index
+- `join(list, delimiter?)` — join list into string
+- `padEnd(str, len, char?)`, `padStart(str, len, char?)` — pad string
+- `trim(str)`, `trimEnd(str)` — remove whitespace
+- `indexOf(str, search)` — find index of substring
+- `includes(str/list, item)` — check if contains item
+- `repeat(str, count)` — repeat string n times
+- `slice(str/list, start, end?)` — extract substring/sublist
+- `chars(str)` — split string into character list
+
+**Set Operations (on lists):**
+- `listSet(list)` — create list with unique elements
+- `setAdd(list, item)` — add if not present (returns new list)
+- `setHas(list, item)` — check if item exists in list
+
+**ASCII Diagram Parser:**
+- `breakPieces(shape)` — parse ASCII diagram into minimal closed pieces
 
 **Parallel Pipe Operator:**
 ```
