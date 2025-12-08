@@ -18,6 +18,7 @@ export enum TokenType {
   PIPE = "PIPE",           // />
   PARALLEL_PIPE = "PARALLEL_PIPE", // \>
   ARROW = "ARROW",         // ->
+  RETURN = "RETURN",       // <-
   PLUS = "PLUS",           // +
   MINUS = "MINUS",         // -
   STAR = "STAR",           // *

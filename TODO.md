@@ -3,10 +3,9 @@
 - [x] Linting for IDEs/VSCode
 - [ ] Refinement Types (Liquid Haskell, F*) — Types with predicates. Not just int, but int where x > 0 && x < 100. The compiler proves your code satisfies the constraints.
 - [ ] Canvas visualisation of our 'pipeline's
-- [ ] Refine for, while, do approaches
 - [ ] String interpolation / coercion (currently `++` only works with strings)
 - [ ] Multi-line records and arrays in parser
-- [ ] Early return
+- [x] Early return
 
 ## Ternary (done)
 
@@ -34,10 +33,14 @@ let foo = (x) -> for(6)
   /> map
 ```
 
-## Early return
+## Early return (done)
 
-let process = (x) ->
+```lea
+let clamp = (x) ->
   let doubled = x * 2
-  if doubled > 100 then <- 100
-  let incremented = doubled + 1
-  <- incremented -- explicit return syntax
+  doubled > 100 ? <- 100 : 0
+  doubled + 1
+
+clamp(10) /> print   -- 21 (no early return)
+clamp(60) /> print   -- 100 (early return triggered)
+```

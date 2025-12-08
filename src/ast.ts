@@ -18,7 +18,8 @@ export type Expr =
   | AwaitExpr
   | RecordExpr
   | MemberExpr
-  | TernaryExpr;
+  | TernaryExpr
+  | ReturnExpr;
 
 export interface NumberLiteral {
   kind: "NumberLiteral";
@@ -131,6 +132,11 @@ export interface TernaryExpr {
   condition: Expr;
   thenBranch: Expr;
   elseBranch: Expr;
+}
+
+export interface ReturnExpr {
+  kind: "ReturnExpr";
+  value: Expr;
 }
 
 export interface BlockBody {
@@ -281,6 +287,11 @@ export const ternaryExpr = (condition: Expr, thenBranch: Expr, elseBranch: Expr)
   condition,
   thenBranch,
   elseBranch,
+});
+
+export const returnExpr = (value: Expr): ReturnExpr => ({
+  kind: "ReturnExpr",
+  value,
 });
 
 export const blockBody = (statements: Stmt[], result: Expr): BlockBody => ({

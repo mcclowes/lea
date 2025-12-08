@@ -1,0 +1,51 @@
+-- Test early return (<-)
+
+"=== Basic early return ===" /> print
+
+-- Early return in multi-line function
+let clamp = (x) ->
+  let doubled = x * 2
+  doubled > 100 ? <- 100 : 0
+  doubled + 1
+
+clamp(10) /> print   -- 21 (no early return)
+clamp(60) /> print   -- 100 (early return triggered)
+
+-- Early return in single-line function
+let checkSize = (x) -> x > 5 ? <- "big" : "small"
+checkSize(10) /> print  -- "big"
+checkSize(3) /> print   -- "small"
+
+"=== Return with explicit value ===" /> print
+
+-- Return with computed value
+let safeDivide = (a, b) ->
+  b == 0 ? <- "error: division by zero" : 0
+  a / b
+
+safeDivide(10, 2) /> print   -- 5
+safeDivide(10, 0) /> print   -- "error: division by zero"
+
+"=== Early return in nested functions ===" /> print
+
+-- Early return only affects innermost function
+let outer = (x) ->
+  let inner = (y) ->
+    y > 10 ? <- "inner returned early" : 0
+    "inner completed"
+  inner(x) ++ " then outer"
+
+outer(5) /> print    -- "inner completed then outer"
+outer(15) /> print   -- "inner returned early then outer"
+
+"=== Early return with list processing ===" /> print
+
+-- Use early return to short-circuit
+let findFirst = (items, pred) ->
+  items /> map((item) -> pred(item) ? <- item : null)
+  "not found"
+
+-- Note: This doesn't quite work as expected because map evaluates all items
+-- For true short-circuiting, use recursion or a dedicated find builtin
+
+"=== All early return tests passed! ===" /> print

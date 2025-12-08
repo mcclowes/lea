@@ -99,7 +99,13 @@ export class Lexer {
         break;
 
       case "<":
-        this.addToken(this.match("=") ? TokenType.LTE : TokenType.LT);
+        if (this.match("-")) {
+          this.addToken(TokenType.RETURN);
+        } else if (this.match("=")) {
+          this.addToken(TokenType.LTE);
+        } else {
+          this.addToken(TokenType.LT);
+        }
         break;
 
       case ">":

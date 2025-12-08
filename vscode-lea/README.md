@@ -1,6 +1,8 @@
-# Lea Language Support for VSCode
+# Lea Language Support for VS Code
 
-Syntax highlighting for the Lea programming language.
+Syntax highlighting for [Lea](https://github.com/mcclowes/lea) — a pipe-oriented functional programming language.
+
+![Lea Logo](icon.png)
 
 ## Features
 
@@ -11,28 +13,29 @@ Syntax highlighting for the Lea programming language.
 
 ## Highlighted Elements
 
-- **Keywords**: `let`, `mut`, `await`, `context`, `provide`, `decorator`
-- **Operators**: `/>` (pipe), `->` (arrow), `++` (concat), comparisons
-- **Decorators**: `#log`, `#memo`, `#time`, `#retry`, `#async`, etc.
-- **Attachments**: `@Context`
-- **Builtins**: `print`, `map`, `filter`, `reduce`, `sqrt`, etc.
-- **Literals**: strings, numbers, `true`, `false`
+| Category | Elements |
+|----------|----------|
+| Keywords | `let`, `mut`, `await`, `context`, `provide` |
+| Operators | `/>` (pipe), `->` (arrow), `<-` (return), `++` (concat) |
+| Decorators | `#log`, `#memo`, `#time`, `#retry`, `#async`, etc. |
+| Attachments | `@Context` |
+| Builtins | `print`, `map`, `filter`, `reduce`, `sqrt`, etc. |
+| Literals | strings, numbers, `true`, `false` |
 
 ## Installation
 
-### From Source (Development)
+**From VS Code Marketplace:**
+1. Open VS Code
+2. Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
+3. Search for "Lea Language"
+4. Click Install
 
-1. Copy the `vscode-lea` folder to your VSCode extensions directory:
-   - **macOS**: `~/.vscode/extensions/`
-   - **Windows**: `%USERPROFILE%\.vscode\extensions\`
-   - **Linux**: `~/.vscode/extensions/`
+**From VSIX:**
+```bash
+code --install-extension lea-language-0.1.0.vsix
+```
 
-2. Restart VSCode
-
-3. Open a `.lea` file to see syntax highlighting
-
-### Alternative: Symlink (for development)
-
+**For Development:**
 ```bash
 ln -s /path/to/lea/vscode-lea ~/.vscode/extensions/lea-language
 ```

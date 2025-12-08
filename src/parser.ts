@@ -25,6 +25,7 @@ import {
   recordExpr,
   memberExpr,
   ternaryExpr,
+  returnExpr,
   blockBody,
   contextDefStmt,
   provideStmt,
@@ -240,6 +241,11 @@ export class Parser {
       return awaitExpr(operand);
     }
 
+    if (this.match(TokenType.RETURN)) {
+      const value = this.expression();
+      return returnExpr(value);
+    }
+
     return this.call();
   }
 
@@ -403,10 +409,9 @@ export class Parser {
       return this.parseIndentedBody();
     }
 
-    // Single expression on same line - use equality() to prevent consuming
-    // pipes that belong to outer expressions. For pipes in function bodies,
-    // use multi-line syntax with braces or indentation.
-    const body = this.equality();
+    // Single expression on same line - use ternary() to allow conditionals
+    // but prevent consuming pipes that belong to outer expressions.
+    const body = this.ternary();
     return { attachments: [], body };
   }
 

@@ -60,6 +60,14 @@ export class RuntimeError extends Error {
   }
 }
 
+// Used for early return - not a real error, just control flow
+export class ReturnValue extends Error {
+  constructor(public value: LeaValue) {
+    super("Return");
+    this.name = "ReturnValue";
+  }
+}
+
 export class Environment {
   private values = new Map<string, { value: LeaValue; mutable: boolean }>();
   private parent: Environment | null;
@@ -501,6 +509,11 @@ export class Interpreter {
           return this.evaluateExpr(expr.elseBranch, env);
         }
       }
+
+      case "ReturnExpr": {
+        const value = this.evaluateExpr(expr.value, env);
+        throw new ReturnValue(value);
+      }
     }
   }
 
@@ -748,16 +761,23 @@ export class Interpreter {
   }
 
   private evaluateBody(body: Expr | BlockBody, env: Environment): LeaValue {
-    if (body.kind === "BlockBody") {
-      // Execute statements in order
-      for (const stmt of body.statements) {
-        this.executeStmt(stmt, env);
+    try {
+      if (body.kind === "BlockBody") {
+        // Execute statements in order
+        for (const stmt of body.statements) {
+          this.executeStmt(stmt, env);
+        }
+        // Return the result expression
+        return this.evaluateExpr(body.result, env);
       }
-      // Return the result expression
-      return this.evaluateExpr(body.result, env);
+      // Single expression
+      return this.evaluateExpr(body, env);
+    } catch (e) {
+      if (e instanceof ReturnValue) {
+        return e.value;
+      }
+      throw e;
     }
-    // Single expression
-    return this.evaluateExpr(body, env);
   }
 
   private evaluateBodyAsync(body: Expr | BlockBody, env: Environment): LeaValue {
@@ -767,18 +787,25 @@ export class Interpreter {
   }
 
   private async evaluateBodyAsyncImpl(body: Expr | BlockBody, env: Environment): Promise<LeaValue> {
-    if (body.kind === "BlockBody") {
-      // Execute statements in order, awaiting any promises
-      for (const stmt of body.statements) {
-        await this.executeStmtAsync(stmt, env);
+    try {
+      if (body.kind === "BlockBody") {
+        // Execute statements in order, awaiting any promises
+        for (const stmt of body.statements) {
+          await this.executeStmtAsync(stmt, env);
+        }
+        // Return the result expression, awaiting if needed
+        let result = await this.evaluateExprAsync(body.result, env);
+        return result;
       }
-      // Return the result expression, awaiting if needed
-      let result = await this.evaluateExprAsync(body.result, env);
+      // Single expression
+      let result = await this.evaluateExprAsync(body, env);
       return result;
+    } catch (e) {
+      if (e instanceof ReturnValue) {
+        return e.value;
+      }
+      throw e;
     }
-    // Single expression
-    let result = await this.evaluateExprAsync(body, env);
-    return result;
   }
 
   private async executeStmtAsync(stmt: Stmt, env: Environment): Promise<LeaValue> {
@@ -914,6 +941,11 @@ export class Interpreter {
         } else {
           return this.evaluateExprAsync(expr.elseBranch, env);
         }
+      }
+
+      case "ReturnExpr": {
+        const value = await this.evaluateExprAsync(expr.value, env);
+        throw new ReturnValue(value);
       }
 
       default:

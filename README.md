@@ -13,6 +13,8 @@ let sumOfSquares = numbers
 sumOfSquares /> print  -- 50
 ```
 
+![An image of code flowing down a symbolic river](./banner.png)
+
 ## Features
 
 - **Pipes** — Left-to-right data flow with `/>` operator

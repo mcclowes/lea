@@ -40,6 +40,12 @@ let process = (x) ->
   let z = y + 1
   z
 
+-- Early return (<-)
+let clamp = (x) ->
+  let doubled = x * 2
+  doubled > 100 ? <- 100 : 0
+  doubled + 1
+
 -- Records and member access
 let user = { name: "Max", age: 30 }
 user.name /> print
@@ -88,7 +94,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 ```
 NUMBER, STRING, IDENTIFIER
 LET, MUT, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
-PIPE (/>), ARROW (->)
+PIPE (/>), ARROW (->), RETURN (<-)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
@@ -105,6 +111,7 @@ NEWLINE, EOF
 - ListExpr, IndexExpr, PlaceholderExpr
 - RecordExpr, MemberExpr, AwaitExpr
 - BlockBody (multi-statement function body)
+- ReturnExpr (early return with <-)
 
 **Statements:**
 - LetStmt (name, mutable, value)
