@@ -20,6 +20,11 @@ let version = 1
 ("Is ready: " ++ true) /> print
 ("Numbers: " ++ [1, 2, 3]) /> print
 
+-- Template strings (backtick syntax)
+`Hello {name}!` /> print
+`Version {version} is ready: {true}` /> print
+`Sum: {10 + 20}` /> print
+
 -- Math builtins
 16 /> sqrt /> print
 -5 /> abs /> print

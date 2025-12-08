@@ -583,6 +583,20 @@ export class Interpreter {
       case "StringLiteral":
         return expr.value;
 
+      case "TemplateStringExpr": {
+        // Evaluate template string parts and concatenate
+        let result = "";
+        for (const part of expr.parts) {
+          if (typeof part === "string") {
+            result += part;
+          } else {
+            const value = this.evaluateExpr(part, env);
+            result += coerceToString(value);
+          }
+        }
+        return result;
+      }
+
       case "BooleanLiteral":
         return expr.value;
 
@@ -1070,6 +1084,20 @@ export class Interpreter {
 
       case "StringLiteral":
         return expr.value;
+
+      case "TemplateStringExpr": {
+        // Evaluate template string parts and concatenate
+        let result = "";
+        for (const part of expr.parts) {
+          if (typeof part === "string") {
+            result += part;
+          } else {
+            const value = await this.evaluateExprAsync(part, env);
+            result += coerceToString(value);
+          }
+        }
+        return result;
+      }
 
       case "BooleanLiteral":
         return expr.value;

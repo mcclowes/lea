@@ -146,6 +146,10 @@ export class Lexer {
         this.string();
         break;
 
+      case '`':
+        this.templateString();
+        break;
+
       default:
         if (this.isDigit(c)) {
           this.number();
@@ -215,6 +219,70 @@ export class Lexer {
 
     const value = this.source.slice(this.start + 1, this.current - 1);
     this.addToken(TokenType.STRING, value);
+  }
+
+  // Template string: `hello {name}, you are {age} years old`
+  // Stores parts as array: ["hello ", "name", ", you are ", "age", " years old"]
+  // Even indices are string literals, odd indices are expression source code
+  private templateString(): void {
+    const startLine = this.line;
+    const startColumn = this.column - 1;
+    const parts: string[] = [];
+    let currentPart = "";
+
+    while (this.peek() !== '`' && !this.isAtEnd()) {
+      if (this.peek() === "\n") {
+        this.line++;
+        this.column = 1;
+        currentPart += this.advance();
+      } else if (this.peek() === '{') {
+        // Start of interpolation
+        parts.push(currentPart);
+        currentPart = "";
+        this.advance(); // consume {
+
+        // Read the expression until matching }
+        let braceDepth = 1;
+        let exprSource = "";
+        while (braceDepth > 0 && !this.isAtEnd()) {
+          const c = this.peek();
+          if (c === '{') {
+            braceDepth++;
+            exprSource += this.advance();
+          } else if (c === '}') {
+            braceDepth--;
+            if (braceDepth > 0) {
+              exprSource += this.advance();
+            } else {
+              this.advance(); // consume closing }
+            }
+          } else if (c === "\n") {
+            this.line++;
+            this.column = 1;
+            exprSource += this.advance();
+          } else {
+            exprSource += this.advance();
+          }
+        }
+
+        if (braceDepth > 0) {
+          throw new LexerError("Unterminated interpolation in template string", startLine, startColumn);
+        }
+
+        parts.push(exprSource.trim());
+      } else {
+        currentPart += this.advance();
+      }
+    }
+
+    if (this.isAtEnd()) {
+      throw new LexerError("Unterminated template string", startLine, startColumn);
+    }
+
+    this.advance(); // closing `
+    parts.push(currentPart); // Add final string part
+
+    this.addToken(TokenType.TEMPLATE_STRING, parts);
   }
 
   private number(): void {

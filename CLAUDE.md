@@ -116,6 +116,12 @@ await fetchData() /> print
 "Done: " ++ true             -- "Done: true"
 (100 ++ 200)                 -- "100200" (numbers coerced)
 
+-- Template strings (backtick syntax with interpolation)
+let name = "World"
+`Hello {name}!`              -- "Hello World!"
+`Sum: {10 + 20}`             -- "Sum: 30"
+`Items: {[1, 2, 3]}`         -- "Items: [1, 2, 3]"
+
 -- Comparison
 x == y, x != y, x < y, x > y, x <= y, x >= y
 
@@ -155,7 +161,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 ## Token Types
 
 ```
-NUMBER, STRING, IDENTIFIER
+NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
 LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
 PIPE (/>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
@@ -170,7 +176,7 @@ NEWLINE, EOF
 ## AST Nodes
 
 **Expressions:**
-- NumberLiteral, StringLiteral, BooleanLiteral, Identifier
+- NumberLiteral, StringLiteral, TemplateStringExpr, BooleanLiteral, Identifier
 - BinaryExpr, UnaryExpr, PipeExpr, CallExpr
 - FunctionExpr (params, attachments, body, decorators, typeSignature?)
 - ListExpr, IndexExpr, PlaceholderExpr, TupleExpr
