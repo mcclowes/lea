@@ -146,6 +146,24 @@ processNumbers.visualize()  -- prints ASCII diagram
 let pipeA = /> filter((x) -> x > 0)
 let pipeB = /> map((x) -> x * 2)
 let combined = /> pipeA /> pipeB  -- compose pipelines
+
+-- Pipeline algebra
+5 /> Pipeline.identity             -- 5 (passes through unchanged)
+5 /> Pipeline.empty                -- 5 (no stages = unchanged)
+pipeA.equals(pipeB)                -- false (structural comparison)
+pipeA.isEmpty()                    -- false
+pipeA.first                        -- first stage as function
+pipeA.last                         -- last stage as function
+pipeA.at(0)                        -- get stage at index
+pipeA.prepend(fn)                  -- add stage at start
+pipeA.append(fn)                   -- add stage at end
+pipeA.reverse()                    -- reverse stage order
+pipeA.slice(0, 2)                  -- extract sub-pipeline
+pipeA.without(pipeB)               -- remove stages in pipeB
+pipeA.intersection(pipeB)          -- keep only common stages
+pipeA.union(pipeB)                 -- combine (deduplicated)
+pipeA.concat(pipeB)                -- concatenate (preserves duplicates)
+Pipeline.from([fn1, fn2])          -- create from function list
 ```
 
 ## Architecture
@@ -278,8 +296,29 @@ value
   - `.length` — number of stages
   - `.stages` — list of stage names
   - `.visualize()` — prints ASCII diagram of pipeline flow
+  - `.first` / `.last` — get first/last stage as callable function
+  - `.isEmpty()` — check if pipeline has no stages
+  - `.equals(other)` — structural equality comparison
 - Compose pipelines: `let combined = /> pipeA /> pipeB`
 - Pipelines capture their closure (lexical scope)
+
+**Pipeline Algebra:**
+- `Pipeline.identity` — no-op pipeline, passes values through unchanged
+- `Pipeline.empty` — pipeline with zero stages
+- `Pipeline.from(list)` — create pipeline from list of functions
+- Stage access:
+  - `.at(index)` — get stage at index as callable function
+- Manipulation (returns new pipeline):
+  - `.prepend(fn)` — add stage at start
+  - `.append(fn)` — add stage at end
+  - `.reverse()` — reverse stage order
+  - `.slice(start, end?)` — extract sub-pipeline
+- Set operations (returns new pipeline):
+  - `.without(other)` — remove stages appearing in other pipeline
+  - `.intersection(other)` — keep only stages common to both
+  - `.union(other)` — combine all stages (deduplicated)
+  - `.difference(other)` — stages in this but not in other (alias for without)
+  - `.concat(other)` — concatenate pipelines (preserves duplicates)
 
 ## Usage
 
