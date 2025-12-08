@@ -1,0 +1,46 @@
+-- Reversible Functions and Bidirectional Pipelines
+-- Functions can have both forward and reverse definitions
+
+-- Define a reversible function with forward and reverse
+let double = (x) -> x * 2
+let double = (x) <- x / 2
+
+-- Test forward application
+5 /> double /> print  -- 10
+
+-- Test reverse application
+10 </ double /> print  -- 5
+
+-- Chain forward and reverse (should return original value)
+5 /> double </ double /> print  -- 5
+
+-- Define another reversible function
+let addTen = (x) -> x + 10
+let addTen = (x) <- x - 10
+
+-- Test forward
+5 /> addTen /> print  -- 15
+
+-- Test reverse
+15 </ addTen /> print  -- 5
+
+-- Create a bidirectional pipeline
+let transform = </> double </> addTen
+
+-- Apply forward: 5 -> 10 -> 20
+5 /> transform /> print  -- 20
+
+-- Apply reverse: 20 -> 10 -> 5
+20 </ transform /> print  -- 5
+
+-- Chain forward and reverse through pipeline
+5 /> transform </ transform /> print  -- 5
+
+-- More complex example: temperature conversion
+let celsiusToFahrenheit = (c) -> c * 9 / 5 + 32
+let celsiusToFahrenheit = (f) <- (f - 32) * 5 / 9
+
+0 /> celsiusToFahrenheit /> print    -- 32 (0C = 32F)
+32 </ celsiusToFahrenheit /> print   -- 0 (32F = 0C)
+100 /> celsiusToFahrenheit /> print  -- 212 (100C = 212F)
+212 </ celsiusToFahrenheit /> print  -- 100 (212F = 100C)

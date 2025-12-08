@@ -21,7 +21,9 @@ export type Expr =
   | TernaryExpr
   | ReturnExpr
   | TupleExpr
-  | PipelineLiteral;
+  | PipelineLiteral
+  | ReversePipeExpr
+  | BidirectionalPipelineLiteral;
 
 export interface NumberLiteral {
   kind: "NumberLiteral";
@@ -102,6 +104,7 @@ export interface FunctionExpr {
   returnType?: string;  // Old style - deprecated
   typeSignature?: TypeSignature;  // New trailing :: syntax
   decorators: Decorator[];
+  isReverse?: boolean;  // True if this is a reverse function definition (x) <- expr
 }
 
 export interface ListExpr {
@@ -166,6 +169,21 @@ export interface PipelineStage {
 // Syntax: /> fn1 /> fn2 /> fn3
 export interface PipelineLiteral {
   kind: "PipelineLiteral";
+  stages: PipelineStage[];
+}
+
+// Reverse pipe expression - applies a value through a pipeline in reverse
+// Syntax: pipeline </ value
+export interface ReversePipeExpr {
+  kind: "ReversePipeExpr";
+  left: Expr;   // The pipeline/function to apply in reverse
+  right: Expr;  // The value to pipe through
+}
+
+// Bidirectional pipeline literal - a pipeline that can be applied in either direction
+// Syntax: </> fn1 </> fn2 </> fn3
+export interface BidirectionalPipelineLiteral {
+  kind: "BidirectionalPipelineLiteral";
   stages: PipelineStage[];
 }
 
@@ -278,7 +296,8 @@ export const functionExpr = (
   returnType?: string,
   decorators: Decorator[] = [],
   attachments: string[] = [],
-  typeSignature?: TypeSignature
+  typeSignature?: TypeSignature,
+  isReverse?: boolean
 ): FunctionExpr => ({
   kind: "FunctionExpr",
   params,
@@ -287,6 +306,7 @@ export const functionExpr = (
   returnType,
   typeSignature,
   decorators,
+  isReverse,
 });
 
 export const listExpr = (elements: Expr[]): ListExpr => ({
@@ -386,5 +406,16 @@ export const program = (statements: Stmt[]): Program => ({
 
 export const pipelineLiteral = (stages: PipelineStage[]): PipelineLiteral => ({
   kind: "PipelineLiteral",
+  stages,
+});
+
+export const reversePipeExpr = (left: Expr, right: Expr): ReversePipeExpr => ({
+  kind: "ReversePipeExpr",
+  left,
+  right,
+});
+
+export const bidirectionalPipelineLiteral = (stages: PipelineStage[]): BidirectionalPipelineLiteral => ({
+  kind: "BidirectionalPipelineLiteral",
   stages,
 });

@@ -127,6 +127,16 @@
     "operators": {
       "patterns": [
         {
+          "comment": "Bidirectional pipe operator - for reversible pipelines",
+          "name": "keyword.operator.bidirectional-pipe.lea",
+          "match": "</>"
+        },
+        {
+          "comment": "Reverse pipe operator - applies value through function/pipeline in reverse",
+          "name": "keyword.operator.reverse-pipe.lea",
+          "match": "</"
+        },
+        {
           "name": "keyword.operator.pipe.lea",
           "match": "/>"
         },
@@ -140,7 +150,7 @@
           "match": "->"
         },
         {
-          "comment": "Early return operator - control flow color",
+          "comment": "Early return / reverse function arrow - control flow color",
           "name": "keyword.control.return.lea",
           "match": "<-"
         },
