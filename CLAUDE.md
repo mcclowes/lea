@@ -229,6 +229,8 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `src/interpreter.ts` — Tree-walk interpreter, Environment class
 - `src/repl.ts` — Interactive REPL
 - `src/index.ts` — File runner entry point
+- `src/visualizer.ts` — AST to Mermaid flowchart generator
+- `src/visualize.ts` — CLI entry point for visualization
 
 ## Token Types
 
@@ -413,7 +415,50 @@ value
 
 ```bash
 npm run repl              # Interactive REPL
-npm run run file.lea      # Run a file
+npm run lea file.lea      # Run a file
+npm run visualize -- file.lea           # Output Mermaid markdown
+npm run visualize -- file.lea --html    # Output HTML with diagram
+npm run visualize -- file.lea -o out.html  # Write to file
+npm run visualize -- file.lea --tb      # Top-to-bottom layout
+```
+
+## Visualization
+
+The visualizer generates Mermaid flowchart diagrams from Lea source code, showing data flow through pipe chains.
+
+### Features
+
+- **Pipe chain visualization** — Shows data flowing through operations
+- **Parallel pipe fan-out/fan-in** — Diamond nodes show branching
+- **Named binding subgraphs** — Groups related pipe chains
+- **Multiple output formats** — Mermaid markdown or self-contained HTML
+
+### Node Types (Color-coded)
+
+- **Purple (stadium)** — Data values (numbers, strings, lists)
+- **Blue (parallelogram)** — Operations (functions, calls)
+- **Orange (diamond)** — Fan-out/Fan-in (parallel pipes)
+- **Green (subroutine)** — Await/Return
+- **Yellow (diamond)** — Conditionals
+
+### CLI Options
+
+```bash
+--html, -h          Output HTML with embedded Mermaid diagram
+-o, --output FILE   Write output to FILE instead of stdout
+--tb, --top-bottom  Use top-to-bottom layout (default: left-to-right)
+--lr, --left-right  Use left-to-right layout (default)
+--types             Show type annotations in diagram
+--no-decorators     Hide decorators in diagram
+--help              Show help message
+```
+
+### Example
+
+```bash
+# Generate and view a flow diagram
+npm run visualize -- examples/09-pipeline.lea --html -o flow.html
+open flow.html
 ```
 
 ## Example Program

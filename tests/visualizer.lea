@@ -1,0 +1,128 @@
+-- Visualizer Test Cases
+-- This file contains various patterns to test the Mermaid visualizer
+-- Run: npm run visualize -- tests/visualizer.lea
+
+-- Helper functions
+let double = (x) -> x * 2
+let addOne = (x) -> x + 1
+let square = (x) -> x * x
+
+-- Test 1: Basic pipe chain
+let basic = 1 /> double /> addOne
+
+-- Test 2: Long chain
+let longChain = 1
+  /> double
+  /> addOne
+  /> double
+  /> addOne
+  /> double
+
+-- Test 3: Parallel pipes
+let parallel = 5
+  \> (x) -> x + 1
+  \> (x) -> x - 1
+  /> (a, b) -> a * b
+
+-- Test 4: Nested parallel pipes
+let nested = 10
+  \> (x) -> x + 1
+  \> (x) -> x * 2
+  /> (a, b) -> a + b
+  /> double
+
+-- Test 5: Pipeline literals
+let pipe1 = /> double
+let pipe2 = /> addOne
+let combined = /> pipe1 /> pipe2
+
+-- Test 6: List operations in pipe
+let listOps = [1, 2, 3, 4, 5]
+  /> filter((x) -> x > 2)
+  /> map((x) -> x * 2)
+  /> reduce(0, (acc, x) -> acc + x)
+
+-- Test 7: Record transformation
+let record = { a: 1, b: 2, c: 3 }
+let recordPipe = record
+  /> (r) -> r.a + r.b + r.c
+
+-- Test 8: Conditional in pipe
+let conditional = 50
+  /> (x) -> x > 100 ? 100 : x
+  /> double
+
+-- Test 9: Match expression
+let matchTest = 5 /> (x) -> match x
+  | 0 -> "zero"
+  | 1 -> "one"
+  | if _ > 10 -> "big"
+  | "other"
+
+-- Test 10: Template strings in pipe
+let template = "World"
+  /> (name) -> `Hello {name}!`
+
+-- Test 11: Tuple in pipe
+let tuple = (1, 2, 3)
+let tupleResult = tuple /> (t) -> t
+
+-- Test 12: Multiple bindings with pipes
+let step1 = 10 /> double
+let step2 = step1 /> addOne
+let step3 = step2 /> square
+
+-- Test 13: Early return in function
+let clamp = (x) ->
+  let doubled = x * 2
+  doubled > 100 ? <- 100 : 0
+  doubled
+
+let earlyReturn = 75 /> clamp
+
+-- Test 14: Decorators on functions used in pipes
+let logged = (x) -> x * 2 #log
+let decorated = 5 /> logged
+
+-- Test 15: Complex composition
+let complexPipe = /> filter((x) -> x > 0) /> map((x) -> x * 2) /> reduce(0, (a, b) -> a + b)
+let complexResult = [1, -2, 3, -4, 5] /> complexPipe
+
+-- Run all tests
+"Test 1 (basic):" /> print
+basic /> print
+
+"Test 2 (long chain):" /> print
+longChain /> print
+
+"Test 3 (parallel):" /> print
+parallel /> print
+
+"Test 4 (nested parallel):" /> print
+nested /> print
+
+"Test 6 (list ops):" /> print
+listOps /> print
+
+"Test 7 (record):" /> print
+recordPipe /> print
+
+"Test 8 (conditional):" /> print
+conditional /> print
+
+"Test 9 (match):" /> print
+matchTest /> print
+
+"Test 10 (template):" /> print
+template /> print
+
+"Test 12 (multiple bindings):" /> print
+step3 /> print
+
+"Test 13 (early return):" /> print
+earlyReturn /> print
+
+"Test 15 (complex):" /> print
+complexResult /> print
+
+"All visualizer tests complete!" /> print
