@@ -41,6 +41,33 @@ export function applyFunctionDecorator(
         return result;
       };
 
+    case "log_verbose": {
+      return (args: LeaValue[]) => {
+        console.log(`[log_verbose] ════════════════════════════════════════`);
+        console.log(`[log_verbose] Function called`);
+        console.log(`[log_verbose] ────────────────────────────────────────`);
+        console.log(`[log_verbose] Parameters:`);
+        fn.params.forEach((param, i) => {
+          const argVal = args[i];
+          const typeInfo = fn.typeSignature?.paramTypes[i] ?? param.typeAnnotation;
+          const typeStr = typeInfo ? ` :: ${ctx.formatType(typeInfo)}` : "";
+          console.log(`[log_verbose]   ${param.name}${typeStr} = ${stringify(argVal)}`);
+        });
+        console.log(`[log_verbose] ────────────────────────────────────────`);
+        console.log(`[log_verbose] Executing...`);
+        const startTime = performance.now();
+        const result = executor(args);
+        const elapsed = performance.now() - startTime;
+        console.log(`[log_verbose] ────────────────────────────────────────`);
+        const returnTypeInfo = fn.typeSignature?.returnType ?? fn.returnType;
+        const returnTypeStr = returnTypeInfo ? ` :: ${ctx.formatType(returnTypeInfo)}` : "";
+        console.log(`[log_verbose] Returned${returnTypeStr}: ${stringify(result)}`);
+        console.log(`[log_verbose] Execution time: ${elapsed.toFixed(3)}ms`);
+        console.log(`[log_verbose] ════════════════════════════════════════`);
+        return result;
+      };
+    }
+
     case "memo": {
       const fnKey = JSON.stringify(fn.params.map(p => p.name));
       if (!ctx.memoCache.has(fnKey)) {
@@ -253,6 +280,62 @@ export function applyPipelineDecorator(
         return result;
       };
 
+    case "log_verbose": {
+      // Log-verbose decorator - detailed stage-by-stage logging with values
+      return (args: LeaValue[]) => {
+        const totalStart = performance.now();
+        console.log(`[log_verbose] ════════════════════════════════════════`);
+        console.log(`[log_verbose] Pipeline execution started`);
+        console.log(`[log_verbose] Stages: ${pipeline.stages.length}`);
+        console.log(`[log_verbose] ────────────────────────────────────────`);
+        console.log(`[log_verbose] Input: ${args.map(stringify).join(", ")}`);
+        console.log(`[log_verbose] ────────────────────────────────────────`);
+
+        let current: LeaValue = args[0];
+        for (let i = 0; i < pipeline.stages.length; i++) {
+          const stage = pipeline.stages[i];
+          const stageName = ctx.describeAnyStage(stage);
+          const stageStart = performance.now();
+
+          console.log(`[log_verbose] Stage ${i + 1}/${pipeline.stages.length}: ${stageName}`);
+          console.log(`[log_verbose]   Input:  ${stringify(current)}`);
+
+          if (isParallelStage(stage)) {
+            // Execute parallel branches with detailed logging
+            console.log(`[log_verbose]   Parallel branches: ${stage.branches.length}`);
+            const branchResults: LeaValue[] = stage.branches.map((branchExpr, bi) => {
+              const branchStart = performance.now();
+              const branchResult = ctx.evaluatePipeWithValue(current, branchExpr, pipeline.closure);
+              const branchTime = performance.now() - branchStart;
+              console.log(`[log_verbose]     Branch ${bi + 1}: ${stringify(branchResult)} (${branchTime.toFixed(3)}ms)`);
+              return branchResult;
+            });
+            current = { kind: "parallel_result" as const, values: branchResults };
+          } else if (stage.expr.kind === "Identifier") {
+            const stageVal = ctx.evaluateExpr(stage.expr, pipeline.closure);
+            if (isPipeline(stageVal)) {
+              current = ctx.applyPipeline(stageVal, [current]);
+            } else {
+              current = ctx.evaluatePipeWithValue(current, stage.expr, pipeline.closure);
+            }
+          } else {
+            current = ctx.evaluatePipeWithValue(current, stage.expr, pipeline.closure);
+          }
+
+          const stageTime = performance.now() - stageStart;
+          console.log(`[log_verbose]   Output: ${stringify(current)}`);
+          console.log(`[log_verbose]   Time:   ${stageTime.toFixed(3)}ms`);
+          console.log(`[log_verbose] ────────────────────────────────────────`);
+        }
+
+        const totalTime = performance.now() - totalStart;
+        console.log(`[log_verbose] Final output: ${stringify(current)}`);
+        console.log(`[log_verbose] Total time: ${totalTime.toFixed(3)}ms`);
+        console.log(`[log_verbose] ════════════════════════════════════════`);
+        return current;
+      };
+    }
+
     case "memo": {
       // Use persistent cache on pipeline object (created once, reused across calls)
       if (!pipeline.memoCache) {
@@ -429,6 +512,64 @@ export function applyPipelineDecoratorAsync(
         console.log(`[log] Pipeline returned:`, stringify(result));
         return result;
       };
+
+    case "log_verbose": {
+      // Log-verbose decorator - detailed stage-by-stage logging with values (async)
+      return async (args: LeaValue[]) => {
+        const totalStart = performance.now();
+        console.log(`[log_verbose] ════════════════════════════════════════`);
+        console.log(`[log_verbose] Pipeline execution started`);
+        console.log(`[log_verbose] Stages: ${pipeline.stages.length}`);
+        console.log(`[log_verbose] ────────────────────────────────────────`);
+        console.log(`[log_verbose] Input: ${args.map(stringify).join(", ")}`);
+        console.log(`[log_verbose] ────────────────────────────────────────`);
+
+        let current: LeaValue = args[0];
+        for (let i = 0; i < pipeline.stages.length; i++) {
+          const stage = pipeline.stages[i];
+          const stageName = ctx.describeAnyStage(stage);
+          const stageStart = performance.now();
+
+          console.log(`[log_verbose] Stage ${i + 1}/${pipeline.stages.length}: ${stageName}`);
+          console.log(`[log_verbose]   Input:  ${stringify(current)}`);
+
+          if (isParallelStage(stage)) {
+            // Execute parallel branches with detailed logging
+            console.log(`[log_verbose]   Parallel branches: ${stage.branches.length}`);
+            const branchResults = await Promise.all(
+              stage.branches.map(async (branchExpr, bi) => {
+                const branchStart = performance.now();
+                const branchResult = await ctx.evaluatePipeWithValueAsync(current, branchExpr, pipeline.closure);
+                const branchTime = performance.now() - branchStart;
+                console.log(`[log_verbose]     Branch ${bi + 1}: ${stringify(branchResult)} (${branchTime.toFixed(3)}ms)`);
+                return branchResult;
+              })
+            );
+            current = { kind: "parallel_result" as const, values: branchResults };
+          } else if (stage.expr.kind === "Identifier") {
+            const stageVal = await ctx.evaluateExprAsync(stage.expr, pipeline.closure);
+            if (isPipeline(stageVal)) {
+              current = await ctx.applyPipelineAsync(stageVal, [current]);
+            } else {
+              current = await ctx.evaluatePipeWithValueAsync(current, stage.expr, pipeline.closure);
+            }
+          } else {
+            current = await ctx.evaluatePipeWithValueAsync(current, stage.expr, pipeline.closure);
+          }
+
+          const stageTime = performance.now() - stageStart;
+          console.log(`[log_verbose]   Output: ${stringify(current)}`);
+          console.log(`[log_verbose]   Time:   ${stageTime.toFixed(3)}ms`);
+          console.log(`[log_verbose] ────────────────────────────────────────`);
+        }
+
+        const totalTime = performance.now() - totalStart;
+        console.log(`[log_verbose] Final output: ${stringify(current)}`);
+        console.log(`[log_verbose] Total time: ${totalTime.toFixed(3)}ms`);
+        console.log(`[log_verbose] ════════════════════════════════════════`);
+        return current;
+      };
+    }
 
     case "memo": {
       // Use persistent cache on pipeline object (created once, reused across calls)

@@ -309,6 +309,7 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 
 **Decorators (Functions):**
 - `#log` — logs inputs/outputs
+- `#log_verbose` — detailed logging with parameters, types, timing, and return values
 - `#memo` — caches results by JSON-stringified args
 - `#time` — logs execution time
 - `#retry(n)` — retry on failure up to n times
@@ -320,6 +321,7 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 
 **Decorators (Pipelines):**
 - `#log` — logs pipeline input/output
+- `#log_verbose` — detailed stage-by-stage logging with inputs, outputs, and timing for each stage
 - `#memo` — caches pipeline results by input
 - `#time` — logs total pipeline execution time
 - `#tap` — inspect output without modifying (default: console.log)

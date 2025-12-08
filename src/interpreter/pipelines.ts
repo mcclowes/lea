@@ -369,6 +369,17 @@ export function getPipelineMember(
         kind: "builtin" as const,
         fn: (): LeaValue => {
           const lines: string[] = [];
+          const boxWidth = 13;
+
+          // Helper to pad text within box
+          const padBox = (text: string): string => {
+            const inner = boxWidth - 2; // Account for "│ " and " │"
+            if (text.length > inner) {
+              return text.substring(0, inner);
+            }
+            return text.padStart(Math.floor((inner + text.length) / 2)).padEnd(inner);
+          };
+
           lines.push("Pipeline:");
           lines.push("  ┌─────────────┐");
           lines.push("  │   input     │");
@@ -376,15 +387,74 @@ export function getPipelineMember(
 
           for (let i = 0; i < pipeline.stages.length; i++) {
             const stage = pipeline.stages[i];
-            const stageDesc = describeAnyStage(stage);
-            const padded = stageDesc.length > 11
-              ? stageDesc.substring(0, 11)
-              : stageDesc.padStart(Math.floor((11 + stageDesc.length) / 2)).padEnd(11);
-            lines.push("         │");
-            lines.push("         ▼");
-            lines.push("  ┌─────────────┐");
-            lines.push(`  │ ${padded} │`);
-            lines.push("  └──────┬──────┘");
+
+            if (isParallelStage(stage)) {
+              // Parallel stage - show branching
+              const numBranches = stage.branches.length;
+
+              // Fan-out diamond
+              lines.push("         │");
+              lines.push("         ▼");
+              lines.push("        ◆◆◆");
+              lines.push("      ╱     ╲");
+
+              // Calculate branch descriptions
+              const branchDescs = stage.branches.map((branchExpr) => {
+                if (branchExpr.kind === "Identifier") {
+                  return branchExpr.name;
+                } else if (branchExpr.kind === "CallExpr" && branchExpr.callee.kind === "Identifier") {
+                  return branchExpr.callee.name;
+                } else if (branchExpr.kind === "FunctionExpr") {
+                  return "λ";
+                }
+                return "expr";
+              });
+
+              // Draw branches based on count
+              if (numBranches === 2) {
+                const leftDesc = padBox(branchDescs[0]);
+                const rightDesc = padBox(branchDescs[1]);
+                lines.push("     │         │");
+                lines.push("     ▼         ▼");
+                lines.push(`┌─────────────┐ ┌─────────────┐`);
+                lines.push(`│ ${leftDesc} │ │ ${rightDesc} │`);
+                lines.push(`└──────┬──────┘ └──────┬──────┘`);
+                lines.push("       │               │");
+                lines.push("       ╲       ╱");
+              } else {
+                // For 3+ branches, show them in a simpler format
+                for (let b = 0; b < numBranches; b++) {
+                  const desc = padBox(branchDescs[b]);
+                  if (b === 0) {
+                    lines.push(`  ├──► ┌─────────────┐`);
+                    lines.push(`  │    │ ${desc} │`);
+                    lines.push(`  │    └──────┬──────┘`);
+                  } else if (b === numBranches - 1) {
+                    lines.push(`  └──► ┌─────────────┐`);
+                    lines.push(`       │ ${desc} │`);
+                    lines.push(`       └──────┬──────┘`);
+                  } else {
+                    lines.push(`  ├──► ┌─────────────┐`);
+                    lines.push(`  │    │ ${desc} │`);
+                    lines.push(`  │    └──────┬──────┘`);
+                  }
+                }
+                lines.push("  ╲         │         ╱");
+              }
+
+              // Fan-in diamond
+              lines.push("        ◆◆◆");
+              lines.push("         │");
+            } else {
+              // Regular stage - show as box
+              const stageDesc = describeStage(stage.expr);
+              const padded = padBox(stageDesc);
+              lines.push("         │");
+              lines.push("         ▼");
+              lines.push("  ┌─────────────┐");
+              lines.push(`  │ ${padded} │`);
+              lines.push("  └──────┬──────┘");
+            }
           }
 
           lines.push("         │");

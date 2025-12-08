@@ -1,0 +1,28 @@
+-- Test #log_verbose decorator for functions and pipelines
+
+-- Test 1: Simple function with #log_verbose
+let double = (x) -> x * 2 :: Int :> Int #log_verbose
+
+"Testing function #log_verbose:" /> print
+5 /> double
+
+-- Test 2: Function with multiple parameters
+let add = (a, b) -> a + b :: (Int, Int) :> Int #log_verbose
+
+"Testing multi-param function:" /> print
+add(3, 7)
+
+-- Test 3: Pipeline with #log_verbose
+let process = /> double /> add(10) #log_verbose
+
+"Testing pipeline #log_verbose:" /> print
+5 /> process
+
+-- Test 4: Pipeline with multiple stages
+let triple = (x) -> x * 3
+let pipeline = /> double /> triple /> add(1) #log_verbose
+
+"Testing multi-stage pipeline:" /> print
+2 /> pipeline
+
+"All log-verbose tests completed!" /> print

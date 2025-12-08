@@ -1,0 +1,24 @@
+-- Test Pipeline.visualize() with parallel branches
+
+let double = (x) -> x * 2
+let triple = (x) -> x * 3
+let addOne = (x) -> x + 1
+
+-- Test 1: Simple linear pipeline visualization
+"Test 1: Linear pipeline:" /> print
+let linearPipe = /> double /> triple /> addOne
+linearPipe.visualize()
+
+-- Test 2: Pipeline with parallel branches (simulated)
+-- Note: First-class pipelines don't support inline parallel notation yet
+-- But we can test the visualization of existing pipelines
+
+"Test 2: Testing linear pipeline application:" /> print
+5 /> linearPipe /> print
+
+-- Test 3: Verify pipeline properties
+"Test 3: Pipeline properties:" /> print
+"Stages: " ++ linearPipe.stages /> print
+"Length: " ++ linearPipe.length /> print
+
+"All visualize tests completed!" /> print
