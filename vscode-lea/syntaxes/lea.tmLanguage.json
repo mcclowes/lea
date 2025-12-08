@@ -89,10 +89,17 @@
     "decorators": {
       "patterns": [
         {
-          "name": "entity.name.function.decorator.lea",
-          "match": "#(log|memo|time|retry|timeout|validate|pure|async|trace)\\b"
+          "comment": "Type-checking decorator - darker blue",
+          "name": "support.type.decorator.validate.lea",
+          "match": "#validate\\b"
         },
         {
+          "comment": "Built-in decorators - standard decorator color",
+          "name": "entity.name.function.decorator.builtin.lea",
+          "match": "#(log|memo|time|retry|timeout|pure|async|trace)\\b"
+        },
+        {
+          "comment": "Custom decorators",
           "name": "entity.name.function.decorator.custom.lea",
           "match": "#[a-zA-Z_][a-zA-Z0-9_]*"
         }
@@ -101,6 +108,12 @@
     "attachments": {
       "patterns": [
         {
+          "comment": "Context attachments - orange/warning color",
+          "name": "variable.parameter.attachment.lea",
+          "match": "@[A-Z][a-zA-Z0-9_]*"
+        },
+        {
+          "comment": "Other attachments",
           "name": "entity.name.tag.attachment.lea",
           "match": "@[a-zA-Z_][a-zA-Z0-9_]*"
         }
@@ -117,11 +130,13 @@
           "match": "\\\\>"
         },
         {
+          "comment": "Function arrow - standard keyword color",
           "name": "keyword.operator.arrow.lea",
           "match": "->"
         },
         {
-          "name": "keyword.operator.return.lea",
+          "comment": "Early return operator - control flow color",
+          "name": "keyword.control.return.lea",
           "match": "<-"
         },
         {

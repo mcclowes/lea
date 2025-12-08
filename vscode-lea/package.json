@@ -52,6 +52,53 @@
         "scopeName": "source.lea",
         "path": "./syntaxes/lea.tmLanguage.json"
       }
-    ]
+    ],
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "variable.parameter.attachment.lea",
+            "settings": {
+              "foreground": "#CE9178",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "support.type.decorator.validate.lea",
+            "settings": {
+              "foreground": "#4682B4",
+              "fontStyle": "italic"
+            }
+          },
+          {
+            "scope": "keyword.control.return.lea",
+            "settings": {
+              "foreground": "#C586C0",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "keyword.operator.parallel-pipe.lea",
+            "settings": {
+              "foreground": "#DCDCAA"
+            }
+          },
+          {
+            "scope": "markup.heading.codeblock.lea",
+            "settings": {
+              "foreground": "#D19A66",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "entity.name.section.codeblock.lea",
+            "settings": {
+              "foreground": "#98C379",
+              "fontStyle": "italic"
+            }
+          }
+        ]
+      }
+    }
   }
 }
