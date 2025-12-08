@@ -49,8 +49,8 @@ let multiplyPipeline = /> (x) -> x * multiplier
 5 /> multiplyPipeline /> print  -- 50
 
 -- Demonstrate pipeline visualize (uncomment to see)
--- "Visualizing processNumber:" /> print
--- processNumber.visualize()
+"Visualizing processNumber:" /> print
+processNumber.visualize()
 
 -- ==========================================
 -- Pipeline Algebra

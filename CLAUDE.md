@@ -80,7 +80,7 @@ let clamp = (x) ->
   doubled + 1
 
 -- Records and member access
-let user = { name: "Max", age: 30 }
+let user = { name: "Max", age: 99 }
 user.name /> print
 
 -- Multi-line records and lists (trailing commas allowed)

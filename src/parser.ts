@@ -510,17 +510,27 @@ export class Parser {
 
   private call(): Expr {
     let expr = this.primary();
+    let lastLine = this.previous().line;
 
     while (true) {
       if (this.match(TokenType.LPAREN)) {
         expr = this.finishCall(expr);
-      } else if (this.match(TokenType.LBRACKET)) {
+        lastLine = this.previous().line;
+      } else if (this.check(TokenType.LBRACKET)) {
+        // Only treat [ as indexing if it's on the same line as the expression
+        // This prevents `expr\n[1,2,3]` from being parsed as `expr[1,2,3]`
+        if (this.peek().line !== lastLine) {
+          break;
+        }
+        this.advance(); // consume [
         const index = this.expression();
         this.consume(TokenType.RBRACKET, "Expected ']' after index");
         expr = indexExpr(expr, index);
+        lastLine = this.previous().line;
       } else if (this.match(TokenType.DOT)) {
         const member = this.consume(TokenType.IDENTIFIER, "Expected property name after '.'").lexeme;
         expr = memberExpr(expr, member);
+        lastLine = this.previous().line;
       } else {
         break;
       }
