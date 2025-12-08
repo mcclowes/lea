@@ -167,6 +167,11 @@
           "match": "</"
         },
         {
+          "comment": "Spread pipe operator - maps function over list elements",
+          "name": "keyword.operator.spread-pipe.lea",
+          "match": "/>>"
+        },
+        {
           "name": "keyword.operator.pipe.lea",
           "match": "/>"
         },

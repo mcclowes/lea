@@ -10,6 +10,7 @@ export type Expr =
   | BinaryExpr
   | UnaryExpr
   | PipeExpr
+  | SpreadPipeExpr
   | ParallelPipeExpr
   | CallExpr
   | FunctionExpr
@@ -71,6 +72,14 @@ export interface PipeExpr {
   kind: "PipeExpr";
   left: Expr;
   right: Expr;
+}
+
+// Spread pipe expression - maps a function/pipeline over each element of a list
+// Syntax: [1, 2, 3] />> fn OR parallelResult />> fn
+export interface SpreadPipeExpr {
+  kind: "SpreadPipeExpr";
+  left: Expr;   // The list or parallel result to spread
+  right: Expr;  // The function/pipeline to apply to each element
 }
 
 export interface ParallelPipeExpr {
@@ -321,6 +330,12 @@ export const unaryExpr = (operator: Token, operand: Expr): UnaryExpr => ({
 
 export const pipeExpr = (left: Expr, right: Expr): PipeExpr => ({
   kind: "PipeExpr",
+  left,
+  right,
+});
+
+export const spreadPipeExpr = (left: Expr, right: Expr): SpreadPipeExpr => ({
+  kind: "SpreadPipeExpr",
   left,
   right,
 });

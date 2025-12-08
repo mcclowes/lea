@@ -268,6 +268,9 @@ export class Interpreter implements InterpreterContext {
       case "PipeExpr":
         return this.evaluatePipe(expr.left, expr.right, env);
 
+      case "SpreadPipeExpr":
+        return this.evaluateSpreadPipe(expr.left, expr.right, env);
+
       case "ParallelPipeExpr":
         return this.evaluateParallelPipe(expr.input, expr.branches, env);
 
@@ -476,6 +479,55 @@ export class Interpreter implements InterpreterContext {
     }
 
     return this.evaluatePipeWithValue(pipedValue, right, env);
+  }
+
+  private evaluateSpreadPipe(left: Expr, right: Expr, env: Environment): LeaValue {
+    const leftValue = this.evaluateExpr(left, env);
+
+    // Promise-aware spread pipe: if left side is a promise, return a promise that awaits it
+    if (isLeaPromise(leftValue)) {
+      return wrapPromise(
+        leftValue.promise.then((resolved) => {
+          return this.evaluateSpreadPipeWithValue(resolved, right, env);
+        })
+      );
+    }
+
+    return this.evaluateSpreadPipeWithValue(leftValue, right, env);
+  }
+
+  private evaluateSpreadPipeWithValue(leftValue: LeaValue, right: Expr, env: Environment): LeaValue {
+    // Get the elements to spread over
+    let elements: LeaValue[];
+
+    if (Array.isArray(leftValue)) {
+      // Left is a list - map over each element
+      elements = leftValue;
+    } else if (isParallelResult(leftValue)) {
+      // Left is a parallel result - map over each branch result
+      elements = leftValue.values;
+    } else {
+      throw new RuntimeError("Spread pipe />> requires a list or parallel result on the left side");
+    }
+
+    // Map the right side function/pipeline over each element
+    const results: LeaValue[] = [];
+    for (const element of elements) {
+      const result = this.evaluatePipeWithValue(element, right, env);
+      results.push(result);
+    }
+
+    // If any result is a promise, return a promise that waits for all
+    const hasPromise = results.some((r) => isLeaPromise(r));
+    if (hasPromise) {
+      return wrapPromise(
+        Promise.all(
+          results.map((r) => (isLeaPromise(r) ? r.promise : Promise.resolve(r)))
+        )
+      );
+    }
+
+    return results;
   }
 
   evaluatePipeWithValue(pipedValue: LeaValue, right: Expr, env: Environment): LeaValue {
@@ -1077,6 +1129,11 @@ export class Interpreter implements InterpreterContext {
         return this.evaluatePipeWithValueAsync(pipedValue, expr.right, env);
       }
 
+      case "SpreadPipeExpr": {
+        const leftValue = await this.evaluateExprAsync(expr.left, env);
+        return this.evaluateSpreadPipeWithValueAsync(leftValue, expr.right, env);
+      }
+
       case "ParallelPipeExpr": {
         const inputValue = await this.evaluateExprAsync(expr.input, env);
         return this.evaluateParallelBranchesAsync(inputValue, expr.branches, env);
@@ -1173,6 +1230,28 @@ export class Interpreter implements InterpreterContext {
       default:
         throw new RuntimeError(`Unknown expression kind: ${(expr as Expr).kind}`);
     }
+  }
+
+  private async evaluateSpreadPipeWithValueAsync(leftValue: LeaValue, right: Expr, env: Environment): Promise<LeaValue> {
+    // Get the elements to spread over
+    let elements: LeaValue[];
+
+    if (Array.isArray(leftValue)) {
+      // Left is a list - map over each element
+      elements = leftValue;
+    } else if (isParallelResult(leftValue)) {
+      // Left is a parallel result - map over each branch result
+      elements = leftValue.values;
+    } else {
+      throw new RuntimeError("Spread pipe />> requires a list or parallel result on the left side");
+    }
+
+    // Map the right side function/pipeline over each element (in parallel)
+    const results = await Promise.all(
+      elements.map((element) => this.evaluatePipeWithValueAsync(element, right, env))
+    );
+
+    return results;
   }
 
   async evaluatePipeWithValueAsync(pipedValue: LeaValue, right: Expr, env: Environment): Promise<LeaValue> {
