@@ -1,0 +1,25 @@
+-- Test custom decorators
+
+-- Simple decorator that adds 1 to the result
+decorator bump = (fn) -> (x) -> fn(x) + 1
+
+let double = (x) -> x * 2 #bump
+double(5) /> print  -- 11 (5*2 + 1)
+
+-- Decorator that doubles the result
+decorator doubleResult = (fn) -> (x) -> fn(x) * 2
+
+let triple = (x) -> x * 3 #doubleResult
+triple(4) /> print  -- 24 (4*3*2)
+
+-- Decorator with different behavior
+decorator negate = (fn) -> (x) -> -(fn(x))
+
+let square = (x) -> x * x #negate
+square(3) /> print  -- -9
+
+-- Combining custom and built-in decorators
+let traced = (x) -> x + 10 #bump #log
+traced(5) /> print  -- 16 (5+10+1)
+
+"Done!" /> print

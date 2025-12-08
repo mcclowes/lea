@@ -1,0 +1,30 @@
+{
+  "name": "lea-language",
+  "displayName": "Lea Language",
+  "description": "Syntax highlighting for the Lea programming language",
+  "version": "0.1.0",
+  "publisher": "mcclowes",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "lea",
+        "aliases": ["Lea", "lea"],
+        "extensions": [".lea"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "lea",
+        "scopeName": "source.lea",
+        "path": "./syntaxes/lea.tmLanguage.json"
+      }
+    ]
+  }
+}

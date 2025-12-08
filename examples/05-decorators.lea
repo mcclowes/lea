@@ -1,0 +1,41 @@
+-- Decorators: function modifiers
+
+-- #log: logs function inputs and outputs
+let logged = (x) -> x * 2 #log
+logged(5) /> print
+
+-- #memo: caches results
+let expensive = (x) ->
+  x * x * x
+  #memo
+
+expensive(10) /> print
+expensive(10) /> print
+
+-- #time: logs execution time
+let timed = (x) ->
+  x /> sqrt
+  #time
+
+timed(16) /> print
+
+-- #retry(n): retries on failure
+let retryable = (x) -> x + 1 #retry(3)
+retryable(5) /> print
+
+-- Multiple decorators (applied right to left)
+let multi = (x) -> x * 2 #log #memo #time
+multi(7) /> print
+multi(7) /> print
+
+-- Decorators on multi-line functions
+let process = (x) ->
+  let y = x * 2
+  let z = y + 1
+  z
+  #log
+  #memo
+
+process(10) /> print
+
+"Decorators complete!" /> print

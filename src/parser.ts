@@ -23,9 +23,11 @@ import {
   awaitExpr,
   recordExpr,
   memberExpr,
+  ternaryExpr,
   blockBody,
   contextDefStmt,
   provideStmt,
+  decoratorDefStmt,
   letStmt,
   exprStmt,
   program,
@@ -68,6 +70,9 @@ export class Parser {
     if (this.check(TokenType.PROVIDE)) {
       return this.provideStatement();
     }
+    if (this.check(TokenType.DECORATOR)) {
+      return this.decoratorDefStatement();
+    }
     return exprStmt(this.expression());
   }
 
@@ -86,6 +91,14 @@ export class Parser {
     return provideStmt(contextName, value);
   }
 
+  private decoratorDefStatement(): Stmt {
+    this.consume(TokenType.DECORATOR, "Expected 'decorator'");
+    const name = this.consume(TokenType.IDENTIFIER, "Expected decorator name").lexeme;
+    this.consume(TokenType.EQ, "Expected '=' after decorator name");
+    const transformer = this.expression();
+    return decoratorDefStmt(name, transformer);
+  }
+
   private letStatement(): LetStmt {
     this.consume(TokenType.LET, "Expected 'let'");
 
@@ -98,20 +111,33 @@ export class Parser {
     return letStmt(name, mutable, value);
   }
 
-  // Precedence (low to high): pipe, equality, comparison, term, factor, unary, call, primary
+  // Precedence (low to high): pipe, ternary, equality, comparison, term, factor, unary, call, primary
   private expression(): Expr {
     return this.pipe();
   }
 
   private pipe(): Expr {
-    let expr = this.equality();
+    let expr = this.ternary();
 
     while (true) {
       this.skipNewlines();
       if (!this.match(TokenType.PIPE)) break;
       this.skipNewlines();
-      const right = this.equality();
+      const right = this.ternary();
       expr = pipeExpr(expr, right);
+    }
+
+    return expr;
+  }
+
+  private ternary(): Expr {
+    let expr = this.equality();
+
+    if (this.match(TokenType.QUESTION)) {
+      const thenBranch = this.ternary();
+      this.consume(TokenType.COLON, "Expected ':' in ternary expression");
+      const elseBranch = this.ternary();
+      expr = ternaryExpr(expr, thenBranch, elseBranch);
     }
 
     return expr;

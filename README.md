@@ -31,7 +31,7 @@ cd lea
 npm install
 
 # Run a file
-npm run run example.lea
+npm run lea example.lea
 
 # Interactive REPL
 npm run repl

@@ -1,0 +1,27 @@
+-- Custom decorators in Lea
+
+-- Define a custom decorator
+-- Decorators are functions that take a function and return a new function
+decorator bump = (fn) -> (x) -> fn(x) + 1
+
+-- Use the custom decorator
+let double = (x) -> x * 2 #bump
+double(5) /> print
+
+-- Decorator that doubles the result
+decorator doubleResult = (fn) -> (x) -> fn(x) * 2
+
+let triple = (x) -> x * 3 #doubleResult
+triple(4) /> print
+
+-- Decorator that negates the result
+decorator negate = (fn) -> (x) -> -(fn(x))
+
+let square = (x) -> x * x #negate
+square(3) /> print
+
+-- Combining custom and built-in decorators
+let traced = (x) -> x + 10 #bump #log
+traced(5) /> print
+
+"Custom decorators complete!" /> print

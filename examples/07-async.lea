@@ -1,0 +1,14 @@
+-- Async operations in Lea
+
+-- #async marks a function as asynchronous
+let fetchData = (id) ->
+  delay(100)
+  #async
+
+-- Async functions return promises
+let getData = () -> delay(50) #async
+
+-- All async operations are demonstrated in tests/test-async.lea
+-- The interpreter handles await at the top level
+
+"Async example - see tests/test-async.lea for full examples" /> print

@@ -1,0 +1,32 @@
+-- Records (objects) in Lea
+
+-- Simple record
+let user = { name: "Alice", age: 30 }
+user /> print
+
+-- Member access
+user.name /> print
+user.age /> print
+
+-- Nested records
+let database = { host: "localhost", port: 5432 }
+let cache = { enabled: true, ttl: 3600 }
+let config = { database: database, cache: cache }
+
+config.database.host /> print
+config.cache.ttl /> print
+
+-- Records in functions
+let greet = (person) -> "Hello, " ++ person.name ++ "!"
+user /> greet /> print
+
+-- List of records
+let users = [{ name: "Alice", score: 85 }, { name: "Bob", score: 92 }, { name: "Charlie", score: 78 }]
+
+users /> map((u) -> u.name) /> print
+users /> filter((u) -> u.score > 80) /> map((u) -> u.name) /> print
+
+-- Sum scores
+users /> map((u) -> u.score) /> reduce(0, (acc, x) -> acc + x) /> print
+
+"Records complete!" /> print

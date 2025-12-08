@@ -1,0 +1,56 @@
+-- Functions in Lea
+
+-- Simple function
+let double = (x) -> x * 2
+double(5) /> print
+
+-- Multi-parameter function
+let add = (a, b) -> a + b
+add(3, 4) /> print
+
+-- Using pipes with functions
+5 /> double /> print
+5 /> add(3) /> print
+
+-- Placeholder syntax for argument position
+10 /> add(3, _) /> print
+
+-- Multi-statement function body (indentation)
+let process = (x) ->
+  let doubled = x * 2
+  let incremented = doubled + 1
+  incremented
+
+process(5) /> print
+
+-- Multi-statement with braces
+let calculate = (x) -> {
+  let a = x * 2
+  let b = a + 10
+  b * 2
+}
+
+calculate(5) /> print
+
+-- Higher-order functions
+let applyTwice = (f, x) -> f(f(x))
+applyTwice(double, 3) /> print
+
+-- Currying: functions returning functions
+let curryAdd = (a) -> (b) -> a + b
+let add5 = curryAdd(5)
+add5(3) /> print
+add(10)(7) /> print
+
+-- Curried multiply
+let curryMultiply = (a) -> (b) -> a * b
+let double2 = curryMultiply(2)
+let triple = curryMultiply(3)
+double2(8) /> print
+triple(8) /> print
+
+-- Currying with pipes
+5 /> curryAdd(10)() /> print
+[1, 2, 3] /> map(multiply(10)) /> print
+
+"Functions complete!" /> print

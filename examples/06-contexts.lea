@@ -1,0 +1,42 @@
+-- Contexts: dependency injection in Lea
+
+-- Define a context with default value
+context Logger = {
+  log: (msg) -> print("[DEFAULT] " ++ msg)
+}
+
+context Config = {
+  host: "localhost",
+  port: 3000
+}
+
+-- Use context in a function with @attachment
+let connect = (message) ->
+  @Logger
+  @Config
+  Logger.log("Connecting to " ++ Config.host)
+  Logger.log(message)
+  Config.port
+
+"Starting..." /> connect /> print
+
+-- Override context for a scope
+provide Logger {
+  log: (msg) -> print("[PROD] " ++ msg)
+}
+
+-- Now Logger uses the overridden value
+let logStatus = (status) ->
+  @Logger
+  Logger.log("Status: " ++ status)
+  status
+
+"OK" /> logStatus /> print
+
+-- Contexts are great for:
+-- - Logging configuration
+-- - Database connections
+-- - Feature flags
+-- - Environment settings
+
+"Contexts complete!" /> print

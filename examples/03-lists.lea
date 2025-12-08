@@ -1,0 +1,41 @@
+-- Lists and list operations
+
+let numbers = [1, 2, 3, 4, 5]
+numbers /> print
+
+-- List builtins
+numbers /> length /> print
+numbers /> head /> print
+numbers /> tail /> print
+
+-- Building lists
+[1, 2, 3] /> push(4) /> print
+[1, 2] /> concat([3, 4]) /> print
+
+-- Range
+range(1, 5) /> print
+range(0, 3) /> print
+
+-- Map: transform each element
+numbers /> map((x) -> x * 2) /> print
+
+-- Filter: keep elements matching predicate
+numbers /> filter((x) -> x > 2) /> print
+
+-- Reduce: fold into single value
+numbers /> reduce(0, (acc, x) -> acc + x) /> print
+
+-- Chaining operations
+let result = numbers
+  /> filter((x) -> x > 1)
+  /> map((x) -> x * x)
+  /> reduce(0, (acc, x) -> acc + x)
+
+result /> print
+
+-- Nested operations
+[[1, 2], [3, 4], [5, 6]]
+  /> map((list) -> list /> reduce(0, (a, b) -> a + b))
+  /> print
+
+"Lists complete!" /> print

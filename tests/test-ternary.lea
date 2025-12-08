@@ -1,0 +1,28 @@
+-- Test ternary expressions
+
+let isEven = (x) -> x % 2 == 0 ? true : false
+isEven(2) /> print  -- true
+isEven(3) /> print  -- false
+
+-- Simple ternary
+let max = (a, b) -> a > b ? a : b
+max(5, 3) /> print  -- 5
+max(2, 7) /> print  -- 7
+
+-- Nested ternary
+let grade = (score) -> score >= 90 ? "A" : score >= 80 ? "B" : score >= 70 ? "C" : "F"
+grade(95) /> print  -- A
+grade(85) /> print  -- B
+grade(75) /> print  -- C
+grade(65) /> print  -- F
+
+-- Ternary with expressions
+let abs = (x) -> x < 0 ? -x : x
+abs(-5) /> print  -- 5
+abs(5) /> print   -- 5
+
+-- Ternary in pipe
+let classify = (x) -> x > 3 ? "big" : "small"
+5 /> classify /> print  -- big
+
+"Done!" /> print
