@@ -1,0 +1,30 @@
+-- Test visualization analysis
+
+-- Simple pipeline
+let numbers = [1, 2, 3, 4, 5]
+
+let doubled = numbers /> map((x) -> x * 2)
+doubled /> print
+
+-- Chained pipeline with multiple transforms
+let result = numbers
+  /> filter((x) -> x > 2)
+  /> map((x) -> x * x)
+  /> reduce(0, (acc, x) -> acc + x)
+
+result /> print
+
+-- Record data flow
+let user = { name: "Alice", score: 100 }
+user.name /> print
+
+-- Ternary condition
+let value = 42
+let category = value > 50 ? "high" : "low"
+category /> print
+
+-- Function with decorators
+let process = (x) -> x * 2 #log
+10 /> process /> print
+
+"visualization test complete" /> print

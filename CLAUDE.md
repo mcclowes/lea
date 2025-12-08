@@ -131,6 +131,12 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `src/interpreter.ts` — Tree-walk interpreter, Environment class
 - `src/repl.ts` — Interactive REPL
 - `src/index.ts` — File runner entry point
+- `src/visualization/` — Flow visualization tools
+  - `flowGraph.ts` — Graph data structures for flow representation
+  - `astAnalyzer.ts` — AST to flow graph conversion
+  - `tracer.ts` — Runtime execution tracing
+  - `renderer/` — HTML/SVG rendering
+  - `cli.ts` — CLI entry point for visualization
 
 ## Token Types
 
@@ -221,8 +227,34 @@ Fan-out to run branches concurrently, fan-in to combine results.
 
 ```bash
 npm run repl              # Interactive REPL
-npm run run file.lea      # Run a file
+npm run lea file.lea      # Run a file
+npm run visualize file.lea  # Generate flow visualization
 ```
+
+## Visualization
+
+The `npm run visualize` command generates an interactive HTML visualization of data flow through Lea programs.
+
+```bash
+# Basic usage - generates file.html
+npm run visualize -- file.lea
+
+# With options
+npm run visualize -- file.lea --summary        # Print analysis summary
+npm run visualize -- file.lea --trace          # Include runtime values
+npm run visualize -- file.lea --theme dark     # Dark color theme
+npm run visualize -- file.lea -o output.html   # Custom output path
+npm run visualize -- file.lea -f json          # Output as JSON
+npm run visualize -- file.lea -f svg           # Output as SVG only
+```
+
+**Visualization Features:**
+- **Node types**: Data sources, transforms, branches, merges, bindings
+- **Edge types**: Pipes, parallel branches, function arguments
+- **Interactive**: Pan, zoom, hover for details, click to inspect
+- **Analysis**: Counts pipelines, parallel branches, async operations
+- **Themes**: Light and dark color schemes
+- **Export**: HTML (interactive), SVG (static), JSON (data)
 
 ## Example Program
 

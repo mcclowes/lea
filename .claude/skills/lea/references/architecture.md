@@ -15,6 +15,12 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `src/interpreter.ts` — Tree-walk interpreter, Environment class
 - `src/repl.ts` — Interactive REPL
 - `src/index.ts` — File runner entry point
+- `src/visualization/` — Flow visualization tools
+  - `flowGraph.ts` — Graph data structures
+  - `astAnalyzer.ts` — AST to flow graph conversion
+  - `tracer.ts` — Runtime execution tracing
+  - `renderer/` — HTML/SVG rendering
+  - `cli.ts` — CLI for visualization
 
 ## AST Nodes
 
@@ -83,3 +89,29 @@ Lexical scoping with parent chain for nested scopes.
 - `context Name = expr` — Define context with default value
 - `provide Name expr` — Override context value in scope
 - `@Name` in function body — Attach context, injects into local scope
+
+## Visualization
+
+The visualization system converts Lea programs into interactive flow diagrams.
+
+### Pipeline
+
+```
+Source → Lexer → Parser → AST → Analyzer → FlowGraph → Renderer → HTML/SVG
+```
+
+### Flow Graph
+
+- **Nodes**: Data, Transform, Branch, Merge, Binding, Condition, Await, Decorator
+- **Edges**: Pipe, Parallel, Argument, Binding, Condition, Merge
+
+### Usage
+
+```bash
+npm run visualize -- file.lea              # Generate HTML
+npm run visualize -- file.lea --summary    # Print analysis
+npm run visualize -- file.lea --trace      # Include runtime values
+npm run visualize -- file.lea --theme dark # Dark theme
+npm run visualize -- file.lea -f json      # JSON output
+npm run visualize -- file.lea -f svg       # SVG output
+```
