@@ -9,6 +9,7 @@ import {
   LetStmt,
   BlockBody,
   RecordField,
+  PipelineStage,
   numberLiteral,
   stringLiteral,
   booleanLiteral,
@@ -36,6 +37,7 @@ import {
   letStmt,
   exprStmt,
   program,
+  pipelineLiteral,
 } from "./ast";
 
 export class ParseError extends Error {
@@ -563,7 +565,75 @@ export class Parser {
       return this.groupingOrFunction();
     }
 
+    // Pipeline literal: /> fn1 /> fn2 /> fn3
+    // A pipeline starts with /> and creates a reusable chain of transformations
+    if (this.match(TokenType.PIPE)) {
+      return this.pipelineLiteral();
+    }
+
     throw new ParseError(`Unexpected token '${this.peek().lexeme}'`, this.peek());
+  }
+
+  // Parse a pipeline literal: /> fn1 /> fn2 /> fn3
+  // Returns a PipelineLiteral with a list of stages
+  private pipelineLiteral(): Expr {
+    const stages: PipelineStage[] = [];
+
+    // Parse the first stage (already consumed the initial />)
+    this.skipNewlines();
+    let stageExpr = this.unary();  // Parse the expression after />
+
+    // Handle call expressions after the stage
+    while (true) {
+      if (this.match(TokenType.LPAREN)) {
+        stageExpr = this.finishCall(stageExpr);
+      } else if (this.match(TokenType.LBRACKET)) {
+        const index = this.expression();
+        this.consume(TokenType.RBRACKET, "Expected ']' after index");
+        stageExpr = { kind: "IndexExpr" as const, object: stageExpr, index };
+      } else if (this.match(TokenType.DOT)) {
+        const member = this.consume(TokenType.IDENTIFIER, "Expected property name after '.'").lexeme;
+        stageExpr = { kind: "MemberExpr" as const, object: stageExpr, member };
+      } else {
+        break;
+      }
+    }
+
+    stages.push({ expr: stageExpr });
+
+    // Continue parsing more stages if there are more /> operators
+    while (true) {
+      const savedPos = this.current;
+      this.skipNewlines();
+
+      if (!this.match(TokenType.PIPE)) {
+        this.current = savedPos;
+        break;
+      }
+
+      this.skipNewlines();
+      let nextStageExpr = this.unary();
+
+      // Handle call expressions after the stage
+      while (true) {
+        if (this.match(TokenType.LPAREN)) {
+          nextStageExpr = this.finishCall(nextStageExpr);
+        } else if (this.match(TokenType.LBRACKET)) {
+          const index = this.expression();
+          this.consume(TokenType.RBRACKET, "Expected ']' after index");
+          nextStageExpr = { kind: "IndexExpr" as const, object: nextStageExpr, index };
+        } else if (this.match(TokenType.DOT)) {
+          const member = this.consume(TokenType.IDENTIFIER, "Expected property name after '.'").lexeme;
+          nextStageExpr = { kind: "MemberExpr" as const, object: nextStageExpr, member };
+        } else {
+          break;
+        }
+      }
+
+      stages.push({ expr: nextStageExpr });
+    }
+
+    return pipelineLiteral(stages);
   }
 
   private record(): Expr {

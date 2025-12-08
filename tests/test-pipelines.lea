@@ -1,0 +1,57 @@
+-- Test pipeline as first-class data type
+
+-- Basic pipeline definition
+let double = (x) -> x * 2
+let addOne = (x) -> x + 1
+
+-- Pipeline literal: /> fn1 /> fn2
+let processNumbers = /> double /> addOne
+
+-- Apply pipeline to values
+5 /> processNumbers /> print   -- 11 (5 * 2 + 1)
+10 /> processNumbers /> print  -- 21 (10 * 2 + 1)
+
+-- Pipeline with builtin functions (single line)
+let listPipeline = /> filter((x) -> x > 2) /> map((x) -> x * 2)
+
+[1, 2, 3, 4, 5] /> listPipeline /> print  -- [6, 8, 10]
+
+-- Pipeline properties
+processNumbers.length /> print   -- 2
+processNumbers.stages /> print   -- ["double", "addOne"]
+
+-- Pipeline composition
+let step1 = /> double
+let step2 = /> addOne
+let combined = /> step1 /> step2
+
+3 /> combined /> print  -- 7 (3 * 2 + 1)
+
+-- Nested pipeline composition
+let pipeA = /> reverse
+let pipeB = /> reverse
+let pipeC = /> pipeA /> pipeB
+
+[1, 2, 3] /> pipeC /> print  -- [1, 2, 3] (reversed twice = original)
+
+-- Pipeline with call expressions
+let filterEvens = /> filter((x) -> x % 2 == 0)
+let doubleAll = /> map((x) -> x * 2)
+let sumPipeline = /> reduce(0, (acc, x) -> acc + x)
+
+let evenSumPipeline = /> filterEvens /> doubleAll /> sumPipeline
+
+[1, 2, 3, 4, 5, 6] /> evenSumPipeline /> print  -- 24 ((2+4+6) * 2)
+
+-- Check pipeline length of composed pipeline
+evenSumPipeline.length /> print  -- 3
+
+-- Test that pipelines capture their closure
+let multiplier = 3
+let multiplyPipeline = /> (x) -> x * multiplier
+10 /> multiplyPipeline /> print  -- 30
+
+-- Pipeline visualize (call it to see the diagram)
+-- processNumbers.visualize()
+
+"Pipeline tests complete!" /> print

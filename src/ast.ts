@@ -20,7 +20,8 @@ export type Expr =
   | MemberExpr
   | TernaryExpr
   | ReturnExpr
-  | TupleExpr;
+  | TupleExpr
+  | PipelineLiteral;
 
 export interface NumberLiteral {
   kind: "NumberLiteral";
@@ -154,6 +155,18 @@ export interface ReturnExpr {
 export interface TupleExpr {
   kind: "TupleExpr";
   elements: Expr[];
+}
+
+// Pipeline stage - represents a single step in a pipeline
+export interface PipelineStage {
+  expr: Expr;  // The expression to apply (function, call, identifier, or nested pipeline)
+}
+
+// Pipeline literal - a reusable pipeline that can be assigned to a variable
+// Syntax: /> fn1 /> fn2 /> fn3
+export interface PipelineLiteral {
+  kind: "PipelineLiteral";
+  stages: PipelineStage[];
 }
 
 export interface BlockBody {
@@ -369,4 +382,9 @@ export const codeblockStmt = (label: string | null, statements: Stmt[]): Codeblo
 export const program = (statements: Stmt[]): Program => ({
   kind: "Program",
   statements,
+});
+
+export const pipelineLiteral = (stages: PipelineStage[]): PipelineLiteral => ({
+  kind: "PipelineLiteral",
+  stages,
 });

@@ -75,7 +75,7 @@ export interface Token {
 
 export const KEYWORDS: Record<string, TokenType> = Object.create(null, {
   let: { value: TokenType.LET, enumerable: true },
-  maybe: TokenType.MAYBE, enumerable: true },
+  maybe: { value: TokenType.MAYBE, enumerable: true },
   true: { value: TokenType.TRUE, enumerable: true },
   false: { value: TokenType.FALSE, enumerable: true },
   await: { value: TokenType.AWAIT, enumerable: true },
