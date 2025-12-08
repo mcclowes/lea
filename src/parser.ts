@@ -68,7 +68,10 @@ export class Parser {
 
   private statement(): Stmt {
     if (this.check(TokenType.LET)) {
-      return this.letStatement();
+      return this.letStatement(false);
+    }
+    if (this.check(TokenType.MAYBE)) {
+      return this.letStatement(true);
     }
     if (this.check(TokenType.CONTEXT)) {
       return this.contextStatement();
@@ -127,10 +130,14 @@ export class Parser {
     return codeblockStmt(label, statements);
   }
 
-  private letStatement(): LetStmt {
-    this.consume(TokenType.LET, "Expected 'let'");
+  private letStatement(mutable: boolean): LetStmt {
+    // Consume either 'let' or 'maybe' keyword
+    if (this.check(TokenType.LET)) {
+      this.advance();
+    } else if (this.check(TokenType.MAYBE)) {
+      this.advance();
+    }
 
-    const mutable = this.match(TokenType.MUT);
     const name = this.consume(TokenType.IDENTIFIER, "Expected variable name").lexeme;
 
     this.consume(TokenType.EQ, "Expected '=' after variable name");
@@ -760,8 +767,8 @@ export class Parser {
       this.skipNewlines();
       if (this.check(TokenType.RBRACE)) break;
 
-      // Check if this is a statement (let, context, provide) or expression
-      if (this.check(TokenType.LET) || this.check(TokenType.CONTEXT) || this.check(TokenType.PROVIDE)) {
+      // Check if this is a statement (let, maybe, context, provide) or expression
+      if (this.check(TokenType.LET) || this.check(TokenType.MAYBE) || this.check(TokenType.CONTEXT) || this.check(TokenType.PROVIDE)) {
         statements.push(this.statement());
       } else {
         // Could be final expression or expression statement
@@ -829,7 +836,7 @@ export class Parser {
         // Could be a comment, let it parse and continue
       }
 
-      if (this.check(TokenType.LET) || this.check(TokenType.CONTEXT) || this.check(TokenType.PROVIDE)) {
+      if (this.check(TokenType.LET) || this.check(TokenType.MAYBE) || this.check(TokenType.CONTEXT) || this.check(TokenType.PROVIDE)) {
         statements.push(this.statement());
       } else {
         const expr = this.expression();

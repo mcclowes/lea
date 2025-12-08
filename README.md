@@ -45,7 +45,7 @@ npm run repl
 
 ```lea
 let x = 10              -- Immutable
-let mut counter = 0     -- Mutable
+maybe counter = 0       -- Mutable
 ```
 
 ### Functions

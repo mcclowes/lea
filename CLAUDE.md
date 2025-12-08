@@ -19,7 +19,7 @@ After modifying or adding functionality, always update:
 let x = 10
 
 -- Mutable binding
-let mut counter = 0
+maybe counter = 0
 
 -- Pipes (value flows into first argument)
 16 /> sqrt
@@ -146,7 +146,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 
 ```
 NUMBER, STRING, IDENTIFIER
-LET, MUT, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
+LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
 PIPE (/>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
