@@ -57,7 +57,8 @@ export enum TokenType {
   AT = "AT",               // @
 
   // Codeblocks
-  CODEBLOCK = "CODEBLOCK",   // <>
+  CODEBLOCK_OPEN = "CODEBLOCK_OPEN",   // <>
+  CODEBLOCK_CLOSE = "CODEBLOCK_CLOSE", // </>
 
   // Special
   NEWLINE = "NEWLINE",
@@ -72,16 +73,16 @@ export interface Token {
   column: number;
 }
 
-export const KEYWORDS: Record<string, TokenType> = {
-  let: TokenType.LET,
-  mut: TokenType.MUT,
-  true: TokenType.TRUE,
-  false: TokenType.FALSE,
-  await: TokenType.AWAIT,
-  context: TokenType.CONTEXT,
-  provide: TokenType.PROVIDE,
-  decorator: TokenType.DECORATOR,
-};
+export const KEYWORDS: Record<string, TokenType> = Object.create(null, {
+  let: { value: TokenType.LET, enumerable: true },
+  mut: { value: TokenType.MUT, enumerable: true },
+  true: { value: TokenType.TRUE, enumerable: true },
+  false: { value: TokenType.FALSE, enumerable: true },
+  await: { value: TokenType.AWAIT, enumerable: true },
+  context: { value: TokenType.CONTEXT, enumerable: true },
+  provide: { value: TokenType.PROVIDE, enumerable: true },
+  decorator: { value: TokenType.DECORATOR, enumerable: true },
+});
 
 export const createToken = (
   type: TokenType,

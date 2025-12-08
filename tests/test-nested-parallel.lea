@@ -1,0 +1,42 @@
+-- Test nested pipes within parallel branches
+
+-- One-liner (should still work)
+5 \> (x) -> x + 1 \> (x) -> x * 2 /> (a, b) -> a + b /> print
+-- 16
+
+-- Multi-line basic parallel (no nesting)
+let basic = [1, 2, 3]
+  \> head
+  \> tail
+  /> (a, b) -> (a, b)
+
+basic /> print
+-- (1, [2, 3])
+
+-- Single branch with nested pipe
+let nested1 = 5
+  \> (x) -> x + 1
+    /> (y) -> y * 2
+  /> print
+-- 12
+
+-- Two branches, one with nested pipe
+let nested2 = 5
+  \> (x) -> x + 1
+    /> (y) -> y * 2
+  \> (x) -> x * 2
+  /> (a, b) -> a + b
+  /> print
+-- 22 (12 + 10)
+
+-- Both branches with nested pipes
+let nested3 = 5
+  \> (x) -> x + 1
+    /> (y) -> y * 2
+  \> (x) -> x * 2
+    /> (y) -> y + 1
+  /> (a, b) -> a + b
+  /> print
+-- 23 (12 + 11)
+
+"Done!" /> print

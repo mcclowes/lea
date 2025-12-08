@@ -1,5 +1,5 @@
 -- Codeblocks in Lea
--- Codeblocks use <> markers to group related code
+-- Codeblocks use <> to open and </> to close
 -- They can have optional labels for documentation
 
 <> -- Math utilities
@@ -8,14 +8,14 @@ let double = (x) -> x * 2
 let triple = (x) -> x * 3
 let square = (x) -> x * x
 
-<>
+</>
 
 <> -- String utilities
 
 let greet = (name) -> "Hello, " ++ name
 let shout = (msg) -> msg ++ "!"
 
-<>
+</>
 
 <> -- Testing our utilities
 
@@ -28,7 +28,7 @@ let shout = (msg) -> msg ++ "!"
 "World" /> greet /> print  -- Hello, World
 "Wow" /> shout /> print    -- Wow!
 
-<>
+</>
 
 <> -- Nested codeblocks work too
 
@@ -38,8 +38,8 @@ let add = (a, b) -> a + b
 
 add(3, 4) /> print  -- 7
 
-<>
+</>
 
-<>
+</>
 
 "Codeblocks complete!" /> print
