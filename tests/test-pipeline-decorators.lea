@@ -1,0 +1,62 @@
+-- Test pipeline decorators
+
+let double = (x) -> x * 2
+let addOne = (x) -> x + 1
+let square = (x) -> x * x
+
+-- Test #log decorator on pipelines
+"Testing #log decorator:" /> print
+let loggedPipe = /> double /> addOne #log
+5 /> loggedPipe /> print
+
+-- Test #time decorator on pipelines
+"Testing #time decorator:" /> print
+let timedPipe = /> double /> addOne #time
+5 /> timedPipe /> print
+
+-- Test #memo decorator on pipelines
+"Testing #memo decorator:" /> print
+let memoPipe = /> double /> addOne #memo
+5 /> memoPipe /> print
+5 /> memoPipe /> print
+
+-- Test #tap decorator (default)
+"Testing #tap decorator (default):" /> print
+let tapPipe = /> double #tap
+5 /> tapPipe /> print
+
+-- Test #debug decorator
+"Testing #debug decorator:" /> print
+let debugPipe = /> double /> addOne #debug
+5 /> debugPipe /> print
+
+-- Test #profile decorator
+"Testing #profile decorator:" /> print
+let profilePipe = /> double /> addOne /> square #profile
+5 /> profilePipe /> print
+
+-- Test #trace decorator
+"Testing #trace decorator:" /> print
+let tracePipe = /> double /> addOne #trace
+5 /> tracePipe /> print
+
+-- Test multiple decorators
+"Testing multiple decorators:" /> print
+let multiPipe = /> double /> addOne #log #time
+5 /> multiPipe /> print
+
+-- Test pipeline followed by list (parsing bug fix)
+"Testing parsing fix:" /> print
+let pipeBeforeList = /> double #log
+5 /> pipeBeforeList /> print
+[1, 2, 3] /> print
+
+-- Test bidirectional pipeline with decorators
+"Testing bidirectional pipeline decorators:" /> print
+let dbl = (x) -> x * 2
+let dbl = (x) <- x / 2
+let biPipe = </> dbl #log
+5 /> biPipe /> print
+10 </ biPipe /> print
+
+"All pipeline decorator tests passed!" /> print
