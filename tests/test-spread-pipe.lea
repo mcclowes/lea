@@ -1,0 +1,34 @@
+-- Test spread pipe />> operator
+
+-- Basic test: map a function over a list
+let double = (x) -> x * 2
+let result1 = [1, 2, 3] />> double
+result1 /> print  -- Should print [2, 4, 6]
+
+-- Test with print (side effects for each element)
+[10, 20, 30] />> print  -- Should print 10, 20, 30 individually and return [10, 20, 30]
+
+-- Test chaining spread pipe with regular pipe
+let addOne = (x) -> x + 1
+let result2 = [1, 2, 3] />> double /> length
+result2 /> print  -- Should print 3 (length of result array)
+
+-- Test spread pipe with parallel results
+let result3 = 5
+  \> (x) -> x + 1
+  \> (x) -> x * 2
+  />> double
+
+await result3 /> print  -- Should print [12, 20] (6*2 and 10*2)
+
+-- Test spread pipe with call expressions
+let add = (a, b) -> a + b
+let result4 = [1, 2, 3] />> add(10)
+result4 /> print  -- Should print [11, 12, 13]
+
+-- Test spread pipe with pipeline
+let process = /> double /> addOne
+let result5 = [1, 2, 3] />> process
+result5 /> print  -- Should print [3, 5, 7]
+
+"All spread pipe tests passed!" /> print
