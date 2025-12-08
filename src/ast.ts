@@ -9,6 +9,7 @@ export type Expr =
   | BinaryExpr
   | UnaryExpr
   | PipeExpr
+  | ParallelPipeExpr
   | CallExpr
   | FunctionExpr
   | ListExpr
@@ -56,6 +57,12 @@ export interface PipeExpr {
   kind: "PipeExpr";
   left: Expr;
   right: Expr;
+}
+
+export interface ParallelPipeExpr {
+  kind: "ParallelPipeExpr";
+  input: Expr;
+  branches: Expr[];
 }
 
 export interface CallExpr {
@@ -209,6 +216,12 @@ export const pipeExpr = (left: Expr, right: Expr): PipeExpr => ({
   kind: "PipeExpr",
   left,
   right,
+});
+
+export const parallelPipeExpr = (input: Expr, branches: Expr[]): ParallelPipeExpr => ({
+  kind: "ParallelPipeExpr",
+  input,
+  branches,
 });
 
 export const callExpr = (callee: Expr, args: Expr[]): CallExpr => ({

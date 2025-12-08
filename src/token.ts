@@ -16,6 +16,7 @@ export enum TokenType {
 
   // Operators
   PIPE = "PIPE",           // />
+  PARALLEL_PIPE = "PARALLEL_PIPE", // \>
   ARROW = "ARROW",         // ->
   PLUS = "PLUS",           // +
   MINUS = "MINUS",         // -

@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import { Lexer, LexerError } from "./lexer";
 import { Parser, ParseError } from "./parser";
-import { Interpreter, RuntimeError, LeaValue, LeaPromise } from "./interpreter";
+import { Interpreter, RuntimeError } from "./interpreter";
 
 async function run(source: string): Promise<void> {
   const lexer = new Lexer(source);
@@ -9,12 +9,8 @@ async function run(source: string): Promise<void> {
   const parser = new Parser(tokens);
   const program = parser.parse();
   const interpreter = new Interpreter();
-  const result = interpreter.interpret(program);
-
-  // If the final result is a promise, await it
-  if (result && typeof result === "object" && "kind" in result && (result as LeaPromise).kind === "promise") {
-    await (result as LeaPromise).promise;
-  }
+  // Use interpretAsync to properly handle top-level await and promises
+  await interpreter.interpretAsync(program);
 }
 
 async function main(): Promise<void> {

@@ -48,6 +48,13 @@ export class Lexer {
       case "?": this.addToken(TokenType.QUESTION); break;
       case "*": this.addToken(TokenType.STAR); break;
       case "%": this.addToken(TokenType.PERCENT); break;
+      case "\\":
+        if (this.match(">")) {
+          this.addToken(TokenType.PARALLEL_PIPE);
+        } else {
+          throw new LexerError(`Unexpected character '\\'`, this.line, this.column - 1);
+        }
+        break;
       case "_":
         if (this.isAlphaNumeric(this.peek())) {
           this.identifier();
