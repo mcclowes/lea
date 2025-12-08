@@ -22,6 +22,7 @@ import {
   Decorator,
   AnyPipelineStage,
   ParallelPipelineStage,
+  MatchCase,
 } from "../ast";
 
 // Re-export types for consumers
@@ -229,6 +230,10 @@ export class Interpreter implements InterpreterContext {
         return env.get(expr.name);
 
       case "PlaceholderExpr":
+        // In match guards, _ is bound to the matched value
+        if (env.has("_")) {
+          return env.get("_");
+        }
         throw new RuntimeError("Placeholder '_' used outside of pipe context");
 
       case "ListExpr":
@@ -352,7 +357,68 @@ export class Interpreter implements InterpreterContext {
         const pipeline = this.evaluateExpr(expr.right, env);
         return this.applyReverse(pipeline, value, env);
       }
+
+      case "MatchExpr": {
+        const matchValue = this.evaluateExpr(expr.value, env);
+        return this.evaluateMatch(matchValue, expr.cases, env);
+      }
     }
+  }
+
+  // Evaluate a match expression by finding the first matching case
+  private evaluateMatch(matchValue: LeaValue, cases: MatchCase[], env: Environment): LeaValue {
+    for (const matchCase of cases) {
+      // Check if this case matches
+      if (matchCase.guard !== null) {
+        // Guard case: | if condition -> result
+        // Create an environment where _ refers to the matched value
+        const guardEnv = new Environment(env);
+        guardEnv.define("_", matchValue, false);
+        const guardResult = this.evaluateExpr(matchCase.guard, guardEnv);
+        if (isTruthy(guardResult)) {
+          // Guard matched - evaluate body in same environment
+          return this.evaluateExpr(matchCase.body, guardEnv);
+        }
+      } else if (matchCase.pattern !== null) {
+        // Pattern case: | pattern -> result
+        const patternValue = this.evaluateExpr(matchCase.pattern, env);
+        if (this.isEqual(matchValue, patternValue)) {
+          return this.evaluateExpr(matchCase.body, env);
+        }
+      } else {
+        // Default case: | result (no pattern or guard)
+        return this.evaluateExpr(matchCase.body, env);
+      }
+    }
+    throw new RuntimeError("No matching case in match expression");
+  }
+
+  // Async version of evaluateMatch
+  private async evaluateMatchAsync(matchValue: LeaValue, cases: MatchCase[], env: Environment): Promise<LeaValue> {
+    for (const matchCase of cases) {
+      // Check if this case matches
+      if (matchCase.guard !== null) {
+        // Guard case: | if condition -> result
+        // Create an environment where _ refers to the matched value
+        const guardEnv = new Environment(env);
+        guardEnv.define("_", matchValue, false);
+        const guardResult = await this.evaluateExprAsync(matchCase.guard, guardEnv);
+        if (isTruthy(guardResult)) {
+          // Guard matched - evaluate body in same environment
+          return this.evaluateExprAsync(matchCase.body, guardEnv);
+        }
+      } else if (matchCase.pattern !== null) {
+        // Pattern case: | pattern -> result
+        const patternValue = await this.evaluateExprAsync(matchCase.pattern, env);
+        if (this.isEqual(matchValue, patternValue)) {
+          return this.evaluateExprAsync(matchCase.body, env);
+        }
+      } else {
+        // Default case: | result (no pattern or guard)
+        return this.evaluateExprAsync(matchCase.body, env);
+      }
+    }
+    throw new RuntimeError("No matching case in match expression");
   }
 
   private evaluateBinary(op: TokenType, left: LeaValue, right: LeaValue): LeaValue {
@@ -966,6 +1032,10 @@ export class Interpreter implements InterpreterContext {
         return env.get(expr.name);
 
       case "PlaceholderExpr":
+        // In match guards, _ is bound to the matched value
+        if (env.has("_")) {
+          return env.get("_");
+        }
         throw new RuntimeError("Placeholder '_' used outside of pipe context");
 
       case "ListExpr": {
@@ -1093,6 +1163,11 @@ export class Interpreter implements InterpreterContext {
         const value = await this.evaluateExprAsync(expr.left, env);
         const pipeline = await this.evaluateExprAsync(expr.right, env);
         return this.applyReverseAsync(pipeline, value, env);
+      }
+
+      case "MatchExpr": {
+        const matchValue = await this.evaluateExprAsync(expr.value, env);
+        return this.evaluateMatchAsync(matchValue, expr.cases, env);
       }
 
       default:

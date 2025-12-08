@@ -202,6 +202,13 @@ export class Environment {
     }
   }
 
+  // Check if a variable is defined (including parent scopes)
+  has(name: string): boolean {
+    if (this.values.has(name)) return true;
+    if (this.parent) return this.parent.has(name);
+    return false;
+  }
+
   get(name: string): LeaValue {
     const entry = this.values.get(name);
     if (entry !== undefined) return entry.value;

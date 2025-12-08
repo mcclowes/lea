@@ -1,0 +1,77 @@
+-- Pattern Matching in Lea
+
+-- Basic pattern matching against literal values
+let describe = (x) -> match x
+  | 0 -> "zero"
+  | 1 -> "one"
+  | 2 -> "two"
+  | "other"
+
+describe(0) /> print
+describe(1) /> print
+describe(5) /> print
+
+-- Guard patterns using 'if' with _ as the matched value
+let classify = (x) -> match x
+  | if _ < 0 -> "negative"
+  | if _ == 0 -> "zero"
+  | if _ > 0 -> "positive"
+  | "unknown"
+
+classify(-5) /> print
+classify(0) /> print
+classify(10) /> print
+
+-- Classic FizzBuzz using match
+let fizzbuzz = (n) -> match n
+  | if _ % 15 == 0 -> "fizzbuzz"
+  | if _ % 3 == 0 -> "fizz"
+  | if _ % 5 == 0 -> "buzz"
+  | n
+
+fizzbuzz(15) /> print
+fizzbuzz(9) /> print
+fizzbuzz(10) /> print
+fizzbuzz(7) /> print
+
+-- Using _ in the result body
+let doubleIfPositive = (x) -> match x
+  | if _ > 0 -> _ * 2
+  | 0
+
+doubleIfPositive(5) /> print
+doubleIfPositive(-3) /> print
+
+-- Match with string patterns
+let greet = (lang) -> match lang
+  | "en" -> "Hello"
+  | "es" -> "Hola"
+  | "fr" -> "Bonjour"
+  | "de" -> "Guten Tag"
+  | "Hi"
+
+greet("en") /> print
+greet("es") /> print
+greet("jp") /> print
+
+-- Match in a pipeline
+let processValue = (x) -> match x
+  | 0 -> "nothing"
+  | if _ > 100 -> "big"
+  | "small"
+
+[0, 50, 150] /> map(processValue) /> print
+
+-- Grade calculator
+let grade = (score) -> match score
+  | if _ >= 90 -> "A"
+  | if _ >= 80 -> "B"
+  | if _ >= 70 -> "C"
+  | if _ >= 60 -> "D"
+  | "F"
+
+grade(95) /> print
+grade(85) /> print
+grade(55) /> print
+
+"Pattern matching complete!" /> print

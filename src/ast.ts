@@ -24,7 +24,8 @@ export type Expr =
   | TupleExpr
   | PipelineLiteral
   | ReversePipeExpr
-  | BidirectionalPipelineLiteral;
+  | BidirectionalPipelineLiteral
+  | MatchExpr;
 
 export interface NumberLiteral {
   kind: "NumberLiteral";
@@ -207,6 +208,25 @@ export interface BidirectionalPipelineLiteral {
   kind: "BidirectionalPipelineLiteral";
   stages: PipelineStage[];
   decorators: Decorator[];
+}
+
+// Match case - a single arm of a match expression
+// Syntax: | pattern -> result OR | if guard -> result OR | result (default)
+export interface MatchCase {
+  pattern: Expr | null;      // The pattern to match against (null = default case)
+  guard: Expr | null;        // Optional guard condition (if expression)
+  body: Expr;                // The result expression
+}
+
+// Match expression - pattern matching on a value
+// Syntax: match expr
+//           | pattern -> result
+//           | if guard -> result
+//           | default
+export interface MatchExpr {
+  kind: "MatchExpr";
+  value: Expr;               // The expression being matched
+  cases: MatchCase[];        // The match arms
 }
 
 export interface BlockBody {
@@ -447,4 +467,10 @@ export const bidirectionalPipelineLiteral = (stages: PipelineStage[], decorators
   kind: "BidirectionalPipelineLiteral",
   stages,
   decorators,
+});
+
+export const matchExpr = (value: Expr, cases: MatchCase[]): MatchExpr => ({
+  kind: "MatchExpr",
+  value,
+  cases,
 });

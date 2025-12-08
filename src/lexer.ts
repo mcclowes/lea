@@ -41,6 +41,7 @@ export class Lexer {
       case "{": this.addToken(TokenType.LBRACE); break;
       case "}": this.addToken(TokenType.RBRACE); break;
       case ",": this.addToken(TokenType.COMMA); break;
+      case "|": this.addToken(TokenType.PIPE_CHAR); break;
       case ":":
         if (this.match(":")) {
           this.addToken(TokenType.DOUBLE_COLON);

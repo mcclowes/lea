@@ -194,6 +194,39 @@ x <= y    -- Less than or equal
 x >= y    -- Greater than or equal
 ```
 
+## Pattern Matching
+
+```lea
+-- Basic pattern matching against literal values
+let describe = (x) -> match x
+  | 0 -> "zero"
+  | 1 -> "one"
+  | 2 -> "two"
+  | "other"                       -- default case (no pattern)
+
+-- Guard patterns with _ as matched value
+let classify = (x) -> match x
+  | if _ < 0 -> "negative"
+  | if _ == 0 -> "zero"
+  | if _ > 0 -> "positive"
+  | "unknown"
+
+-- Using _ in the result body
+let doubleIfPositive = (x) -> match x
+  | if _ > 0 -> _ * 2
+  | 0
+
+-- Match in pipelines
+5 /> classify /> print            -- "positive"
+
+-- FizzBuzz example
+let fizzbuzz = (n) -> match n
+  | if _ % 15 == 0 -> "fizzbuzz"
+  | if _ % 3 == 0 -> "fizz"
+  | if _ % 5 == 0 -> "buzz"
+  | n
+```
+
 ## Pipelines as First-Class Values
 
 ```lea
@@ -269,9 +302,9 @@ let transform = </> double </> addTen
 
 ```
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
-LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
+LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF
 PIPE (/>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
-REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>)
+REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 DOUBLE_COLON (::), COLON_GT (:>)

@@ -125,6 +125,22 @@ let name = "World"
 -- Comparison
 x == y, x != y, x < y, x > y, x <= y, x >= y
 
+-- Pattern matching
+let describe = (x) -> match x
+  | 0 -> "zero"                  -- pattern match against literal
+  | 1 -> "one"
+  | if _ < 0 -> "negative"       -- guard with _ as matched value
+  | if _ > 100 -> "big"          -- multiple guards allowed
+  | "default"                    -- default case (no pattern/guard)
+
+5 /> describe /> print           -- "default"
+-3 /> describe /> print          -- "negative"
+
+-- Using _ in result body
+let double = (x) -> match x
+  | if _ > 0 -> _ * 2            -- _ available in body too
+  | 0
+
 -- Parallel pipes (fan-out/fan-in)
 5 \> (x) -> x + 1 \> (x) -> x * 2 /> (a, b) -> a + b
 
@@ -218,9 +234,9 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 
 ```
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
-LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
+LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF
 PIPE (/>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
-REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>)
+REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 DOUBLE_COLON (::), COLON_GT (:>)
@@ -243,6 +259,8 @@ NEWLINE, EOF
 - PipelineLiteral (stages: list of expressions, decorators)
 - ReversePipeExpr (left: value, right: pipeline/function)
 - BidirectionalPipelineLiteral (stages: list of expressions, decorators)
+- MatchExpr (value: expr, cases: MatchCase[])
+- MatchCase (pattern: expr|null, guard: expr|null, body: expr)
 
 **Statements:**
 - LetStmt (name, mutable, value)
@@ -333,6 +351,15 @@ value
 - More specific type matches are preferred over generic ones
 - Arity (number of arguments) is checked first, then types
 - Error if no overload matches or if call is ambiguous
+
+**Pattern Matching:**
+- `match expr` starts a match expression, followed by cases
+- `| pattern -> body` — match against a literal value
+- `| if guard -> body` — guard condition with `_` bound to matched value
+- `| body` — default case (no pattern or guard, always matches)
+- Cases are evaluated in order; first match wins
+- `_` in guards refers to the matched value and can be used in the body
+- Throws error if no case matches
 
 **Pipelines (First-Class):**
 - Define with `/>` at start: `let p = /> fn1 /> fn2`
