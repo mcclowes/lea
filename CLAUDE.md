@@ -147,6 +147,13 @@ let pipeA = /> filter((x) -> x > 0)
 let pipeB = /> map((x) -> x * 2)
 let combined = /> pipeA /> pipeB  -- compose pipelines
 
+-- Pipeline decorators (trailing, after pipeline definition)
+let debugPipeline = /> double /> addOne #debug
+let profiledPipeline = /> double /> addOne #profile
+let loggedPipeline = /> double /> addOne #log
+5 /> debugPipeline   -- shows step-by-step execution
+5 /> profiledPipeline  -- shows timing for each stage
+
 -- Reversible functions (bidirectional transforms)
 -- Define forward with -> and reverse with <-
 let double = (x) -> x * 2
@@ -224,9 +231,9 @@ NEWLINE, EOF
 - RecordExpr, MemberExpr, AwaitExpr
 - BlockBody (multi-statement function body)
 - ReturnExpr (early return with <-)
-- PipelineLiteral (stages: list of expressions)
+- PipelineLiteral (stages: list of expressions, decorators)
 - ReversePipeExpr (left: value, right: pipeline/function)
-- BidirectionalPipelineLiteral (stages: list of expressions)
+- BidirectionalPipelineLiteral (stages: list of expressions, decorators)
 
 **Statements:**
 - LetStmt (name, mutable, value)
@@ -258,7 +265,7 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 - Otherwise prepend piped value as first argument
 - If right side is just Identifier, call it with piped value as single arg
 
-**Decorators:**
+**Decorators (Functions):**
 - `#log` — logs inputs/outputs
 - `#memo` — caches results by JSON-stringified args
 - `#time` — logs execution time
@@ -268,6 +275,16 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 - `#pure` — warn if side effects detected
 - `#async` — mark function as async (returns promise)
 - `#trace` — deep logging with call depth
+
+**Decorators (Pipelines):**
+- `#log` — logs pipeline input/output
+- `#memo` — caches pipeline results by input
+- `#time` — logs total pipeline execution time
+- `#tap` — inspect output without modifying (default: console.log)
+- `#tap("fnName")` — call named function with output as side effect
+- `#debug` — detailed stage-by-stage execution logging
+- `#profile` — timing breakdown for each stage with percentages
+- `#trace` — nested call tracing with indentation
 
 **Builtins:**
 - `print` (returns first arg for chaining)
@@ -320,6 +337,7 @@ value
   - `.equals(other)` — structural equality comparison
 - Compose pipelines: `let combined = /> pipeA /> pipeB`
 - Pipelines capture their closure (lexical scope)
+- Decorators can be attached: `let p = /> fn1 /> fn2 #debug #profile`
 
 **Reversible Functions:**
 - Define forward with `(x) -> expr` and reverse with `(x) <- expr`

@@ -59,6 +59,7 @@ export interface LeaPipeline {
   kind: "pipeline";
   stages: { expr: Expr }[];  // Each stage holds an AST expression to apply
   closure: Environment;       // Captured environment for evaluating the stages
+  decorators: Decorator[];    // Decorators applied to the pipeline
 }
 
 // A bidirectional pipeline that can be applied in either direction
@@ -66,6 +67,7 @@ export interface LeaBidirectionalPipeline {
   kind: "bidirectional_pipeline";
   stages: { expr: Expr }[];  // Each stage holds an AST expression to apply
   closure: Environment;       // Captured environment for evaluating the stages
+  decorators: Decorator[];    // Decorators applied to the pipeline
 }
 
 // A reversible function that has both forward and reverse implementations
@@ -574,6 +576,7 @@ export class Interpreter {
       kind: "pipeline" as const,
       stages: [{ expr: { kind: "Identifier" as const, name: "__identity__" } }],
       closure: this.globals,
+      decorators: [],
     } as LeaPipeline);
 
     // Pipeline.empty - a pipeline with no stages
@@ -581,6 +584,7 @@ export class Interpreter {
       kind: "pipeline" as const,
       stages: [],
       closure: this.globals,
+      decorators: [],
     } as LeaPipeline);
 
     // Pipeline.from(list) - create pipeline from list of functions
@@ -598,6 +602,7 @@ export class Interpreter {
           kind: "pipeline" as const,
           stages,
           closure: this.globals,
+          decorators: [],
         } as LeaPipeline;
       }
     } as LeaBuiltin);
@@ -805,6 +810,7 @@ export class Interpreter {
           kind: "pipeline" as const,
           stages: expr.stages,
           closure: env,
+          decorators: expr.decorators,
         } as LeaPipeline;
       }
 
@@ -814,6 +820,7 @@ export class Interpreter {
           kind: "bidirectional_pipeline" as const,
           stages: expr.stages,
           closure: env,
+          decorators: expr.decorators,
         } as LeaBidirectionalPipeline;
       }
 
@@ -1011,7 +1018,21 @@ export class Interpreter {
 
   // Apply a pipeline to an input value by running it through each stage
   private applyPipeline(pipeline: LeaPipeline, args: LeaValue[]): LeaValue {
-    // Pipeline takes the first argument as input
+    // Create the base executor that runs the pipeline stages
+    let executor = (pipeArgs: LeaValue[]): LeaValue => {
+      return this.executePipelineStages(pipeline, pipeArgs);
+    };
+
+    // Apply decorators in reverse order (like function decorators)
+    for (const decorator of [...pipeline.decorators].reverse()) {
+      executor = this.applyPipelineDecorator(decorator, executor, pipeline);
+    }
+
+    return executor(args);
+  }
+
+  // Execute the core pipeline stages without decorators
+  private executePipelineStages(pipeline: LeaPipeline, args: LeaValue[]): LeaValue {
     let current: LeaValue = args[0];
 
     for (const stage of pipeline.stages) {
@@ -1505,6 +1526,7 @@ export class Interpreter {
           kind: "pipeline" as const,
           stages: expr.stages,
           closure: env,
+          decorators: expr.decorators,
         } as LeaPipeline;
       }
 
@@ -1514,6 +1536,7 @@ export class Interpreter {
           kind: "bidirectional_pipeline" as const,
           stages: expr.stages,
           closure: env,
+          decorators: expr.decorators,
         } as LeaBidirectionalPipeline;
       }
 
@@ -1655,6 +1678,21 @@ export class Interpreter {
 
   // Async version of applyPipeline
   private async applyPipelineAsync(pipeline: LeaPipeline, args: LeaValue[]): Promise<LeaValue> {
+    // Create the base executor that runs the pipeline stages
+    let executor = async (pipeArgs: LeaValue[]): Promise<LeaValue> => {
+      return this.executePipelineStagesAsync(pipeline, pipeArgs);
+    };
+
+    // Apply decorators in reverse order (like function decorators)
+    for (const decorator of [...pipeline.decorators].reverse()) {
+      executor = this.applyPipelineDecoratorAsync(decorator, executor, pipeline);
+    }
+
+    return executor(args);
+  }
+
+  // Execute the core pipeline stages without decorators (async version)
+  private async executePipelineStagesAsync(pipeline: LeaPipeline, args: LeaValue[]): Promise<LeaValue> {
     let current: LeaValue = args[0];
 
     for (const stage of pipeline.stages) {
@@ -1840,6 +1878,7 @@ export class Interpreter {
               kind: "pipeline" as const,
               stages: [newStage, ...pipeline.stages],
               closure: pipeline.closure,
+              decorators: [],
             } as LeaPipeline;
           }
         } as LeaBuiltin;
@@ -1856,6 +1895,7 @@ export class Interpreter {
               kind: "pipeline" as const,
               stages: [...pipeline.stages, newStage],
               closure: pipeline.closure,
+              decorators: [],
             } as LeaPipeline;
           }
         } as LeaBuiltin;
@@ -1870,6 +1910,7 @@ export class Interpreter {
               kind: "pipeline" as const,
               stages: [...pipeline.stages].reverse(),
               closure: pipeline.closure,
+              decorators: [],
             } as LeaPipeline;
           }
         } as LeaBuiltin;
@@ -1886,6 +1927,7 @@ export class Interpreter {
               kind: "pipeline" as const,
               stages: pipeline.stages.slice(start, end),
               closure: pipeline.closure,
+              decorators: [],
             } as LeaPipeline;
           }
         } as LeaBuiltin;
@@ -1908,6 +1950,7 @@ export class Interpreter {
               kind: "pipeline" as const,
               stages: filteredStages,
               closure: pipeline.closure,
+              decorators: [],
             } as LeaPipeline;
           }
         } as LeaBuiltin;
@@ -1930,6 +1973,7 @@ export class Interpreter {
               kind: "pipeline" as const,
               stages: commonStages,
               closure: pipeline.closure,
+              decorators: [],
             } as LeaPipeline;
           }
         } as LeaBuiltin;
@@ -1969,6 +2013,7 @@ export class Interpreter {
               kind: "pipeline" as const,
               stages: combinedStages,
               closure: pipeline.closure,
+              decorators: [],
             } as LeaPipeline;
           }
         } as LeaBuiltin;
@@ -1992,6 +2037,7 @@ export class Interpreter {
               kind: "pipeline" as const,
               stages: filteredStages,
               closure: pipeline.closure,
+              decorators: [],
             } as LeaPipeline;
           }
         } as LeaBuiltin;
@@ -2010,6 +2056,7 @@ export class Interpreter {
               kind: "pipeline" as const,
               stages: [...pipeline.stages, ...other.stages],
               closure: pipeline.closure,
+              decorators: [],
             } as LeaPipeline;
           }
         } as LeaBuiltin;
@@ -2203,6 +2250,345 @@ export class Interpreter {
 
     // Execute body asynchronously
     return this.evaluateBodyAsyncImpl(fn.body, localEnv);
+  }
+
+  // Apply a decorator to a pipeline (sync version)
+  private applyPipelineDecorator(
+    decorator: Decorator,
+    executor: (args: LeaValue[]) => LeaValue,
+    pipeline: LeaPipeline
+  ): (args: LeaValue[]) => LeaValue {
+    switch (decorator.name) {
+      case "log":
+        return (args: LeaValue[]) => {
+          console.log(`[log] Pipeline called with:`, args.map(stringify).join(", "));
+          const result = executor(args);
+          console.log(`[log] Pipeline returned:`, stringify(result));
+          return result;
+        };
+
+      case "memo": {
+        const cache = new Map<string, LeaValue>();
+        return (args: LeaValue[]) => {
+          const key = JSON.stringify(args);
+          if (cache.has(key)) {
+            return cache.get(key)!;
+          }
+          const result = executor(args);
+          cache.set(key, result);
+          return result;
+        };
+      }
+
+      case "time":
+        return (args: LeaValue[]) => {
+          const start = performance.now();
+          const result = executor(args);
+          const elapsed = performance.now() - start;
+          console.log(`[time] Pipeline execution took ${elapsed.toFixed(3)}ms`);
+          return result;
+        };
+
+      case "tap": {
+        // Tap decorator - apply a side-effect function without modifying the value
+        // Usage: /> fn1 /> fn2 #tap(inspectFn) or just #tap for console.log
+        return (args: LeaValue[]) => {
+          const result = executor(args);
+          // If an argument was provided (function name as string), look it up
+          if (decorator.args.length > 0) {
+            const tapFnName = decorator.args[0] as string;
+            try {
+              const tapFn = this.globals.get(tapFnName);
+              if (tapFn && typeof tapFn === "object" && "kind" in tapFn &&
+                  (tapFn.kind === "function" || tapFn.kind === "builtin")) {
+                if (tapFn.kind === "function") {
+                  this.callFunction(tapFn as LeaFunction, [result]);
+                } else {
+                  (tapFn as LeaBuiltin).fn([result]);
+                }
+              }
+            } catch {
+              // Ignore if function not found
+            }
+          } else {
+            // Default: log the value
+            console.log(`[tap]`, stringify(result));
+          }
+          return result;
+        };
+      }
+
+      case "debug": {
+        // Debug decorator - shows input/output and each stage's name
+        return (args: LeaValue[]) => {
+          console.log(`[debug] Pipeline input:`, args.map(stringify).join(", "));
+          console.log(`[debug] Stages:`, pipeline.stages.map(s => {
+            if (s.expr.kind === "Identifier") return s.expr.name;
+            if (s.expr.kind === "CallExpr" && s.expr.callee.kind === "Identifier") {
+              return `${s.expr.callee.name}(...)`;
+            }
+            return "<expression>";
+          }).join(" /> "));
+
+          // Execute with detailed stage-by-stage logging
+          let current: LeaValue = args[0];
+          for (let i = 0; i < pipeline.stages.length; i++) {
+            const stage = pipeline.stages[i];
+            const stageName = stage.expr.kind === "Identifier"
+              ? stage.expr.name
+              : (stage.expr.kind === "CallExpr" && stage.expr.callee.kind === "Identifier"
+                  ? `${stage.expr.callee.name}(...)`
+                  : `stage[${i}]`);
+
+            if (stage.expr.kind === "Identifier") {
+              const stageVal = this.evaluateExpr(stage.expr, pipeline.closure);
+              if (isPipeline(stageVal)) {
+                current = this.applyPipeline(stageVal, [current]);
+              } else {
+                current = this.evaluatePipeWithValue(current, stage.expr, pipeline.closure);
+              }
+            } else {
+              current = this.evaluatePipeWithValue(current, stage.expr, pipeline.closure);
+            }
+
+            console.log(`[debug]   ${stageName}: ${stringify(current)}`);
+          }
+
+          console.log(`[debug] Pipeline output:`, stringify(current));
+          return current;
+        };
+      }
+
+      case "profile": {
+        // Profile decorator - detailed timing for each stage
+        return (args: LeaValue[]) => {
+          const totalStart = performance.now();
+          const stageTimes: { name: string; time: number }[] = [];
+
+          let current: LeaValue = args[0];
+          for (let i = 0; i < pipeline.stages.length; i++) {
+            const stage = pipeline.stages[i];
+            const stageName = stage.expr.kind === "Identifier"
+              ? stage.expr.name
+              : (stage.expr.kind === "CallExpr" && stage.expr.callee.kind === "Identifier"
+                  ? `${stage.expr.callee.name}(...)`
+                  : `stage[${i}]`);
+
+            const stageStart = performance.now();
+
+            if (stage.expr.kind === "Identifier") {
+              const stageVal = this.evaluateExpr(stage.expr, pipeline.closure);
+              if (isPipeline(stageVal)) {
+                current = this.applyPipeline(stageVal, [current]);
+              } else {
+                current = this.evaluatePipeWithValue(current, stage.expr, pipeline.closure);
+              }
+            } else {
+              current = this.evaluatePipeWithValue(current, stage.expr, pipeline.closure);
+            }
+
+            stageTimes.push({ name: stageName, time: performance.now() - stageStart });
+          }
+
+          const totalTime = performance.now() - totalStart;
+          console.log(`[profile] Pipeline execution profile:`);
+          stageTimes.forEach(({ name, time }) => {
+            const percent = ((time / totalTime) * 100).toFixed(1);
+            console.log(`[profile]   ${name}: ${time.toFixed(3)}ms (${percent}%)`);
+          });
+          console.log(`[profile] Total: ${totalTime.toFixed(3)}ms`);
+
+          return current;
+        };
+      }
+
+      case "trace": {
+        const indent = this.traceDepth;
+        return (args: LeaValue[]) => {
+          const prefix = "  ".repeat(indent);
+          console.log(`${prefix}[trace] → Pipeline called with:`, args.map(stringify).join(", "));
+          this.traceDepth++;
+          try {
+            const result = executor(args);
+            console.log(`${prefix}[trace] ← Pipeline returned:`, stringify(result));
+            return result;
+          } finally {
+            this.traceDepth--;
+          }
+        };
+      }
+
+      default:
+        // Unknown decorator - log warning and return unchanged
+        console.warn(`Unknown pipeline decorator: #${decorator.name}`);
+        return executor;
+    }
+  }
+
+  // Apply a decorator to a pipeline (async version)
+  private applyPipelineDecoratorAsync(
+    decorator: Decorator,
+    executor: (args: LeaValue[]) => Promise<LeaValue>,
+    pipeline: LeaPipeline
+  ): (args: LeaValue[]) => Promise<LeaValue> {
+    switch (decorator.name) {
+      case "log":
+        return async (args: LeaValue[]) => {
+          console.log(`[log] Pipeline called with:`, args.map(stringify).join(", "));
+          const result = await executor(args);
+          console.log(`[log] Pipeline returned:`, stringify(result));
+          return result;
+        };
+
+      case "memo": {
+        const cache = new Map<string, LeaValue>();
+        return async (args: LeaValue[]) => {
+          const key = JSON.stringify(args);
+          if (cache.has(key)) {
+            return cache.get(key)!;
+          }
+          const result = await executor(args);
+          cache.set(key, result);
+          return result;
+        };
+      }
+
+      case "time":
+        return async (args: LeaValue[]) => {
+          const start = performance.now();
+          const result = await executor(args);
+          const elapsed = performance.now() - start;
+          console.log(`[time] Pipeline execution took ${elapsed.toFixed(3)}ms`);
+          return result;
+        };
+
+      case "tap": {
+        return async (args: LeaValue[]) => {
+          const result = await executor(args);
+          if (decorator.args.length > 0) {
+            const tapFnName = decorator.args[0] as string;
+            try {
+              const tapFn = this.globals.get(tapFnName);
+              if (tapFn && typeof tapFn === "object" && "kind" in tapFn &&
+                  (tapFn.kind === "function" || tapFn.kind === "builtin")) {
+                if (tapFn.kind === "function") {
+                  await this.callFunctionAsync(tapFn as LeaFunction, [result]);
+                } else {
+                  const res = (tapFn as LeaBuiltin).fn([result]);
+                  if (res instanceof Promise) await res;
+                }
+              }
+            } catch {
+              // Ignore if function not found
+            }
+          } else {
+            console.log(`[tap]`, stringify(result));
+          }
+          return result;
+        };
+      }
+
+      case "debug": {
+        return async (args: LeaValue[]) => {
+          console.log(`[debug] Pipeline input:`, args.map(stringify).join(", "));
+          console.log(`[debug] Stages:`, pipeline.stages.map(s => {
+            if (s.expr.kind === "Identifier") return s.expr.name;
+            if (s.expr.kind === "CallExpr" && s.expr.callee.kind === "Identifier") {
+              return `${s.expr.callee.name}(...)`;
+            }
+            return "<expression>";
+          }).join(" /> "));
+
+          let current: LeaValue = args[0];
+          for (let i = 0; i < pipeline.stages.length; i++) {
+            const stage = pipeline.stages[i];
+            const stageName = stage.expr.kind === "Identifier"
+              ? stage.expr.name
+              : (stage.expr.kind === "CallExpr" && stage.expr.callee.kind === "Identifier"
+                  ? `${stage.expr.callee.name}(...)`
+                  : `stage[${i}]`);
+
+            if (stage.expr.kind === "Identifier") {
+              const stageVal = await this.evaluateExprAsync(stage.expr, pipeline.closure);
+              if (isPipeline(stageVal)) {
+                current = await this.applyPipelineAsync(stageVal, [current]);
+              } else {
+                current = await this.evaluatePipeWithValueAsync(current, stage.expr, pipeline.closure);
+              }
+            } else {
+              current = await this.evaluatePipeWithValueAsync(current, stage.expr, pipeline.closure);
+            }
+
+            console.log(`[debug]   ${stageName}: ${stringify(current)}`);
+          }
+
+          console.log(`[debug] Pipeline output:`, stringify(current));
+          return current;
+        };
+      }
+
+      case "profile": {
+        return async (args: LeaValue[]) => {
+          const totalStart = performance.now();
+          const stageTimes: { name: string; time: number }[] = [];
+
+          let current: LeaValue = args[0];
+          for (let i = 0; i < pipeline.stages.length; i++) {
+            const stage = pipeline.stages[i];
+            const stageName = stage.expr.kind === "Identifier"
+              ? stage.expr.name
+              : (stage.expr.kind === "CallExpr" && stage.expr.callee.kind === "Identifier"
+                  ? `${stage.expr.callee.name}(...)`
+                  : `stage[${i}]`);
+
+            const stageStart = performance.now();
+
+            if (stage.expr.kind === "Identifier") {
+              const stageVal = await this.evaluateExprAsync(stage.expr, pipeline.closure);
+              if (isPipeline(stageVal)) {
+                current = await this.applyPipelineAsync(stageVal, [current]);
+              } else {
+                current = await this.evaluatePipeWithValueAsync(current, stage.expr, pipeline.closure);
+              }
+            } else {
+              current = await this.evaluatePipeWithValueAsync(current, stage.expr, pipeline.closure);
+            }
+
+            stageTimes.push({ name: stageName, time: performance.now() - stageStart });
+          }
+
+          const totalTime = performance.now() - totalStart;
+          console.log(`[profile] Pipeline execution profile:`);
+          stageTimes.forEach(({ name, time }) => {
+            const percent = ((time / totalTime) * 100).toFixed(1);
+            console.log(`[profile]   ${name}: ${time.toFixed(3)}ms (${percent}%)`);
+          });
+          console.log(`[profile] Total: ${totalTime.toFixed(3)}ms`);
+
+          return current;
+        };
+      }
+
+      case "trace": {
+        const indent = this.traceDepth;
+        return async (args: LeaValue[]) => {
+          const prefix = "  ".repeat(indent);
+          console.log(`${prefix}[trace] → Pipeline called with:`, args.map(stringify).join(", "));
+          this.traceDepth++;
+          try {
+            const result = await executor(args);
+            console.log(`${prefix}[trace] ← Pipeline returned:`, stringify(result));
+            return result;
+          } finally {
+            this.traceDepth--;
+          }
+        };
+      }
+
+      default:
+        console.warn(`Unknown pipeline decorator: #${decorator.name}`);
+        return executor;
+    }
   }
 
   private applyDecorator(

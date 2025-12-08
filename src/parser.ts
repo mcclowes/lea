@@ -651,7 +651,14 @@ export class Parser {
       stages.push({ expr: nextStageExpr });
     }
 
-    return pipelineLiteral(stages);
+    // Parse trailing decorators for the pipeline
+    // Save position in case there are no decorators (to avoid consuming newlines)
+    const savedPosForDecorators = this.current;
+    const decorators = this.parseDecorators();
+    if (decorators.length === 0) {
+      this.current = savedPosForDecorators;
+    }
+    return pipelineLiteral(stages, decorators);
   }
 
   // Parse a bidirectional pipeline literal: </> fn1 </> fn2 </> fn3
@@ -713,7 +720,14 @@ export class Parser {
       stages.push({ expr: nextStageExpr });
     }
 
-    return bidirectionalPipelineLiteral(stages);
+    // Parse trailing decorators for the pipeline
+    // Save position in case there are no decorators (to avoid consuming newlines)
+    const savedPosForDecorators = this.current;
+    const decorators = this.parseDecorators();
+    if (decorators.length === 0) {
+      this.current = savedPosForDecorators;
+    }
+    return bidirectionalPipelineLiteral(stages, decorators);
   }
 
   private record(): Expr {
@@ -1145,8 +1159,14 @@ export class Parser {
       }
 
       decorators.push({ name, args });
-      // Allow next decorator on a new line
+      // Allow next decorator on a new line, but save position first
+      const beforeSkip = this.current;
       this.skipNewlines();
+      // If no more decorators, restore position to not consume trailing newlines
+      if (!this.check(TokenType.HASH)) {
+        this.current = beforeSkip;
+        break;
+      }
     }
 
     return decorators;

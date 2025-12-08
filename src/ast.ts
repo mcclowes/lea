@@ -170,6 +170,7 @@ export interface PipelineStage {
 export interface PipelineLiteral {
   kind: "PipelineLiteral";
   stages: PipelineStage[];
+  decorators: Decorator[];
 }
 
 // Reverse pipe expression - applies a value through a pipeline in reverse
@@ -185,6 +186,7 @@ export interface ReversePipeExpr {
 export interface BidirectionalPipelineLiteral {
   kind: "BidirectionalPipelineLiteral";
   stages: PipelineStage[];
+  decorators: Decorator[];
 }
 
 export interface BlockBody {
@@ -404,9 +406,10 @@ export const program = (statements: Stmt[]): Program => ({
   statements,
 });
 
-export const pipelineLiteral = (stages: PipelineStage[]): PipelineLiteral => ({
+export const pipelineLiteral = (stages: PipelineStage[], decorators: Decorator[] = []): PipelineLiteral => ({
   kind: "PipelineLiteral",
   stages,
+  decorators,
 });
 
 export const reversePipeExpr = (left: Expr, right: Expr): ReversePipeExpr => ({
@@ -415,7 +418,8 @@ export const reversePipeExpr = (left: Expr, right: Expr): ReversePipeExpr => ({
   right,
 });
 
-export const bidirectionalPipelineLiteral = (stages: PipelineStage[]): BidirectionalPipelineLiteral => ({
+export const bidirectionalPipelineLiteral = (stages: PipelineStage[], decorators: Decorator[] = []): BidirectionalPipelineLiteral => ({
   kind: "BidirectionalPipelineLiteral",
   stages,
+  decorators,
 });
