@@ -7,8 +7,8 @@
 - [ ] Multi-line records and arrays in parser
 - [x] Early return
 - [ ] Additional syntax highlighting - \> operator, @Logger (orange colour?), #validate (a darker blue), the implicit or explicit return statement of a function
-- [ ] Codeblocks 
-- [ ] Collapsing codeblocks (implicit, e.g. functions, and explicit) in the IDE, syntax highlighting (brown)
+- [x] Codeblocks
+- [x] Collapsing codeblocks (implicit, e.g. functions, and explicit) in the IDE, syntax highlighting (brown)
 
 ## Ternary (done)
 

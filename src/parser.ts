@@ -32,6 +32,7 @@ import {
   contextDefStmt,
   provideStmt,
   decoratorDefStmt,
+  codeblockStmt,
   letStmt,
   exprStmt,
   program,
@@ -77,6 +78,9 @@ export class Parser {
     if (this.check(TokenType.DECORATOR)) {
       return this.decoratorDefStatement();
     }
+    if (this.check(TokenType.CODEBLOCK)) {
+      return this.codeblockStatement();
+    }
     return exprStmt(this.expression());
   }
 
@@ -101,6 +105,27 @@ export class Parser {
     this.consume(TokenType.EQ, "Expected '=' after decorator name");
     const transformer = this.expression();
     return decoratorDefStmt(name, transformer);
+  }
+
+  private codeblockStatement(): Stmt {
+    const openToken = this.consume(TokenType.CODEBLOCK, "Expected '<>'");
+    const label = openToken.literal as string | null;
+
+    this.skipNewlines();
+
+    // Parse statements until we hit a closing <> or EOF
+    const statements: Stmt[] = [];
+    while (!this.check(TokenType.CODEBLOCK) && !this.isAtEnd()) {
+      statements.push(this.statement());
+      this.skipNewlines();
+    }
+
+    // Consume closing <>
+    if (this.check(TokenType.CODEBLOCK)) {
+      this.advance();
+    }
+
+    return codeblockStmt(label, statements);
   }
 
   private letStatement(): LetStmt {

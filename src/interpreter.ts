@@ -418,6 +418,15 @@ export class Interpreter {
         this.customDecorators.set(stmt.name, transformer as LeaFunction);
         return null;
       }
+
+      case "CodeblockStmt": {
+        // Codeblocks are transparent - just execute their statements
+        let result: LeaValue = null;
+        for (const innerStmt of stmt.statements) {
+          result = this.executeStmt(innerStmt, env);
+        }
+        return result;
+      }
     }
   }
 
@@ -855,6 +864,24 @@ export class Interpreter {
         const newValue = await this.evaluateExprAsync(stmt.value, env);
         ctx.current = newValue;
         return newValue;
+      }
+
+      case "DecoratorDefStmt": {
+        const transformer = await this.evaluateExprAsync(stmt.transformer, env);
+        if (!transformer || typeof transformer !== "object" || !("kind" in transformer) || transformer.kind !== "function") {
+          throw new RuntimeError("Decorator must be a function");
+        }
+        this.customDecorators.set(stmt.name, transformer as LeaFunction);
+        return null;
+      }
+
+      case "CodeblockStmt": {
+        // Codeblocks are transparent - just execute their statements
+        let result: LeaValue = null;
+        for (const innerStmt of stmt.statements) {
+          result = await this.executeStmtAsync(innerStmt, env);
+        }
+        return result;
       }
 
       default:

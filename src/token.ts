@@ -56,6 +56,9 @@ export enum TokenType {
   HASH = "HASH",           // #
   AT = "AT",               // @
 
+  // Codeblocks
+  CODEBLOCK = "CODEBLOCK",   // <>
+
   // Special
   NEWLINE = "NEWLINE",
   EOF = "EOF",

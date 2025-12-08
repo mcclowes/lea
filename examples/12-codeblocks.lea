@@ -1,0 +1,45 @@
+-- Codeblocks in Lea
+-- Codeblocks use <> markers to group related code
+-- They can have optional labels for documentation
+
+<> -- Math utilities
+
+let double = (x) -> x * 2
+let triple = (x) -> x * 3
+let square = (x) -> x * x
+
+<>
+
+<> -- String utilities
+
+let greet = (name) -> "Hello, " ++ name
+let shout = (msg) -> msg ++ "!"
+
+<>
+
+<> -- Testing our utilities
+
+"=== Math utilities ===" /> print
+5 /> double /> print  -- 10
+5 /> triple /> print  -- 15
+4 /> square /> print  -- 16
+
+"=== String utilities ===" /> print
+"World" /> greet /> print  -- Hello, World
+"Wow" /> shout /> print    -- Wow!
+
+<>
+
+<> -- Nested codeblocks work too
+
+let add = (a, b) -> a + b
+
+<> -- Using add
+
+add(3, 4) /> print  -- 7
+
+<>
+
+<>
+
+"Codeblocks complete!" /> print

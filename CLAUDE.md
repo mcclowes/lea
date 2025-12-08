@@ -97,6 +97,12 @@ await fetchData() /> print
 
 -- Comparison
 x == y, x != y, x < y, x > y, x <= y, x >= y
+
+-- Codeblocks (collapsible regions)
+<> -- Section name
+let x = 10
+let y = 20
+<>
 ```
 
 ## Architecture
@@ -126,6 +132,7 @@ EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 DOUBLE_COLON (::), COLON_GT (:>)
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
 COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
+CODEBLOCK (<>)
 NEWLINE, EOF
 ```
 
@@ -145,6 +152,7 @@ NEWLINE, EOF
 - ExprStmt (expression)
 - ContextDefStmt (name, defaultValue)
 - ProvideStmt (contextName, value)
+- CodeblockStmt (label, statements)
 
 ## Parser Precedence (low to high)
 

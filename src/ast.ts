@@ -163,7 +163,7 @@ export interface BlockBody {
 }
 
 // Statement types
-export type Stmt = LetStmt | ExprStmt | ContextDefStmt | ProvideStmt | DecoratorDefStmt;
+export type Stmt = LetStmt | ExprStmt | ContextDefStmt | ProvideStmt | DecoratorDefStmt | CodeblockStmt;
 
 export interface LetStmt {
   kind: "LetStmt";
@@ -193,6 +193,12 @@ export interface DecoratorDefStmt {
   kind: "DecoratorDefStmt";
   name: string;
   transformer: Expr;
+}
+
+export interface CodeblockStmt {
+  kind: "CodeblockStmt";
+  label: string | null;
+  statements: Stmt[];
 }
 
 // Program
@@ -352,6 +358,12 @@ export const letStmt = (name: string, mutable: boolean, value: Expr): LetStmt =>
 export const exprStmt = (expression: Expr): ExprStmt => ({
   kind: "ExprStmt",
   expression,
+});
+
+export const codeblockStmt = (label: string | null, statements: Stmt[]): CodeblockStmt => ({
+  kind: "CodeblockStmt",
+  label,
+  statements,
 });
 
 export const program = (statements: Stmt[]): Program => ({

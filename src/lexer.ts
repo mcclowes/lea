@@ -107,7 +107,10 @@ export class Lexer {
         break;
 
       case "<":
-        if (this.match("-")) {
+        if (this.match(">")) {
+          // Codeblock marker <> - capture optional label on same line
+          this.codeblock();
+        } else if (this.match("-")) {
           this.addToken(TokenType.RETURN);
         } else if (this.match("=")) {
           this.addToken(TokenType.LTE);
@@ -151,6 +154,38 @@ export class Lexer {
     while (this.peek() !== "\n" && !this.isAtEnd()) {
       this.advance();
     }
+  }
+
+  private codeblock(): void {
+    // Skip whitespace after <>
+    while (this.peek() === " " || this.peek() === "\t") {
+      this.advance();
+    }
+
+    // Check for optional label (rest of line after <> and whitespace)
+    let label = "";
+    if (this.peek() !== "\n" && !this.isAtEnd() && this.peek() !== "-") {
+      const labelStart = this.current;
+      while (this.peek() !== "\n" && !this.isAtEnd()) {
+        this.advance();
+      }
+      label = this.source.slice(labelStart, this.current).trim();
+    } else if (this.peek() === "-" && this.peekNext() === "-") {
+      // It's a comment, skip to capture label from comment
+      this.advance(); // -
+      this.advance(); // -
+      // Skip whitespace after --
+      while (this.peek() === " " || this.peek() === "\t") {
+        this.advance();
+      }
+      const labelStart = this.current;
+      while (this.peek() !== "\n" && !this.isAtEnd()) {
+        this.advance();
+      }
+      label = this.source.slice(labelStart, this.current).trim();
+    }
+
+    this.addToken(TokenType.CODEBLOCK, label || null);
   }
 
   private string(): void {
