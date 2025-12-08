@@ -9,63 +9,12 @@
 - [x] Additional syntax highlighting - \> operator, @Logger (orange colour?), #validate (a darker blue), the implicit or explicit return statement of a function
 - [x] Codeblocks
 - [x] Collapsing codeblocks (implicit, e.g. functions, and explicit) in the IDE, syntax highlighting (brown)
-- [ ] Implement #log-verbose to log input, output, and all variable assignment
-- [ ] Multi-line ternary
+- [ ] Implement #log-verbose to log input, output, and all variable assignment, or the values passed between pipeline stages
+- [X] Multi-line ternary
 - [x] First-class citizen: Pipeline
 - [ ] Partitions
-
-## Ternary (done)
-
-```lea
-let isEven = (x) -> x % 2 == 0 ? true : false
-isEven(2) /> print  -- true
-isEven(3) /> print  -- false
-```
-
-## Custom decorators (done)
-
-```lea
-decorator bump = (fn) -> (x) -> fn(x) + 1
-
-let double = (x) -> x * 2 #bump
-double(5) /> print  -- 11
-```
-
-## Simple iterating
-
-If you want to do something 6 times...
-
-```lea
-let foo = (x) -> for(6)
-  /> map
-```
-
-## Early return (done)
-
-```lea
-let clamp = (x) ->
-  let doubled = x * 2
-  doubled > 100 ? <- 100 : 0
-  doubled + 1
-
-clamp(10) /> print   -- 21 (no early return)
-clamp(60) /> print   -- 100 (early return triggered)
-```
-
-## Codeblocks
-
-```lea
-<> -- Clamping logic
-
-let clamp = (x) ->
-  let doubled = x * 2
-  doubled > 100 ? <- 100 : 0
-  doubled + 1
-
-clamp(10) /> print   -- 21 (no early return)
-clamp(60) /> print   -- 100 (early return triggered)
-<>
-```
+- [ ] Explicit types for pipelines
+- [ ] List types syntax - ❌ List , ✅ [Int]
 
 ## Pipeline
 
@@ -125,4 +74,76 @@ equivalent to
 let [evens, odds] = 
   \> filter((x) -> x % 2 == 0)
   \> filter((x) -> x % 2 != 0)
+```
+
+## Explicit pipeline types
+
+- If you define the types for stages, then the pipelines types is all implicit (or rather, explicitly defined by its constituent parts)
+- If you dont, then it makes sense to define types at the pipeline level
+
+```lea
+let pipe = /> double /> reverse :: [Int] -- defined the input only
+```
+
+```lea
+let pipe = /> double /> reverse :: [Int] /> [Int] -- defined the input and pipeline output
+```
+
+## Pattern matching
+
+Pattern Matching - Would complement the functional style
+
+```lea
+let describe = (x) -> match x
+  | 0 -> "zero"
+  | n if n < 0 -> "negative"
+  | _ -> "positive"
+```
+
+## Record improvements
+
+Destructuring - For records and tuples
+
+let { name, age } = user
+let (x, y) = point
+
+Spread Operator - For records and lists
+
+let updated = { ...user, age: 31 }
+let combined = [...list1, ...list2]
+
+## Autoformatting - prettier style
+
+Formatter - Auto-format Lea code (like Prettier)
+
+## Array vs value handling - resolve ambiguity
+
+```lea
+let foo = 
+  \> (x) -> x + 1 
+  \> (x) -> x * 2 
+  /> print
+
+10 /> foo -- prints [11, 20]
+```
+
+### New token - />>
+
+```lea
+let foo = 
+  \> (x) -> x + 1 
+  \> (x) -> x * 2 
+  />> print -- map
+
+10 /> foo -- prints 11 and then 20
+```
+
+Equivalent to:
+```lea
+let foo = 
+  \> (x) -> x + 1 
+  \> (x) -> x * 2 
+  /> map((x) -> print(x)) -- map
+
+10 /> foo -- prints 11 and then 20
 ```
