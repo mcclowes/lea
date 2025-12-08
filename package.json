@@ -4,6 +4,7 @@
   "scripts": {
     "repl": "ts-node src/repl.ts",
     "lea": "ts-node src/index.ts",
+    "visualize": "ts-node src/visualize.ts",
     "examples": "for f in examples/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done",
     "test": "for f in tests/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done"
   },

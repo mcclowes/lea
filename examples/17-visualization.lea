@@ -1,0 +1,82 @@
+-- Visualization Example
+-- This file demonstrates various pipe patterns that can be visualized
+-- Run: npm run visualize -- examples/17-visualization.lea
+-- Or:  npm run visualize -- examples/17-visualization.lea --html -o flow.html
+
+-- Helper functions
+let double = (x) -> x * 2
+let addOne = (x) -> x + 1
+let square = (x) -> x * x
+
+-- Simple pipe chain (linear flow)
+let result = 5
+  /> double
+  /> addOne
+  /> square
+
+-- Complex data pipeline
+let data = [1, 2, 3, 4, 5]
+let processed = data
+  /> filter((x) -> x > 2)
+  /> map((x) -> x * 2)
+  /> reduce(0, (acc, x) -> acc + x)
+
+-- Pipeline with conditionals
+let clampedValue = 150
+  /> (x) -> x > 100 ? 100 : x
+  /> (x) -> x < 0 ? 0 : x
+
+-- Parallel pipes (fan-out and fan-in)
+let parallelResult = 10
+  \> (x) -> x + 1
+  \> (x) -> x * 2
+  /> (a, b) -> a + b
+
+-- Reusable pipeline literal
+let processingPipeline = /> double /> addOne /> square
+
+-- Apply the pipeline
+let pipelineResult = 3 /> processingPipeline
+
+-- Nested operations
+let complex = [1, 2, 3]
+  /> map((x) -> x * 2)
+  /> filter((x) -> x > 3)
+  /> map((item) -> item /> addOne)
+  /> reduce(0, (acc, x) -> acc + x)
+
+-- Match expressions in pipes
+let describe = (x) -> match x
+  | 0 -> "zero"
+  | 1 -> "one"
+  | if _ < 0 -> "negative"
+  | "positive"
+
+let described = 5 /> describe
+
+-- Chained transformations
+let transform = (x) -> x
+  /> double
+  /> addOne
+  /> (y) -> y * 3
+
+-- Print results
+"Simple result:" /> print
+result /> print
+
+"Data processing result:" /> print
+processed /> print
+
+"Clamped value:" /> print
+clampedValue /> print
+
+"Parallel result:" /> print
+parallelResult /> print
+
+"Pipeline result:" /> print
+pipelineResult /> print
+
+"Complex result:" /> print
+complex /> print
+
+"Visualization demo complete!" /> print
