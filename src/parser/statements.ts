@@ -2,7 +2,9 @@ import { TokenType } from "../token";
 import {
   Stmt,
   LetStmt,
+  AndStmt,
   letStmt,
+  andStmt,
   exprStmt,
   contextDefStmt,
   provideStmt,
@@ -18,6 +20,9 @@ import { parseExpression } from "./expressions";
 export function parseStatement(ctx: ParserContext): Stmt {
   if (ctx.check(TokenType.LET)) {
     return parseLetStatement(ctx, false);
+  }
+  if (ctx.check(TokenType.AND)) {
+    return parseAndStatement(ctx);
   }
   if (ctx.check(TokenType.MAYBE)) {
     return parseLetStatement(ctx, true);
@@ -58,6 +63,21 @@ export function parseLetStatement(ctx: ParserContext, mutable: boolean): LetStmt
   const value = parseExpression(ctx);
 
   return letStmt(name, mutable, value);
+}
+
+/**
+ * Parse an and statement - extends an existing function (overload or reverse)
+ */
+export function parseAndStatement(ctx: ParserContext): AndStmt {
+  ctx.consume(TokenType.AND, "Expected 'and'");
+
+  const name = ctx.consume(TokenType.IDENTIFIER, "Expected variable name").lexeme;
+
+  ctx.consume(TokenType.EQ, "Expected '=' after variable name");
+  ctx.skipNewlines();
+  const value = parseExpression(ctx);
+
+  return andStmt(name, value);
 }
 
 /**

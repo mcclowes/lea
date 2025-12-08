@@ -2,7 +2,7 @@
 
 -- Basic reversible function
 let double = (x) -> x * 2
-let double = (x) <- x / 2
+and double = (x) <- x / 2
 
 -- Forward should double
 5 /> double /> print  -- Expected: 10
@@ -15,7 +15,7 @@ let double = (x) <- x / 2
 
 -- Another reversible function
 let addFive = (x) -> x + 5
-let addFive = (x) <- x - 5
+and addFive = (x) <- x - 5
 
 -- Forward then reverse should preserve
 7 /> addFive </ addFive /> print  -- Expected: 7
@@ -34,7 +34,7 @@ let pipeline = </> double </> addFive
 
 -- Chained operations
 let tripleNum = (x) -> x * 3
-let tripleNum = (x) <- x / 3
+and tripleNum = (x) <- x / 3
 
 -- Create a multi-stage bidirectional pipeline
 let complexPipe = </> double </> tripleNum </> addFive
