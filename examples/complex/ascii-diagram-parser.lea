@@ -1,0 +1,175 @@
+-- ASCII Diagram Parser in Lea
+-- https://www.codewars.com/kata/587574a055d436d2ff00008a
+--
+-- Breaks an ASCII diagram into its minimal closed pieces.
+-- Uses flood-fill algorithm to identify interior regions and extract them.
+--
+-- Algorithm:
+-- 1. Parse the input into a 2D grid
+-- 2. Flood-fill from edges to mark exterior spaces
+-- 3. Find connected components of interior spaces (closed regions)
+-- 4. Extract each region with its boundary as a separate piece
+-- 5. Adjust '+' signs to '-' or '|' where they're not actual corners
+
+-- ==========================================
+-- Test Cases
+-- ==========================================
+
+"=== ASCII Diagram Parser ===" /> print
+
+-- Test 1: Simple 2x2 grid
+let grid1 = "+------------+
+|            |
+|            |
+|            |
++------+-----+
+|      |     |
+|      |     |
++------+-----+"
+
+"Test 1: 2x2 Grid Layout" /> print
+"Input:" /> print
+grid1 /> print
+"" /> print
+
+"Pieces found:" /> print
+let pieces1 = grid1 /> breakPieces
+let count1 = pieces1 /> length
+(count1 ++ " pieces") /> print
+"" /> print
+
+-- Print each piece
+grid1 /> breakPieces /> map((piece) ->
+  "--- Piece ---" /> print
+  piece /> print
+  "" /> print
+  piece
+)
+
+-- Test 2: L-shaped region (single piece)
+let lShape = "    +---+
+    |   |
++---+   |
+|       |
++-------+"
+
+"" /> print
+"Test 2: L-Shape (single piece)" /> print
+"Input:" /> print
+lShape /> print
+"" /> print
+
+"Pieces found:" /> print
+let pieces2 = lShape /> breakPieces
+let count2 = pieces2 /> length
+(count2 ++ " piece(s)") /> print
+"" /> print
+
+lShape /> breakPieces /> map((piece) ->
+  "--- Piece ---" /> print
+  piece /> print
+  "" /> print
+  piece
+)
+
+-- Test 3: Simple rectangle
+let simpleRect = "+---+
+|   |
++---+"
+
+"" /> print
+"Test 3: Simple Rectangle" /> print
+"Input:" /> print
+simpleRect /> print
+"" /> print
+
+"Pieces found:" /> print
+let pieces3 = simpleRect /> breakPieces
+let count3 = pieces3 /> length
+(count3 ++ " piece(s)") /> print
+"" /> print
+
+simpleRect /> breakPieces /> map((piece) ->
+  "--- Piece ---" /> print
+  piece /> print
+  "" /> print
+  piece
+)
+
+-- Test 4: Nested boxes (outer has hole, inner is separate piece)
+let nested = "+-----+
+|+---+|
+||   ||
+|+---+|
++-----+"
+
+"" /> print
+"Test 4: Nested Boxes" /> print
+"Input:" /> print
+nested /> print
+"" /> print
+
+"Pieces found:" /> print
+let pieces4 = nested /> breakPieces
+let count4 = pieces4 /> length
+(count4 ++ " piece(s)") /> print
+"" /> print
+
+nested /> breakPieces /> map((piece) ->
+  "--- Piece ---" /> print
+  piece /> print
+  "" /> print
+  piece
+)
+
+-- Test 5: Three boxes in a row
+let threeBoxes = "+--+--+--+
+|  |  |  |
++--+--+--+"
+
+"" /> print
+"Test 5: Three Boxes in a Row" /> print
+"Input:" /> print
+threeBoxes /> print
+"" /> print
+
+"Pieces found:" /> print
+let pieces5 = threeBoxes /> breakPieces
+let count5 = pieces5 /> length
+(count5 ++ " piece(s)") /> print
+"" /> print
+
+threeBoxes /> breakPieces /> map((piece) ->
+  "--- Piece ---" /> print
+  piece /> print
+  "" /> print
+  piece
+)
+
+-- Test 6: T-shaped arrangement
+let tShape = "+--+--+--+
+|  |  |  |
++--+--+--+
+   |  |
+   +--+"
+
+"" /> print
+"Test 6: T-Shaped Arrangement" /> print
+"Input:" /> print
+tShape /> print
+"" /> print
+
+"Pieces found:" /> print
+let pieces6 = tShape /> breakPieces
+let count6 = pieces6 /> length
+(count6 ++ " piece(s)") /> print
+"" /> print
+
+tShape /> breakPieces /> map((piece) ->
+  "--- Piece ---" /> print
+  piece /> print
+  "" /> print
+  piece
+)
+
+"=== Done! ===" /> print

@@ -223,7 +223,7 @@
       "patterns": [
         {
           "name": "support.function.builtin.lea",
-          "match": "\\b(print|sqrt|abs|floor|ceil|round|min|max|length|head|tail|push|concat|reverse|zip|isEmpty|fst|snd|take|at|toString|map|filter|reduce|range|iterations|delay|parallel|race|then)\\b"
+          "match": "\\b(print|sqrt|abs|floor|ceil|round|min|max|length|head|tail|push|concat|reverse|zip|isEmpty|fst|snd|take|at|toString|map|filter|reduce|range|iterations|delay|parallel|race|then|split|lines|charAt|join|padEnd|padStart|trim|trimEnd|indexOf|includes|repeat|slice|chars|listSet|setAdd|setHas|breakPieces)\\b"
         }
       ]
     },

@@ -1,0 +1,87 @@
+-- Tests for ASCII Diagram Parser (breakPieces builtin)
+
+"=== ASCII Diagram Parser Tests ===" /> print
+
+-- Test helper: compare pieces count
+let testPiecesCount = (name, shape, expected) ->
+  let pieces = shape /> breakPieces
+  let actual = pieces /> length
+  actual == expected
+    ? (name ++ ": PASS") /> print
+    : (name ++ ": FAIL - expected " ++ expected ++ " but got " ++ actual) /> print
+
+-- Test helper: check if shape extracts to itself (single piece)
+let testSinglePiece = (name, shape) ->
+  let pieces = shape /> breakPieces
+  (pieces /> length) == 1
+    ? (name ++ ": PASS") /> print
+    : (name ++ ": FAIL - expected 1 piece") /> print
+
+-- Test 1: Simple rectangle should be 1 piece
+testSinglePiece("Simple rectangle", "+---+
+|   |
++---+")
+
+-- Test 2: 2x2 grid should be 3 pieces
+testPiecesCount("2x2 grid", "+------+------+
+|      |      |
+|      |      |
++------+------+
+|      |      |
+|      |      |
++------+------+", 4)
+
+-- Test 3: 2x1 grid should be 2 pieces
+testPiecesCount("2x1 horizontal grid", "+---+---+
+|   |   |
++---+---+", 2)
+
+-- Test 4: L-shape should be 1 piece
+testSinglePiece("L-shape", "    +---+
+    |   |
++---+   |
+|       |
++-------+")
+
+-- Test 5: Nested box - only inner piece counts
+testPiecesCount("Nested boxes (inner only)", "+-----+
+|+---+|
+||   ||
+|+---+|
++-----+", 1)
+
+-- Test 6: Three boxes in a row
+testPiecesCount("Three boxes row", "+--+--+--+
+|  |  |  |
++--+--+--+", 3)
+
+-- Test 7: Four boxes in a 2x2
+testPiecesCount("Four boxes 2x2", "+--+--+
+|  |  |
++--+--+
+|  |  |
++--+--+", 4)
+
+-- Test 8: T-shape arrangement (3 top + 1 bottom = 4 pieces)
+testPiecesCount("T-shape", "+--+--+--+
+|  |  |  |
++--+--+--+
+   |  |
+   +--+", 4)
+
+-- Test 9: Empty input
+let emptyResult = "" /> breakPieces
+(emptyResult /> length) == 0
+  ? "Empty input: PASS" /> print
+  : "Empty input: FAIL" /> print
+
+-- Test 10: No closed shapes (just lines)
+let noClosedResult = "---
+|
++" /> breakPieces
+(noClosedResult /> length) == 0
+  ? "No closed shapes: PASS" /> print
+  : "No closed shapes: FAIL" /> print
+
+"" /> print
+"=== Tests Complete ===" /> print
