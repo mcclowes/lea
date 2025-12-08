@@ -15,6 +15,9 @@
 - [ ] Partitions
 - [ ] Explicit types for pipelines
 - [ ] List types syntax - ❌ List , ✅ [Int]
+- [ ] Array vs value handling - resolve ambiguity
+- [ ] Pattern matching
+- [ ] Record improvements
 
 ## Pipeline
 
@@ -96,8 +99,10 @@ Pattern Matching - Would complement the functional style
 ```lea
 let describe = (x) -> match x
   | 0 -> "zero"
-  | n if n < 0 -> "negative"
-  | _ -> "positive"
+  | if _ < 0 -> "negative"
+  | "positive"
+
+5 /> describe /> print -- print "positive"
 ```
 
 ## Record improvements
@@ -133,7 +138,7 @@ let foo =
 let foo = 
   \> (x) -> x + 1 
   \> (x) -> x * 2 
-  />> print -- map
+  />> print
 
 10 /> foo -- prints 11 and then 20
 ```
@@ -143,7 +148,64 @@ Equivalent to:
 let foo = 
   \> (x) -> x + 1 
   \> (x) -> x * 2 
-  /> map((x) -> print(x)) -- map
+  /> map((x) -> print(x))
 
 10 /> foo -- prints 11 and then 20
 ```
+
+On inputs...
+```lea
+let foo = 
+  \> (x) -> x + 1 
+  \> (x) -> x * 2 
+  /> print
+
+[10, 10, 10] /> foo -- Should fail as [10, 10, 10] + 1 makes no sense
+```
+
+Whereas
+```lea
+let foo = 
+  \> (x) -> x + 1 
+  \> (x) -> x * 2 
+  /> print
+
+[10, 10, 10] />> foo -- prints [11, 20] three times
+```
+
+```lea
+let foo = 
+  /> double
+  /> min(4, 5, 6)
+  /> print
+
+[1, 2, 3] />> foo -- would print 1, then 2, then 3, after comparing [1,4,5,6], [2,4,5,6], etc.
+```
+
+Equivalent
+```lea
+let foo = 
+  />> double
+  />> min(4, 5, 6)
+  /> print
+
+[1, 2, 3] /> foo
+```
+
+Equivalent
+```lea
+let foo = 
+  />> double
+  />> min(..._, 4, 5, 6) -- spread placeholder (this syntax is horrible though)
+  /> print
+
+[1, 2, 3] />> foo -- would print 1
+```
+
+## Other pipe variants
+
+Not sure what they'll do yet...
+|>
++>
+*>
+>>>

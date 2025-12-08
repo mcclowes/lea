@@ -1,4 +1,10 @@
--- Decorators: function modifiers
+-- Decorators: function and pipeline modifiers
+
+-- ==========================================
+-- Function Decorators
+-- ==========================================
+
+"=== Function Decorators ===" /> print
 
 -- #log: logs function inputs and outputs
 let logged = (x) -> x * 2 #log
@@ -37,5 +43,95 @@ let process = (x) ->
   #memo
 
 process(10) /> print
+
+-- ==========================================
+-- Pipeline Decorators
+-- ==========================================
+
+"=== Pipeline Decorators ===" /> print
+
+-- Define helper functions
+let double = (x) -> x * 2
+let addOne = (x) -> x + 1
+let square = (x) -> x * x
+
+-- #log on pipelines - logs pipeline input and output
+"--- #log on pipeline ---" /> print
+let loggedPipeline = /> double /> addOne #log
+5 /> loggedPipeline /> print
+
+-- #time on pipelines - measures total execution time
+"--- #time on pipeline ---" /> print
+let timedPipeline = /> double /> addOne /> square #time
+10 /> timedPipeline /> print
+
+-- #tap - inspect output without modifying it
+"--- #tap decorator ---" /> print
+let tappedPipeline = /> double /> addOne #tap
+5 /> tappedPipeline /> print
+
+-- #debug - detailed stage-by-stage logging
+"--- #debug decorator ---" /> print
+let debugPipeline = /> double /> addOne /> square #debug
+5 /> debugPipeline /> print
+
+-- #profile - timing breakdown for each stage
+"--- #profile decorator ---" /> print
+let profiledPipeline = /> double /> addOne /> square #profile
+10 /> profiledPipeline /> print
+
+-- #trace - nested call tracing
+"--- #trace decorator ---" /> print
+let tracedPipeline = /> double /> addOne #trace
+5 /> tracedPipeline /> print
+
+-- ==========================================
+-- Combining decorators
+-- ==========================================
+
+"=== Combined Decorators ===" /> print
+
+-- Multiple decorators can be combined (applied right-to-left)
+let fullyInstrumented = /> double /> addOne /> square #log #time
+5 /> fullyInstrumented /> print
+
+-- ==========================================
+-- Practical example: Data processing pipeline
+-- ==========================================
+
+"=== Practical Example ===" /> print
+
+let processData = /> filter((x) -> x > 0) /> map((x) -> x * 2) /> reduce(0, (acc, x) -> acc + x) #profile
+[-1, 2, -3, 4, 5] /> processData /> print
+
+-- ==========================================
+-- Custom Decorators
+-- ==========================================
+
+"=== Custom Decorators ===" /> print
+
+-- Define a custom decorator
+-- Decorators are functions that take a function and return a new function
+decorator bump = (fn) -> (x) -> fn(x) + 1
+
+-- Use the custom decorator
+let bumped = (x) -> x * 2 #bump
+bumped(5) /> print
+
+-- Decorator that doubles the result
+decorator doubleResult = (fn) -> (x) -> fn(x) * 2
+
+let tripled = (x) -> x * 3 #doubleResult
+tripled(4) /> print
+
+-- Decorator that negates the result
+decorator negate = (fn) -> (x) -> -(fn(x))
+
+let squared = (x) -> x * x #negate
+squared(3) /> print
+
+-- Combining custom and built-in decorators
+let traced = (x) -> x + 10 #bump #log
+traced(5) /> print
 
 "Decorators complete!" /> print

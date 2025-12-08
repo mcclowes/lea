@@ -194,12 +194,84 @@ x <= y    -- Less than or equal
 x >= y    -- Greater than or equal
 ```
 
+## Pipelines as First-Class Values
+
+```lea
+-- Define a reusable pipeline (starts with />)
+let processNumbers = /> double /> addOne
+5 /> processNumbers                   -- applies pipeline to 5
+
+-- Pipeline properties
+processNumbers.length                 -- 2 (number of stages)
+processNumbers.stages                 -- ["double", "addOne"]
+processNumbers.visualize()            -- prints ASCII diagram
+
+-- Pipeline composition
+let pipeA = /> filter((x) -> x > 0)
+let pipeB = /> map((x) -> x * 2)
+let combined = /> pipeA /> pipeB      -- compose pipelines
+
+-- Pipeline decorators
+let debugPipeline = /> double /> addOne #debug
+let profiledPipeline = /> double /> addOne #profile
+5 /> debugPipeline                    -- shows step-by-step execution
+
+-- Pipeline algebra
+5 /> Pipeline.identity                -- 5 (passes through unchanged)
+5 /> Pipeline.empty                   -- 5 (no stages)
+pipeA.equals(pipeB)                   -- false (structural comparison)
+pipeA.isEmpty()                       -- false
+pipeA.first                           -- first stage as function
+pipeA.last                            -- last stage as function
+pipeA.at(0)                           -- get stage at index
+pipeA.prepend(fn)                     -- add stage at start
+pipeA.append(fn)                      -- add stage at end
+pipeA.reverse()                       -- reverse stage order
+pipeA.slice(0, 2)                     -- extract sub-pipeline
+pipeA.without(pipeB)                  -- remove stages in pipeB
+pipeA.intersection(pipeB)             -- keep only common stages
+pipeA.union(pipeB)                    -- combine (deduplicated)
+pipeA.concat(pipeB)                   -- concatenate (preserves duplicates)
+Pipeline.from([fn1, fn2])             -- create from function list
+```
+
+## Reversible Functions
+
+```lea
+-- Define forward with -> and reverse with <-
+let double = (x) -> x * 2
+let double = (x) <- x / 2             -- adds reverse definition
+
+-- Apply forward or reverse
+5 /> double                           -- 10 (forward: 5 * 2)
+10 </ double                          -- 5  (reverse: 10 / 2)
+
+-- Roundtrip preserves value
+5 /> double </ double                 -- 5
+```
+
+## Bidirectional Pipelines
+
+```lea
+-- Define with </> at start
+let transform = </> double </> addTen
+
+-- Forward: apply stages left-to-right using forward functions
+5 /> transform                        -- 20 (5 -> 10 -> 20)
+
+-- Reverse: apply stages right-to-left using reverse functions
+20 </ transform                       -- 5 (20 -> 10 -> 5)
+
+-- All stages should be reversible functions for reverse to work
+```
+
 ## Token Types
 
 ```
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
 LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
 PIPE (/>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
+REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 DOUBLE_COLON (::), COLON_GT (:>)
@@ -216,7 +288,7 @@ NEWLINE, EOF
 3. Comparison (`<`, `>`, `<=`, `>=`)
 4. Term (`+`, `-`, `++`)
 5. Factor (`*`, `/`, `%`)
-6. Pipe (`/>`, `\>`)
+6. Pipe (`/>`, `\>`, `</`)
 7. Unary (`-`)
 8. Call (function calls, indexing)
 9. Primary (literals, identifiers, grouping, functions)
