@@ -9,6 +9,8 @@ import {
   FunctionParam,
   BlockBody,
   TypeSignature,
+  AnyPipelineStage,
+  ParallelPipelineStage,
 } from "./ast";
 
 export interface LeaFunction {
@@ -57,9 +59,9 @@ export interface LeaOverloadSet {
 // A pipeline is a first-class value representing a composable chain of transformations
 export interface LeaPipeline {
   kind: "pipeline";
-  stages: { expr: Expr }[];  // Each stage holds an AST expression to apply
-  closure: Environment;       // Captured environment for evaluating the stages
-  decorators: Decorator[];    // Decorators applied to the pipeline
+  stages: AnyPipelineStage[];  // Each stage: regular expr or parallel branches
+  closure: Environment;        // Captured environment for evaluating the stages
+  decorators: Decorator[];     // Decorators applied to the pipeline
 }
 
 // A bidirectional pipeline that can be applied in either direction
@@ -232,6 +234,19 @@ function isLeaPromise(val: LeaValue): val is LeaPromise {
 // Helper to check if a value is a LeaParallelResult
 function isParallelResult(val: LeaValue): val is LeaParallelResult {
   return val !== null && typeof val === "object" && "kind" in val && val.kind === "parallel_result";
+}
+
+// Helper to check if a pipeline stage is a parallel stage
+function isParallelStage(stage: AnyPipelineStage): stage is ParallelPipelineStage {
+  return stage.isParallel === true;
+}
+
+// Helper to get the expr from a regular (non-parallel) stage
+function getStageExpr(stage: AnyPipelineStage): Expr {
+  if (isParallelStage(stage)) {
+    throw new RuntimeError("Cannot get expr from parallel stage");
+  }
+  return stage.expr;
 }
 
 // Helper to check if a value is a LeaOverloadSet
@@ -1071,7 +1086,19 @@ export class Interpreter {
     let current: LeaValue = args[0];
 
     for (const stage of pipeline.stages) {
-      // Evaluate the stage expression and pipe the current value into it
+      // Check if this is a parallel stage
+      if (stage.isParallel) {
+        const parallelStage = stage as ParallelPipelineStage;
+        // Execute each branch with the current value
+        const branchResults: LeaValue[] = parallelStage.branches.map((branchExpr) => {
+          return this.evaluatePipeWithValue(current, branchExpr, pipeline.closure);
+        });
+        // Wrap results as a parallel result for the next stage to spread
+        current = { kind: "parallel_result" as const, values: branchResults };
+        continue;
+      }
+
+      // Regular stage - evaluate the stage expression and pipe the current value into it
       const stageExpr = stage.expr;
 
       // If the stage is an identifier that refers to another pipeline, compose them
@@ -1118,6 +1145,9 @@ export class Interpreter {
       let current = value;
       for (let i = target.stages.length - 1; i >= 0; i--) {
         const stage = target.stages[i];
+        if (isParallelStage(stage)) {
+          throw new RuntimeError("Cannot apply reverse to pipeline with parallel stages");
+        }
         current = this.applyReverseToStage(current, stage.expr, target.closure);
       }
       return current;
@@ -1745,6 +1775,21 @@ export class Interpreter {
     let current: LeaValue = args[0];
 
     for (const stage of pipeline.stages) {
+      // Check if this is a parallel stage
+      if (stage.isParallel) {
+        const parallelStage = stage as ParallelPipelineStage;
+        // Execute each branch with the current value (in parallel)
+        const branchResults = await Promise.all(
+          parallelStage.branches.map((branchExpr) => {
+            return this.evaluatePipeWithValueAsync(current, branchExpr, pipeline.closure);
+          })
+        );
+        // Wrap results as a parallel result for the next stage to spread
+        current = { kind: "parallel_result" as const, values: branchResults };
+        continue;
+      }
+
+      // Regular stage
       const stageExpr = stage.expr;
 
       // If the stage is an identifier that refers to another pipeline, compose them
@@ -1790,6 +1835,9 @@ export class Interpreter {
       let current = value;
       for (let i = target.stages.length - 1; i >= 0; i--) {
         const stage = target.stages[i];
+        if (isParallelStage(stage)) {
+          throw new RuntimeError("Cannot apply reverse to pipeline with parallel stages");
+        }
         current = await this.applyReverseToStageAsync(current, stage.expr, target.closure);
       }
       return current;
@@ -1861,7 +1909,7 @@ export class Interpreter {
 
       case "stages": {
         // Return a list of stage descriptions
-        return pipeline.stages.map(stage => this.describeStage(stage.expr));
+        return pipeline.stages.map(stage => this.describeAnyStage(stage));
       }
 
       case "first": {
@@ -1991,9 +2039,9 @@ export class Interpreter {
             if (!isPipeline(other)) {
               throw new RuntimeError("without requires a pipeline argument");
             }
-            const otherStageNames = new Set(other.stages.map(s => this.describeStage(s.expr)));
+            const otherStageNames = new Set(other.stages.map(s => this.describeAnyStage(s)));
             const filteredStages = pipeline.stages.filter(
-              s => !otherStageNames.has(this.describeStage(s.expr))
+              s => !otherStageNames.has(this.describeAnyStage(s))
             );
             return {
               kind: "pipeline" as const,
@@ -2014,9 +2062,9 @@ export class Interpreter {
             if (!isPipeline(other)) {
               throw new RuntimeError("intersection requires a pipeline argument");
             }
-            const otherStageNames = new Set(other.stages.map(s => this.describeStage(s.expr)));
+            const otherStageNames = new Set(other.stages.map(s => this.describeAnyStage(s)));
             const commonStages = pipeline.stages.filter(
-              s => otherStageNames.has(this.describeStage(s.expr))
+              s => otherStageNames.has(this.describeAnyStage(s))
             );
             return {
               kind: "pipeline" as const,
@@ -2038,11 +2086,11 @@ export class Interpreter {
               throw new RuntimeError("union requires a pipeline argument");
             }
             const seenNames = new Set<string>();
-            const combinedStages: { expr: Expr }[] = [];
+            const combinedStages: AnyPipelineStage[] = [];
 
             // Add all stages from this pipeline
             for (const stage of pipeline.stages) {
-              const name = this.describeStage(stage.expr);
+              const name = this.describeAnyStage(stage);
               if (!seenNames.has(name)) {
                 seenNames.add(name);
                 combinedStages.push(stage);
@@ -2051,7 +2099,7 @@ export class Interpreter {
 
             // Add stages from other pipeline not already present
             for (const stage of other.stages) {
-              const name = this.describeStage(stage.expr);
+              const name = this.describeAnyStage(stage);
               if (!seenNames.has(name)) {
                 seenNames.add(name);
                 combinedStages.push(stage);
@@ -2078,9 +2126,9 @@ export class Interpreter {
             if (!isPipeline(other)) {
               throw new RuntimeError("difference requires a pipeline argument");
             }
-            const otherStageNames = new Set(other.stages.map(s => this.describeStage(s.expr)));
+            const otherStageNames = new Set(other.stages.map(s => this.describeAnyStage(s)));
             const filteredStages = pipeline.stages.filter(
-              s => !otherStageNames.has(this.describeStage(s.expr))
+              s => !otherStageNames.has(this.describeAnyStage(s))
             );
             return {
               kind: "pipeline" as const,
@@ -2124,7 +2172,7 @@ export class Interpreter {
 
             for (let i = 0; i < pipeline.stages.length; i++) {
               const stage = pipeline.stages[i];
-              const stageDesc = this.describeStage(stage.expr);
+              const stageDesc = this.describeAnyStage(stage);
               const padded = stageDesc.length > 11
                 ? stageDesc.substring(0, 11)
                 : stageDesc.padStart(Math.floor((11 + stageDesc.length) / 2)).padEnd(11);
@@ -2158,8 +2206,8 @@ export class Interpreter {
       return false;
     }
     for (let i = 0; i < a.stages.length; i++) {
-      const aName = this.describeStage(a.stages[i].expr);
-      const bName = this.describeStage(b.stages[i].expr);
+      const aName = this.describeAnyStage(a.stages[i]);
+      const bName = this.describeAnyStage(b.stages[i]);
       if (aName !== bName) {
         return false;
       }
@@ -2168,7 +2216,10 @@ export class Interpreter {
   }
 
   // Convert a stage to a callable function value
-  private stageToFunction(stage: { expr: Expr }, closure: Environment): LeaValue {
+  private stageToFunction(stage: AnyPipelineStage, closure: Environment): LeaValue {
+    if (isParallelStage(stage)) {
+      throw new RuntimeError("Cannot convert parallel stage to function");
+    }
     return this.evaluateExpr(stage.expr, closure);
   }
 
@@ -2178,6 +2229,14 @@ export class Interpreter {
     const syntheticName = `__dynamic_stage_${Date.now()}_${Math.random().toString(36).slice(2)}__`;
     this.globals.define(syntheticName, fn, false);
     return { expr: { kind: "Identifier" as const, name: syntheticName } };
+  }
+
+  // Describe any pipeline stage for display purposes
+  private describeAnyStage(stage: AnyPipelineStage): string {
+    if (isParallelStage(stage)) {
+      return `parallel[${stage.branches.length}]`;
+    }
+    return this.describeStage(stage.expr);
   }
 
   // Describe a stage expression for display purposes
@@ -2371,25 +2430,21 @@ export class Interpreter {
         // Debug decorator - shows input/output and each stage's name
         return (args: LeaValue[]) => {
           console.log(`[debug] Pipeline input:`, args.map(stringify).join(", "));
-          console.log(`[debug] Stages:`, pipeline.stages.map(s => {
-            if (s.expr.kind === "Identifier") return s.expr.name;
-            if (s.expr.kind === "CallExpr" && s.expr.callee.kind === "Identifier") {
-              return `${s.expr.callee.name}(...)`;
-            }
-            return "<expression>";
-          }).join(" /> "));
+          console.log(`[debug] Stages:`, pipeline.stages.map(s => this.describeAnyStage(s)).join(" /> "));
 
           // Execute with detailed stage-by-stage logging
           let current: LeaValue = args[0];
           for (let i = 0; i < pipeline.stages.length; i++) {
             const stage = pipeline.stages[i];
-            const stageName = stage.expr.kind === "Identifier"
-              ? stage.expr.name
-              : (stage.expr.kind === "CallExpr" && stage.expr.callee.kind === "Identifier"
-                  ? `${stage.expr.callee.name}(...)`
-                  : `stage[${i}]`);
+            const stageName = this.describeAnyStage(stage);
 
-            if (stage.expr.kind === "Identifier") {
+            if (isParallelStage(stage)) {
+              // Execute parallel branches
+              const branchResults: LeaValue[] = stage.branches.map((branchExpr) => {
+                return this.evaluatePipeWithValue(current, branchExpr, pipeline.closure);
+              });
+              current = { kind: "parallel_result" as const, values: branchResults };
+            } else if (stage.expr.kind === "Identifier") {
               const stageVal = this.evaluateExpr(stage.expr, pipeline.closure);
               if (isPipeline(stageVal)) {
                 current = this.applyPipeline(stageVal, [current]);
@@ -2417,15 +2472,17 @@ export class Interpreter {
           let current: LeaValue = args[0];
           for (let i = 0; i < pipeline.stages.length; i++) {
             const stage = pipeline.stages[i];
-            const stageName = stage.expr.kind === "Identifier"
-              ? stage.expr.name
-              : (stage.expr.kind === "CallExpr" && stage.expr.callee.kind === "Identifier"
-                  ? `${stage.expr.callee.name}(...)`
-                  : `stage[${i}]`);
+            const stageName = this.describeAnyStage(stage);
 
             const stageStart = performance.now();
 
-            if (stage.expr.kind === "Identifier") {
+            if (isParallelStage(stage)) {
+              // Execute parallel branches
+              const branchResults: LeaValue[] = stage.branches.map((branchExpr) => {
+                return this.evaluatePipeWithValue(current, branchExpr, pipeline.closure);
+              });
+              current = { kind: "parallel_result" as const, values: branchResults };
+            } else if (stage.expr.kind === "Identifier") {
               const stageVal = this.evaluateExpr(stage.expr, pipeline.closure);
               if (isPipeline(stageVal)) {
                 current = this.applyPipeline(stageVal, [current]);
@@ -2540,24 +2597,22 @@ export class Interpreter {
       case "debug": {
         return async (args: LeaValue[]) => {
           console.log(`[debug] Pipeline input:`, args.map(stringify).join(", "));
-          console.log(`[debug] Stages:`, pipeline.stages.map(s => {
-            if (s.expr.kind === "Identifier") return s.expr.name;
-            if (s.expr.kind === "CallExpr" && s.expr.callee.kind === "Identifier") {
-              return `${s.expr.callee.name}(...)`;
-            }
-            return "<expression>";
-          }).join(" /> "));
+          console.log(`[debug] Stages:`, pipeline.stages.map(s => this.describeAnyStage(s)).join(" /> "));
 
           let current: LeaValue = args[0];
           for (let i = 0; i < pipeline.stages.length; i++) {
             const stage = pipeline.stages[i];
-            const stageName = stage.expr.kind === "Identifier"
-              ? stage.expr.name
-              : (stage.expr.kind === "CallExpr" && stage.expr.callee.kind === "Identifier"
-                  ? `${stage.expr.callee.name}(...)`
-                  : `stage[${i}]`);
+            const stageName = this.describeAnyStage(stage);
 
-            if (stage.expr.kind === "Identifier") {
+            if (isParallelStage(stage)) {
+              // Execute parallel branches
+              const branchResults = await Promise.all(
+                stage.branches.map((branchExpr) => {
+                  return this.evaluatePipeWithValueAsync(current, branchExpr, pipeline.closure);
+                })
+              );
+              current = { kind: "parallel_result" as const, values: branchResults };
+            } else if (stage.expr.kind === "Identifier") {
               const stageVal = await this.evaluateExprAsync(stage.expr, pipeline.closure);
               if (isPipeline(stageVal)) {
                 current = await this.applyPipelineAsync(stageVal, [current]);
@@ -2584,15 +2639,19 @@ export class Interpreter {
           let current: LeaValue = args[0];
           for (let i = 0; i < pipeline.stages.length; i++) {
             const stage = pipeline.stages[i];
-            const stageName = stage.expr.kind === "Identifier"
-              ? stage.expr.name
-              : (stage.expr.kind === "CallExpr" && stage.expr.callee.kind === "Identifier"
-                  ? `${stage.expr.callee.name}(...)`
-                  : `stage[${i}]`);
+            const stageName = this.describeAnyStage(stage);
 
             const stageStart = performance.now();
 
-            if (stage.expr.kind === "Identifier") {
+            if (isParallelStage(stage)) {
+              // Execute parallel branches
+              const branchResults = await Promise.all(
+                stage.branches.map((branchExpr) => {
+                  return this.evaluatePipeWithValueAsync(current, branchExpr, pipeline.closure);
+                })
+              );
+              current = { kind: "parallel_result" as const, values: branchResults };
+            } else if (stage.expr.kind === "Identifier") {
               const stageVal = await this.evaluateExprAsync(stage.expr, pipeline.closure);
               if (isPipeline(stageVal)) {
                 current = await this.applyPipelineAsync(stageVal, [current]);

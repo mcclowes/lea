@@ -10,6 +10,8 @@ import {
   BlockBody,
   RecordField,
   PipelineStage,
+  ParallelPipelineStage,
+  AnyPipelineStage,
   numberLiteral,
   stringLiteral,
   templateStringExpr,
@@ -148,6 +150,10 @@ export class Parser {
     const name = this.consume(TokenType.IDENTIFIER, "Expected variable name").lexeme;
 
     this.consume(TokenType.EQ, "Expected '=' after variable name");
+    // Skip newlines after = to allow pipeline literals on the next line:
+    // let foo =
+    //   /> map((x) -> x + 1)
+    this.skipNewlines();
     const value = this.expression();
 
     return letStmt(name, mutable, value);
@@ -639,15 +645,75 @@ export class Parser {
   }
   
   // Parse a pipeline literal: /> fn1 /> fn2 /> fn3
+  // Can include parallel stages: /> fn1 \> branch1 \> branch2 /> combiner
   // Returns a PipelineLiteral with a list of stages
   private pipelineLiteral(): Expr {
-    const stages: PipelineStage[] = [];
+    const stages: AnyPipelineStage[] = [];
 
     // Parse the first stage (already consumed the initial />)
     this.skipNewlines();
-    let stageExpr = this.unary();  // Parse the expression after />
+    let stageExpr = this.parseStageExpr();
+    stages.push({ expr: stageExpr });
 
-    // Handle call expressions after the stage
+    // Continue parsing more stages
+    while (true) {
+      const savedPos = this.current;
+      this.skipNewlines();
+
+      // Check for parallel pipe \> - start collecting parallel branches
+      if (this.match(TokenType.PARALLEL_PIPE)) {
+        const branches: Expr[] = [];
+
+        // Parse first parallel branch
+        this.skipNewlines();
+        branches.push(this.parseStageExpr());
+
+        // Continue collecting branches while we see more \>
+        while (true) {
+          const branchSavedPos = this.current;
+          this.skipNewlines();
+
+          if (this.match(TokenType.PARALLEL_PIPE)) {
+            this.skipNewlines();
+            branches.push(this.parseStageExpr());
+          } else {
+            this.current = branchSavedPos;
+            break;
+          }
+        }
+
+        // Add the parallel stage
+        stages.push({ isParallel: true, branches } as ParallelPipelineStage);
+        continue;
+      }
+
+      // Check for regular pipe />
+      if (this.match(TokenType.PIPE)) {
+        this.skipNewlines();
+        stageExpr = this.parseStageExpr();
+        stages.push({ expr: stageExpr });
+        continue;
+      }
+
+      // No more pipes, restore position and break
+      this.current = savedPos;
+      break;
+    }
+
+    // Parse trailing decorators for the pipeline
+    const savedPosForDecorators = this.current;
+    const decorators = this.parseDecorators();
+    if (decorators.length === 0) {
+      this.current = savedPosForDecorators;
+    }
+    return pipelineLiteral(stages, decorators);
+  }
+
+  // Helper to parse a single stage expression with call/index/member access
+  private parseStageExpr(): Expr {
+    let stageExpr = this.unary();
+
+    // Handle call expressions, indexing, and member access after the stage
     while (true) {
       if (this.match(TokenType.LPAREN)) {
         stageExpr = this.finishCall(stageExpr);
@@ -662,49 +728,7 @@ export class Parser {
         break;
       }
     }
-
-    stages.push({ expr: stageExpr });
-
-    // Continue parsing more stages if there are more /> operators
-    while (true) {
-      const savedPos = this.current;
-      this.skipNewlines();
-
-      if (!this.match(TokenType.PIPE)) {
-        this.current = savedPos;
-        break;
-      }
-
-      this.skipNewlines();
-      let nextStageExpr = this.unary();
-
-      // Handle call expressions after the stage
-      while (true) {
-        if (this.match(TokenType.LPAREN)) {
-          nextStageExpr = this.finishCall(nextStageExpr);
-        } else if (this.match(TokenType.LBRACKET)) {
-          const index = this.expression();
-          this.consume(TokenType.RBRACKET, "Expected ']' after index");
-          nextStageExpr = { kind: "IndexExpr" as const, object: nextStageExpr, index };
-        } else if (this.match(TokenType.DOT)) {
-          const member = this.consume(TokenType.IDENTIFIER, "Expected property name after '.'").lexeme;
-          nextStageExpr = { kind: "MemberExpr" as const, object: nextStageExpr, member };
-        } else {
-          break;
-        }
-      }
-
-      stages.push({ expr: nextStageExpr });
-    }
-
-    // Parse trailing decorators for the pipeline
-    // Save position in case there are no decorators (to avoid consuming newlines)
-    const savedPosForDecorators = this.current;
-    const decorators = this.parseDecorators();
-    if (decorators.length === 0) {
-      this.current = savedPosForDecorators;
-    }
-    return pipelineLiteral(stages, decorators);
+    return stageExpr;
   }
 
   // Parse a bidirectional pipeline literal: </> fn1 </> fn2 </> fn3

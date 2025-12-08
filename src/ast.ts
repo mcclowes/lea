@@ -171,13 +171,25 @@ export interface TupleExpr {
 // Pipeline stage - represents a single step in a pipeline
 export interface PipelineStage {
   expr: Expr;  // The expression to apply (function, call, identifier, or nested pipeline)
+  isParallel?: false;  // Marker for type narrowing
 }
+
+// Parallel pipeline stage - a fan-out/fan-in stage within a pipeline
+// Syntax within pipeline: \> branch1 \> branch2 /> combiner
+export interface ParallelPipelineStage {
+  isParallel: true;
+  branches: Expr[];  // The parallel branches to execute
+}
+
+// Union type for pipeline stages
+export type AnyPipelineStage = PipelineStage | ParallelPipelineStage;
 
 // Pipeline literal - a reusable pipeline that can be assigned to a variable
 // Syntax: /> fn1 /> fn2 /> fn3
+// Can include parallel stages: /> fn1 \> branch1 \> branch2 /> combiner
 export interface PipelineLiteral {
   kind: "PipelineLiteral";
-  stages: PipelineStage[];
+  stages: AnyPipelineStage[];
   decorators: Decorator[];
 }
 
@@ -419,7 +431,7 @@ export const program = (statements: Stmt[]): Program => ({
   statements,
 });
 
-export const pipelineLiteral = (stages: PipelineStage[], decorators: Decorator[] = []): PipelineLiteral => ({
+export const pipelineLiteral = (stages: AnyPipelineStage[], decorators: Decorator[] = []): PipelineLiteral => ({
   kind: "PipelineLiteral",
   stages,
   decorators,

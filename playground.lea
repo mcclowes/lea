@@ -1,1 +1,8 @@
-let 
+let foo = 
+  /> map((x) -> x + 1)
+  \> (x) -> x
+  \> reverse
+  /> concat
+  /> print
+
+[1,2, 3, 4, 5] /> foo /> print
