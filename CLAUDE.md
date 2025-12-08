@@ -40,7 +40,7 @@ let greet = (name) -> :: String :> String
   "Hello " ++ name
 -- Use #validate for runtime type checking
 let safe = (x) -> x * 2 :: Int :> Int #validate
--- Supported types: Int, String, Bool, List, Function, Tuple
+-- Supported types: Int, String, Bool, List, Function, Tuple, Pipeline
 -- Optional types with ?: ?Int allows null
 -- Tuple types: (Int, String) :> (Int, String)
 -- Underscore for ignored params
@@ -140,6 +140,55 @@ value
 let x = 10
 let y = 20
 </>
+
+-- Pipelines as first-class values
+-- Define a reusable pipeline (starts with />)
+let processNumbers = /> double /> addOne
+5 /> processNumbers         -- applies pipeline to 5
+
+-- Pipeline properties
+processNumbers.length       -- 2 (number of stages)
+processNumbers.stages       -- ["double", "addOne"]
+processNumbers.visualize()  -- prints ASCII diagram
+
+-- Pipeline composition
+let pipeA = /> filter((x) -> x > 0)
+let pipeB = /> map((x) -> x * 2)
+let combined = /> pipeA /> pipeB  -- compose pipelines
+
+-- Reversible functions (bidirectional transforms)
+-- Define forward with -> and reverse with <-
+let double = (x) -> x * 2
+let double = (x) <- x / 2         -- adds reverse definition
+
+-- Apply forward or reverse
+5 /> double                        -- 10 (forward: 5 * 2)
+10 </ double                       -- 5  (reverse: 10 / 2)
+
+-- Roundtrip preserves value
+5 /> double </ double              -- 5
+
+-- Bidirectional pipelines (starts with </>)
+let transform = </> double </> addTen
+5 /> transform                     -- 20 (forward: 5 -> 10 -> 20)
+20 </ transform                    -- 5  (reverse: 20 -> 10 -> 5)
+-- Pipeline algebra
+5 /> Pipeline.identity             -- 5 (passes through unchanged)
+5 /> Pipeline.empty                -- 5 (no stages = unchanged)
+pipeA.equals(pipeB)                -- false (structural comparison)
+pipeA.isEmpty()                    -- false
+pipeA.first                        -- first stage as function
+pipeA.last                         -- last stage as function
+pipeA.at(0)                        -- get stage at index
+pipeA.prepend(fn)                  -- add stage at start
+pipeA.append(fn)                   -- add stage at end
+pipeA.reverse()                    -- reverse stage order
+pipeA.slice(0, 2)                  -- extract sub-pipeline
+pipeA.without(pipeB)               -- remove stages in pipeB
+pipeA.intersection(pipeB)          -- keep only common stages
+pipeA.union(pipeB)                 -- combine (deduplicated)
+pipeA.concat(pipeB)                -- concatenate (preserves duplicates)
+Pipeline.from([fn1, fn2])          -- create from function list
 ```
 
 ## Architecture
@@ -164,12 +213,13 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
 LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
 PIPE (/>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
+REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 DOUBLE_COLON (::), COLON_GT (:>)
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
 COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
-CODEBLOCK_OPEN (<>), CODEBLOCK_CLOSE (</>)
+CODEBLOCK_OPEN (<>)
 NEWLINE, EOF
 ```
 
@@ -178,11 +228,14 @@ NEWLINE, EOF
 **Expressions:**
 - NumberLiteral, StringLiteral, TemplateStringExpr, BooleanLiteral, Identifier
 - BinaryExpr, UnaryExpr, PipeExpr, CallExpr
-- FunctionExpr (params, attachments, body, decorators, typeSignature?)
+- FunctionExpr (params, attachments, body, decorators, typeSignature?, isReverse?)
 - ListExpr, IndexExpr, PlaceholderExpr, TupleExpr
 - RecordExpr, MemberExpr, AwaitExpr
 - BlockBody (multi-statement function body)
 - ReturnExpr (early return with <-)
+- PipelineLiteral (stages: list of expressions)
+- ReversePipeExpr (left: value, right: pipeline/function)
+- BidirectionalPipelineLiteral (stages: list of expressions)
 
 **Statements:**
 - LetStmt (name, mutable, value)
@@ -198,7 +251,7 @@ NEWLINE, EOF
 3. Comparison (`<`, `>`, `<=`, `>=`)
 4. Term (`+`, `-`, `++`)
 5. Factor (`*`, `/`, `%`)
-6. Pipe (`/>`, `\>`)
+6. Pipe (`/>`, `\>`, `</`)
 7. Unary (`-`)
 8. Call (function calls, indexing)
 9. Primary (literals, identifiers, grouping, functions)
@@ -263,6 +316,53 @@ value
 - More specific type matches are preferred over generic ones
 - Arity (number of arguments) is checked first, then types
 - Error if no overload matches or if call is ambiguous
+
+**Pipelines (First-Class):**
+- Define with `/>` at start: `let p = /> fn1 /> fn2`
+- Apply by piping: `value /> p`
+- Properties:
+  - `.length` — number of stages
+  - `.stages` — list of stage names
+  - `.visualize()` — prints ASCII diagram of pipeline flow
+  - `.first` / `.last` — get first/last stage as callable function
+  - `.isEmpty()` — check if pipeline has no stages
+  - `.equals(other)` — structural equality comparison
+- Compose pipelines: `let combined = /> pipeA /> pipeB`
+- Pipelines capture their closure (lexical scope)
+
+**Reversible Functions:**
+- Define forward with `(x) -> expr` and reverse with `(x) <- expr`
+- When both are defined on same name, creates a `LeaReversibleFunction`
+- Forward: `value /> fn` calls the forward transformation
+- Reverse: `value </ fn` calls the reverse transformation
+- Reversible functions act like regular functions in forward pipes
+- Similar to overloading but for direction rather than types
+
+**Bidirectional Pipelines:**
+- Define with `</>` at start: `let p = </> fn1 </> fn2`
+- Forward: `value /> p` applies stages left-to-right using forward functions
+- Reverse: `value </ p` applies stages right-to-left using reverse functions
+- All stages should be reversible functions for reverse to work
+- Bidirectional pipelines capture their closure (lexical scope)
+- Useful for encoding/decoding, serialization, unit conversions
+
+**Pipeline Algebra:**
+- `Pipeline.identity` — no-op pipeline, passes values through unchanged
+- `Pipeline.empty` — pipeline with zero stages
+- `Pipeline.from(list)` — create pipeline from list of functions
+- Stage access:
+  - `.at(index)` — get stage at index as callable function
+- Manipulation (returns new pipeline):
+  - `.prepend(fn)` — add stage at start
+  - `.append(fn)` — add stage at end
+  - `.reverse()` — reverse stage order
+  - `.slice(start, end?)` — extract sub-pipeline
+- Set operations (returns new pipeline):
+  - `.without(other)` — remove stages appearing in other pipeline
+  - `.intersection(other)` — keep only stages common to both
+  - `.union(other)` — combine all stages (deduplicated)
+  - `.difference(other)` — stages in this but not in other (alias for without)
+  - `.concat(other)` — concatenate pipelines (preserves duplicates)
 
 ## Usage
 

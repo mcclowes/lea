@@ -20,6 +20,7 @@ export interface LeaFunction {
   decorators: Decorator[];
   returnType?: string;  // Old style (deprecated)
   typeSignature?: TypeSignature;  // New :: (types) :> ReturnType style
+  isReverse?: boolean;  // True if this is a reverse function definition
 }
 
 export interface LeaRecord {
@@ -53,6 +54,27 @@ export interface LeaOverloadSet {
   overloads: LeaFunction[];
 }
 
+// A pipeline is a first-class value representing a composable chain of transformations
+export interface LeaPipeline {
+  kind: "pipeline";
+  stages: { expr: Expr }[];  // Each stage holds an AST expression to apply
+  closure: Environment;       // Captured environment for evaluating the stages
+}
+
+// A bidirectional pipeline that can be applied in either direction
+export interface LeaBidirectionalPipeline {
+  kind: "bidirectional_pipeline";
+  stages: { expr: Expr }[];  // Each stage holds an AST expression to apply
+  closure: Environment;       // Captured environment for evaluating the stages
+}
+
+// A reversible function that has both forward and reverse implementations
+export interface LeaReversibleFunction {
+  kind: "reversible_function";
+  forward: LeaFunction;  // The forward transformation
+  reverse: LeaFunction;  // The reverse transformation
+}
+
 export type LeaValue =
   | number
   | string
@@ -65,6 +87,9 @@ export type LeaValue =
   | LeaParallelResult
   | LeaTuple
   | LeaOverloadSet
+  | LeaPipeline
+  | LeaBidirectionalPipeline
+  | LeaReversibleFunction
   | null;
 
 export class RuntimeError extends Error {
@@ -136,6 +161,41 @@ export class Environment {
     return this.values.has(name);
   }
 
+  // Add a reverse function to an existing forward function, creating a reversible function
+  addReverse(name: string, reverse: LeaFunction): void {
+    const existing = this.values.get(name);
+
+    if (existing === undefined) {
+      throw new RuntimeError(`Cannot add reverse to '${name}' - no forward function defined`);
+    }
+
+    if (
+      existing.value !== null &&
+      typeof existing.value === "object" &&
+      "kind" in existing.value &&
+      existing.value.kind === "function"
+    ) {
+      // Convert existing single function to a reversible function
+      const forward = existing.value as LeaFunction;
+      const reversibleFn: LeaReversibleFunction = {
+        kind: "reversible_function",
+        forward,
+        reverse,
+      };
+      this.values.set(name, { value: reversibleFn, mutable: false });
+    } else if (
+      existing.value !== null &&
+      typeof existing.value === "object" &&
+      "kind" in existing.value &&
+      existing.value.kind === "reversible_function"
+    ) {
+      // Already a reversible function - update the reverse
+      (existing.value as LeaReversibleFunction).reverse = reverse;
+    } else {
+      throw new RuntimeError(`Cannot add reverse to '${name}' - existing binding is not a function`);
+    }
+  }
+
   get(name: string): LeaValue {
     const entry = this.values.get(name);
     if (entry !== undefined) return entry.value;
@@ -177,6 +237,21 @@ function isOverloadSet(val: LeaValue): val is LeaOverloadSet {
   return val !== null && typeof val === "object" && "kind" in val && val.kind === "overload_set";
 }
 
+// Helper to check if a value is a LeaPipeline
+function isPipeline(val: LeaValue): val is LeaPipeline {
+  return val !== null && typeof val === "object" && "kind" in val && val.kind === "pipeline";
+}
+
+// Helper to check if a value is a LeaBidirectionalPipeline
+function isBidirectionalPipeline(val: LeaValue): val is LeaBidirectionalPipeline {
+  return val !== null && typeof val === "object" && "kind" in val && val.kind === "bidirectional_pipeline";
+}
+
+// Helper to check if a value is a LeaReversibleFunction
+function isReversibleFunction(val: LeaValue): val is LeaReversibleFunction {
+  return val !== null && typeof val === "object" && "kind" in val && val.kind === "reversible_function";
+}
+
 // Helper to unwrap a LeaPromise to its underlying value
 async function unwrapPromise(val: LeaValue): Promise<LeaValue> {
   if (isLeaPromise(val)) {
@@ -191,6 +266,9 @@ function wrapPromise(promise: Promise<LeaValue>): LeaPromise {
 }
 
 const builtins: Record<string, BuiltinFn> = {
+  // Identity function - returns its argument unchanged (used by Pipeline.identity)
+  __identity__: (args) => args[0] ?? null,
+
   print: (args) => {
     console.log(...args.map(stringify));
     return args[0] ?? null;
@@ -456,6 +534,15 @@ function stringify(val: LeaValue): string {
         .join(", ");
       return `{ ${entries} }`;
     }
+    if (val.kind === "pipeline") {
+      return `<pipeline[${val.stages.length}]>`;
+    }
+    if (val.kind === "bidirectional_pipeline") {
+      return `<bidirectional_pipeline[${val.stages.length}]>`;
+    }
+    if (val.kind === "reversible_function") {
+      return "<reversible_function>";
+    }
     return "<function>";
   }
   return String(val);
@@ -496,6 +583,49 @@ export class Interpreter {
     for (const [name, fn] of Object.entries(builtins)) {
       this.globals.define(name, { kind: "builtin", fn } as LeaBuiltin, false);
     }
+
+    // Define Pipeline global object with algebra operations
+    this.globals.define("Pipeline", this.createPipelineGlobal(), false);
+  }
+
+  // Create the Pipeline global object with static methods and properties
+  private createPipelineGlobal(): LeaRecord {
+    const fields = new Map<string, LeaValue>();
+
+    // Pipeline.identity - a no-op pipeline that passes values through unchanged
+    fields.set("identity", {
+      kind: "pipeline" as const,
+      stages: [{ expr: { kind: "Identifier" as const, name: "__identity__" } }],
+      closure: this.globals,
+    } as LeaPipeline);
+
+    // Pipeline.empty - a pipeline with no stages
+    fields.set("empty", {
+      kind: "pipeline" as const,
+      stages: [],
+      closure: this.globals,
+    } as LeaPipeline);
+
+    // Pipeline.from(list) - create pipeline from list of functions
+    fields.set("from", {
+      kind: "builtin" as const,
+      fn: (args: LeaValue[]): LeaValue => {
+        const list = asList(args[0]);
+        const stages: { expr: Expr }[] = list.map((item, i) => {
+          // Create a synthetic identifier that will resolve to this function
+          const syntheticName = `__pipeline_stage_${i}__`;
+          this.globals.define(syntheticName, item, false);
+          return { expr: { kind: "Identifier" as const, name: syntheticName } };
+        });
+        return {
+          kind: "pipeline" as const,
+          stages,
+          closure: this.globals,
+        } as LeaPipeline;
+      }
+    } as LeaBuiltin);
+
+    return { kind: "record", fields } as LeaRecord;
   }
 
   interpret(program: Program): LeaValue {
@@ -522,14 +652,19 @@ export class Interpreter {
       case "LetStmt": {
         const value = this.evaluateExpr(stmt.value, env);
 
-        // Check if this is a function overload
+        // Check if this is a function
         const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
-        const hasTypeSignature = isFunction && (value as LeaFunction).typeSignature !== undefined;
+        const fn = isFunction ? (value as LeaFunction) : null;
+        const hasTypeSignature = fn && fn.typeSignature !== undefined;
+        const isReverse = fn && fn.isReverse === true;
 
-        if (hasTypeSignature && env.hasInCurrentScope(stmt.name)) {
+        if (isReverse && env.hasInCurrentScope(stmt.name)) {
+          // This is a reverse function definition - add it to existing forward function
+          env.addReverse(stmt.name, fn);
+        } else if (hasTypeSignature && env.hasInCurrentScope(stmt.name)) {
           // This is a function with a type signature and the name already exists
           // Add it as an overload
-          env.addOverload(stmt.name, value as LeaFunction);
+          env.addOverload(stmt.name, fn);
         } else {
           env.define(stmt.name, value, stmt.mutable);
         }
@@ -675,7 +810,11 @@ export class Interpreter {
           }
           return record.fields.get(expr.member)!;
         }
-        throw new RuntimeError("Member access requires a record");
+        // Handle pipeline members: .stages, .length, .visualize
+        if (isPipeline(obj)) {
+          return this.getPipelineMember(obj, expr.member, env);
+        }
+        throw new RuntimeError("Member access requires a record or pipeline");
       }
 
       case "TernaryExpr": {
@@ -695,6 +834,32 @@ export class Interpreter {
       case "TupleExpr": {
         const elements = expr.elements.map((e) => this.evaluateExpr(e, env));
         return { kind: "tuple" as const, elements };
+      }
+
+      case "PipelineLiteral": {
+        // Create a pipeline value that captures the current environment
+        return {
+          kind: "pipeline" as const,
+          stages: expr.stages,
+          closure: env,
+        } as LeaPipeline;
+      }
+
+      case "BidirectionalPipelineLiteral": {
+        // Create a bidirectional pipeline that can be applied forward or in reverse
+        return {
+          kind: "bidirectional_pipeline" as const,
+          stages: expr.stages,
+          closure: env,
+        } as LeaBidirectionalPipeline;
+      }
+
+      case "ReversePipeExpr": {
+        // Apply value through pipeline/function in reverse
+        // Syntax: value </ pipeline (like 5 </ double means apply 5 to double's reverse)
+        const value = this.evaluateExpr(expr.left, env);     // The value to pipe
+        const pipeline = this.evaluateExpr(expr.right, env); // The pipeline/function
+        return this.applyReverse(pipeline, value, env);
       }
     }
   }
@@ -782,6 +947,10 @@ export class Interpreter {
           }
           return result;
         }
+        // If callee is a pipeline, run the parallel results through it
+        if (isPipeline(callee)) {
+          return this.applyPipeline(callee, pipedValue.values);
+        }
       }
 
       // If right is a call expression, add spread values as additional args
@@ -807,8 +976,22 @@ export class Interpreter {
       }
     }
 
-    // If right is just an identifier, call it with piped value
+    // If right is just an identifier, check if it resolves to a pipeline or reversible function
     if (right.kind === "Identifier") {
+      const callee = this.evaluateExpr(right, env);
+      // If the identifier refers to a pipeline, apply the pipeline to the piped value
+      if (isPipeline(callee)) {
+        return this.applyPipeline(callee, [pipedValue]);
+      }
+      // If the identifier refers to a bidirectional pipeline, apply forward
+      if (isBidirectionalPipeline(callee)) {
+        return this.applyBidirectionalPipelineForward(callee, [pipedValue]);
+      }
+      // If the identifier refers to a reversible function, call its forward
+      if (isReversibleFunction(callee)) {
+        return this.callFunction(callee.forward, [pipedValue]);
+      }
+      // Otherwise treat as a function call
       return this.evaluateCall(
         { kind: "CallExpr", callee: right, args: [] },
         env,
@@ -833,7 +1016,158 @@ export class Interpreter {
       return this.evaluatePipeWithValue(intermediate, right.right, env);
     }
 
+    // If right is a pipeline literal, evaluate it and apply it
+    if (right.kind === "PipelineLiteral") {
+      const pipeline = this.evaluateExpr(right, env) as LeaPipeline;
+      return this.applyPipeline(pipeline, [pipedValue]);
+    }
+
+    // If right is a member expression, evaluate it and check if it's a pipeline or function
+    if (right.kind === "MemberExpr") {
+      const callee = this.evaluateExpr(right, env);
+      if (isPipeline(callee)) {
+        return this.applyPipeline(callee, [pipedValue]);
+      }
+      // If it's a function, call it with piped value
+      if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
+        return this.callFunction(callee as LeaFunction, [pipedValue]);
+      }
+      if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "builtin") {
+        const result = (callee as LeaBuiltin).fn([pipedValue]);
+        if (result instanceof Promise) {
+          return wrapPromise(result);
+        }
+        return result;
+      }
+    }
+
     throw new RuntimeError("Right side of pipe must be a function or call");
+  }
+
+  // Apply a pipeline to an input value by running it through each stage
+  private applyPipeline(pipeline: LeaPipeline, args: LeaValue[]): LeaValue {
+    // Pipeline takes the first argument as input
+    let current: LeaValue = args[0];
+
+    for (const stage of pipeline.stages) {
+      // Evaluate the stage expression and pipe the current value into it
+      const stageExpr = stage.expr;
+
+      // If the stage is an identifier that refers to another pipeline, compose them
+      if (stageExpr.kind === "Identifier") {
+        const stageVal = this.evaluateExpr(stageExpr, pipeline.closure);
+        if (isPipeline(stageVal)) {
+          current = this.applyPipeline(stageVal, [current]);
+          continue;
+        }
+      }
+
+      // Otherwise pipe the value through the stage normally
+      current = this.evaluatePipeWithValue(current, stageExpr, pipeline.closure);
+    }
+
+    return current;
+  }
+
+  // Apply a value through a pipeline/function in reverse
+  private applyReverse(target: LeaValue, value: LeaValue, env: Environment): LeaValue {
+    // If target is a reversible function, call its reverse
+    if (isReversibleFunction(target)) {
+      return this.callFunction(target.reverse, [value]);
+    }
+
+    // If target is a bidirectional pipeline, apply stages in reverse order
+    if (isBidirectionalPipeline(target)) {
+      let current = value;
+      // Iterate stages in reverse order
+      for (let i = target.stages.length - 1; i >= 0; i--) {
+        const stage = target.stages[i];
+        current = this.applyReverseToStage(current, stage.expr, target.closure);
+      }
+      return current;
+    }
+
+    // If target is a regular function, check if it's reversible
+    if (target !== null && typeof target === "object" && "kind" in target && target.kind === "function") {
+      throw new RuntimeError("Cannot apply reverse to non-reversible function. Define a reverse with (x) <- expr");
+    }
+
+    // If target is a regular pipeline, apply in reverse (stages must be reversible)
+    if (isPipeline(target)) {
+      let current = value;
+      for (let i = target.stages.length - 1; i >= 0; i--) {
+        const stage = target.stages[i];
+        current = this.applyReverseToStage(current, stage.expr, target.closure);
+      }
+      return current;
+    }
+
+    throw new RuntimeError("Cannot apply reverse pipe to this value");
+  }
+
+  // Apply reverse to a single stage expression
+  private applyReverseToStage(value: LeaValue, stageExpr: Expr, closure: Environment): LeaValue {
+    // Evaluate the stage to see what it is
+    if (stageExpr.kind === "Identifier") {
+      const stageVal = this.evaluateExpr(stageExpr, closure);
+
+      // If it's a reversible function, call its reverse
+      if (isReversibleFunction(stageVal)) {
+        return this.callFunction(stageVal.reverse, [value]);
+      }
+
+      // If it's a bidirectional pipeline, apply in reverse
+      if (isBidirectionalPipeline(stageVal)) {
+        return this.applyReverse(stageVal, value, closure);
+      }
+
+      // If it's a regular pipeline, try to apply in reverse
+      if (isPipeline(stageVal)) {
+        return this.applyReverse(stageVal, value, closure);
+      }
+
+      throw new RuntimeError(`Cannot apply reverse to stage '${stageExpr.name}' - not reversible`);
+    }
+
+    // For function expressions in stages, we can't reverse them unless explicitly defined
+    throw new RuntimeError("Cannot apply reverse to inline function in pipeline");
+  }
+
+  // Apply a bidirectional pipeline in the forward direction
+  private applyBidirectionalPipelineForward(pipeline: LeaBidirectionalPipeline, args: LeaValue[]): LeaValue {
+    let current: LeaValue = args[0];
+
+    for (const stage of pipeline.stages) {
+      const stageExpr = stage.expr;
+
+      // If the stage is an identifier, resolve it
+      if (stageExpr.kind === "Identifier") {
+        const stageVal = this.evaluateExpr(stageExpr, pipeline.closure);
+
+        // If it's a reversible function, call its forward
+        if (isReversibleFunction(stageVal)) {
+          current = this.callFunction(stageVal.forward, [current]);
+          continue;
+        }
+
+        // If it's a bidirectional pipeline, apply forward recursively
+        if (isBidirectionalPipeline(stageVal)) {
+          current = this.applyBidirectionalPipelineForward(stageVal, [current]);
+          continue;
+        }
+
+        // If it's a regular pipeline, apply it
+        if (isPipeline(stageVal)) {
+          current = this.applyPipeline(stageVal, [current]);
+          continue;
+        }
+      }
+
+      // Otherwise pipe the value through the stage normally
+      current = this.evaluatePipeWithValue(current, stageExpr, pipeline.closure);
+    }
+
+    return current;
   }
 
   private evaluateParallelPipe(input: Expr, branches: Expr[], env: Environment): LeaValue {
@@ -924,6 +1258,7 @@ export class Interpreter {
       decorators: expr.decorators,
       returnType: expr.returnType,
       typeSignature: expr.typeSignature,
+      isReverse: expr.isReverse,
     };
   }
 
@@ -1021,14 +1356,19 @@ export class Interpreter {
       case "LetStmt": {
         const value = await this.evaluateExprAsync(stmt.value, env);
 
-        // Check if this is a function overload
+        // Check if this is a function
         const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
-        const hasTypeSignature = isFunction && (value as LeaFunction).typeSignature !== undefined;
+        const fn = isFunction ? (value as LeaFunction) : null;
+        const hasTypeSignature = fn && fn.typeSignature !== undefined;
+        const isReverse = fn && fn.isReverse === true;
 
-        if (hasTypeSignature && env.hasInCurrentScope(stmt.name)) {
+        if (isReverse && env.hasInCurrentScope(stmt.name)) {
+          // This is a reverse function definition - add it to existing forward function
+          env.addReverse(stmt.name, fn);
+        } else if (hasTypeSignature && env.hasInCurrentScope(stmt.name)) {
           // This is a function with a type signature and the name already exists
           // Add it as an overload
-          env.addOverload(stmt.name, value as LeaFunction);
+          env.addOverload(stmt.name, fn);
         } else {
           env.define(stmt.name, value, stmt.mutable);
         }
@@ -1182,7 +1522,11 @@ export class Interpreter {
           }
           return record.fields.get(expr.member)!;
         }
-        throw new RuntimeError("Member access requires a record");
+        // Handle pipeline members: .stages, .length, .visualize
+        if (isPipeline(obj)) {
+          return this.getPipelineMember(obj, expr.member, env);
+        }
+        throw new RuntimeError("Member access requires a record or pipeline");
       }
 
       case "TernaryExpr": {
@@ -1202,6 +1546,32 @@ export class Interpreter {
       case "TupleExpr": {
         const elements = await Promise.all(expr.elements.map((e) => this.evaluateExprAsync(e, env)));
         return { kind: "tuple" as const, elements };
+      }
+
+      case "PipelineLiteral": {
+        // Create a pipeline value that captures the current environment
+        return {
+          kind: "pipeline" as const,
+          stages: expr.stages,
+          closure: env,
+        } as LeaPipeline;
+      }
+
+      case "BidirectionalPipelineLiteral": {
+        // Create a bidirectional pipeline that can be applied forward or in reverse
+        return {
+          kind: "bidirectional_pipeline" as const,
+          stages: expr.stages,
+          closure: env,
+        } as LeaBidirectionalPipeline;
+      }
+
+      case "ReversePipeExpr": {
+        // Apply value through pipeline/function in reverse
+        // Syntax: value </ pipeline (like 5 </ double means apply 5 to double's reverse)
+        const value = await this.evaluateExprAsync(expr.left, env);     // The value to pipe
+        const pipeline = await this.evaluateExprAsync(expr.right, env); // The pipeline/function
+        return this.applyReverseAsync(pipeline, value, env);
       }
 
       default:
@@ -1234,6 +1604,10 @@ export class Interpreter {
           if (isLeaPromise(result)) return result.promise;
           return result;
         }
+        // If callee is a pipeline, run the parallel results through it
+        if (isPipeline(callee)) {
+          return this.applyPipelineAsync(callee, pipedValue.values);
+        }
       }
 
       // If right is a call expression, add spread values as additional args
@@ -1261,8 +1635,22 @@ export class Interpreter {
       }
     }
 
-    // If right is just an identifier, call it with piped value
+    // If right is just an identifier, check if it resolves to a pipeline or reversible function
     if (right.kind === "Identifier") {
+      const callee = await this.evaluateExprAsync(right, env);
+      // If the identifier refers to a pipeline, apply the pipeline to the piped value
+      if (isPipeline(callee)) {
+        return this.applyPipelineAsync(callee, [pipedValue]);
+      }
+      // If the identifier refers to a bidirectional pipeline, apply forward
+      if (isBidirectionalPipeline(callee)) {
+        return this.applyBidirectionalPipelineForwardAsync(callee, [pipedValue]);
+      }
+      // If the identifier refers to a reversible function, call its forward
+      if (isReversibleFunction(callee)) {
+        return this.callFunctionAsync(callee.forward, [pipedValue]);
+      }
+      // Otherwise treat as a function call
       return this.evaluateCallAsync(
         { kind: "CallExpr", callee: right, args: [] },
         env,
@@ -1287,7 +1675,481 @@ export class Interpreter {
       return this.evaluatePipeWithValueAsync(intermediate, right.right, env);
     }
 
+    // If right is a pipeline literal, evaluate it and apply it
+    if (right.kind === "PipelineLiteral") {
+      const pipeline = await this.evaluateExprAsync(right, env) as LeaPipeline;
+      return this.applyPipelineAsync(pipeline, [pipedValue]);
+    }
+
+    // If right is a member expression, evaluate it and check if it's a pipeline or function
+    if (right.kind === "MemberExpr") {
+      const callee = await this.evaluateExprAsync(right, env);
+      if (isPipeline(callee)) {
+        return this.applyPipelineAsync(callee, [pipedValue]);
+      }
+      // If it's a function, call it with piped value
+      if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
+        return this.callFunctionAsync(callee as LeaFunction, [pipedValue]);
+      }
+      if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "builtin") {
+        const result = (callee as LeaBuiltin).fn([pipedValue]);
+        if (result instanceof Promise) return result;
+        if (isLeaPromise(result)) return result.promise;
+        return result;
+      }
+    }
+
     throw new RuntimeError("Right side of pipe must be a function or call");
+  }
+
+  // Async version of applyPipeline
+  private async applyPipelineAsync(pipeline: LeaPipeline, args: LeaValue[]): Promise<LeaValue> {
+    let current: LeaValue = args[0];
+
+    for (const stage of pipeline.stages) {
+      const stageExpr = stage.expr;
+
+      // If the stage is an identifier that refers to another pipeline, compose them
+      if (stageExpr.kind === "Identifier") {
+        const stageVal = await this.evaluateExprAsync(stageExpr, pipeline.closure);
+        if (isPipeline(stageVal)) {
+          current = await this.applyPipelineAsync(stageVal, [current]);
+          continue;
+        }
+      }
+
+      // Otherwise pipe the value through the stage normally
+      current = await this.evaluatePipeWithValueAsync(current, stageExpr, pipeline.closure);
+    }
+
+    return current;
+  }
+
+  // Async version of applyReverse
+  private async applyReverseAsync(target: LeaValue, value: LeaValue, env: Environment): Promise<LeaValue> {
+    // If target is a reversible function, call its reverse
+    if (isReversibleFunction(target)) {
+      return this.callFunctionAsync(target.reverse, [value]);
+    }
+
+    // If target is a bidirectional pipeline, apply stages in reverse order
+    if (isBidirectionalPipeline(target)) {
+      let current = value;
+      for (let i = target.stages.length - 1; i >= 0; i--) {
+        const stage = target.stages[i];
+        current = await this.applyReverseToStageAsync(current, stage.expr, target.closure);
+      }
+      return current;
+    }
+
+    // If target is a regular function, check if it's reversible
+    if (target !== null && typeof target === "object" && "kind" in target && target.kind === "function") {
+      throw new RuntimeError("Cannot apply reverse to non-reversible function. Define a reverse with (x) <- expr");
+    }
+
+    // If target is a regular pipeline, apply in reverse (stages must be reversible)
+    if (isPipeline(target)) {
+      let current = value;
+      for (let i = target.stages.length - 1; i >= 0; i--) {
+        const stage = target.stages[i];
+        current = await this.applyReverseToStageAsync(current, stage.expr, target.closure);
+      }
+      return current;
+    }
+
+    throw new RuntimeError("Cannot apply reverse pipe to this value");
+  }
+
+  // Async version of applyReverseToStage
+  private async applyReverseToStageAsync(value: LeaValue, stageExpr: Expr, closure: Environment): Promise<LeaValue> {
+    if (stageExpr.kind === "Identifier") {
+      const stageVal = await this.evaluateExprAsync(stageExpr, closure);
+
+      if (isReversibleFunction(stageVal)) {
+        return this.callFunctionAsync(stageVal.reverse, [value]);
+      }
+
+      if (isBidirectionalPipeline(stageVal)) {
+        return this.applyReverseAsync(stageVal, value, closure);
+      }
+
+      if (isPipeline(stageVal)) {
+        return this.applyReverseAsync(stageVal, value, closure);
+      }
+
+      throw new RuntimeError(`Cannot apply reverse to stage '${stageExpr.name}' - not reversible`);
+    }
+
+    throw new RuntimeError("Cannot apply reverse to inline function in pipeline");
+  }
+
+  // Async version of applyBidirectionalPipelineForward
+  private async applyBidirectionalPipelineForwardAsync(pipeline: LeaBidirectionalPipeline, args: LeaValue[]): Promise<LeaValue> {
+    let current: LeaValue = args[0];
+
+    for (const stage of pipeline.stages) {
+      const stageExpr = stage.expr;
+
+      if (stageExpr.kind === "Identifier") {
+        const stageVal = await this.evaluateExprAsync(stageExpr, pipeline.closure);
+
+        if (isReversibleFunction(stageVal)) {
+          current = await this.callFunctionAsync(stageVal.forward, [current]);
+          continue;
+        }
+
+        if (isBidirectionalPipeline(stageVal)) {
+          current = await this.applyBidirectionalPipelineForwardAsync(stageVal, [current]);
+          continue;
+        }
+
+        if (isPipeline(stageVal)) {
+          current = await this.applyPipelineAsync(stageVal, [current]);
+          continue;
+        }
+      }
+
+      current = await this.evaluatePipeWithValueAsync(current, stageExpr, pipeline.closure);
+    }
+
+    return current;
+  }
+
+  // Get a member of a pipeline (.stages, .length, .visualize, etc.)
+  private getPipelineMember(pipeline: LeaPipeline, member: string, env: Environment): LeaValue {
+    switch (member) {
+      case "length":
+        return pipeline.stages.length;
+
+      case "stages": {
+        // Return a list of stage descriptions
+        return pipeline.stages.map(stage => this.describeStage(stage.expr));
+      }
+
+      case "first": {
+        // Return the first stage as a callable function
+        if (pipeline.stages.length === 0) {
+          return null;
+        }
+        return this.stageToFunction(pipeline.stages[0], pipeline.closure);
+      }
+
+      case "last": {
+        // Return the last stage as a callable function
+        if (pipeline.stages.length === 0) {
+          return null;
+        }
+        return this.stageToFunction(pipeline.stages[pipeline.stages.length - 1], pipeline.closure);
+      }
+
+      case "isEmpty": {
+        // Return a builtin that checks if pipeline has no stages
+        return {
+          kind: "builtin" as const,
+          fn: (): LeaValue => pipeline.stages.length === 0
+        } as LeaBuiltin;
+      }
+
+      case "equals": {
+        // Return a builtin that compares two pipelines structurally
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const other = args[0];
+            if (!isPipeline(other)) {
+              return false;
+            }
+            return this.pipelinesEqual(pipeline, other);
+          }
+        } as LeaBuiltin;
+      }
+
+      case "at": {
+        // Return a builtin that gets a stage at a specific index
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const index = asNumber(args[0]);
+            if (index < 0 || index >= pipeline.stages.length) {
+              return null;
+            }
+            return this.stageToFunction(pipeline.stages[index], pipeline.closure);
+          }
+        } as LeaBuiltin;
+      }
+
+      case "prepend": {
+        // Return a builtin that adds a stage at the start
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const fn = args[0];
+            const newStage = this.functionToStage(fn);
+            return {
+              kind: "pipeline" as const,
+              stages: [newStage, ...pipeline.stages],
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "append": {
+        // Return a builtin that adds a stage at the end
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const fn = args[0];
+            const newStage = this.functionToStage(fn);
+            return {
+              kind: "pipeline" as const,
+              stages: [...pipeline.stages, newStage],
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "reverse": {
+        // Return a builtin that reverses stage order
+        return {
+          kind: "builtin" as const,
+          fn: (): LeaValue => {
+            return {
+              kind: "pipeline" as const,
+              stages: [...pipeline.stages].reverse(),
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "slice": {
+        // Return a builtin that extracts a sub-pipeline
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const start = asNumber(args[0]);
+            const end = args[1] !== undefined && args[1] !== null ? asNumber(args[1]) : pipeline.stages.length;
+            return {
+              kind: "pipeline" as const,
+              stages: pipeline.stages.slice(start, end),
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "without": {
+        // Return a builtin that removes stages appearing in another pipeline
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const other = args[0];
+            if (!isPipeline(other)) {
+              throw new RuntimeError("without requires a pipeline argument");
+            }
+            const otherStageNames = new Set(other.stages.map(s => this.describeStage(s.expr)));
+            const filteredStages = pipeline.stages.filter(
+              s => !otherStageNames.has(this.describeStage(s.expr))
+            );
+            return {
+              kind: "pipeline" as const,
+              stages: filteredStages,
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "intersection": {
+        // Return a builtin that keeps only common stages
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const other = args[0];
+            if (!isPipeline(other)) {
+              throw new RuntimeError("intersection requires a pipeline argument");
+            }
+            const otherStageNames = new Set(other.stages.map(s => this.describeStage(s.expr)));
+            const commonStages = pipeline.stages.filter(
+              s => otherStageNames.has(this.describeStage(s.expr))
+            );
+            return {
+              kind: "pipeline" as const,
+              stages: commonStages,
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "union": {
+        // Return a builtin that combines all stages (deduplicated)
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const other = args[0];
+            if (!isPipeline(other)) {
+              throw new RuntimeError("union requires a pipeline argument");
+            }
+            const seenNames = new Set<string>();
+            const combinedStages: { expr: Expr }[] = [];
+
+            // Add all stages from this pipeline
+            for (const stage of pipeline.stages) {
+              const name = this.describeStage(stage.expr);
+              if (!seenNames.has(name)) {
+                seenNames.add(name);
+                combinedStages.push(stage);
+              }
+            }
+
+            // Add stages from other pipeline not already present
+            for (const stage of other.stages) {
+              const name = this.describeStage(stage.expr);
+              if (!seenNames.has(name)) {
+                seenNames.add(name);
+                combinedStages.push(stage);
+              }
+            }
+
+            return {
+              kind: "pipeline" as const,
+              stages: combinedStages,
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "difference": {
+        // Return a builtin that returns stages in this pipeline but not in other
+        // (same as 'without' - alias for clarity)
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const other = args[0];
+            if (!isPipeline(other)) {
+              throw new RuntimeError("difference requires a pipeline argument");
+            }
+            const otherStageNames = new Set(other.stages.map(s => this.describeStage(s.expr)));
+            const filteredStages = pipeline.stages.filter(
+              s => !otherStageNames.has(this.describeStage(s.expr))
+            );
+            return {
+              kind: "pipeline" as const,
+              stages: filteredStages,
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "concat": {
+        // Return a builtin that concatenates two pipelines (not deduplicated)
+        return {
+          kind: "builtin" as const,
+          fn: (args: LeaValue[]): LeaValue => {
+            const other = args[0];
+            if (!isPipeline(other)) {
+              throw new RuntimeError("concat requires a pipeline argument");
+            }
+            return {
+              kind: "pipeline" as const,
+              stages: [...pipeline.stages, ...other.stages],
+              closure: pipeline.closure,
+            } as LeaPipeline;
+          }
+        } as LeaBuiltin;
+      }
+
+      case "visualize": {
+        // Return a builtin function that prints an ASCII diagram
+        return {
+          kind: "builtin" as const,
+          fn: (): LeaValue => {
+            const lines: string[] = [];
+            lines.push("Pipeline:");
+            lines.push("  ┌─────────────┐");
+            lines.push("  │   input     │");
+            lines.push("  └──────┬──────┘");
+
+            for (let i = 0; i < pipeline.stages.length; i++) {
+              const stage = pipeline.stages[i];
+              const stageDesc = this.describeStage(stage.expr);
+              const padded = stageDesc.length > 11
+                ? stageDesc.substring(0, 11)
+                : stageDesc.padStart(Math.floor((11 + stageDesc.length) / 2)).padEnd(11);
+              lines.push("         │");
+              lines.push("         ▼");
+              lines.push("  ┌─────────────┐");
+              lines.push(`  │ ${padded} │`);
+              lines.push("  └──────┬──────┘");
+            }
+
+            lines.push("         │");
+            lines.push("         ▼");
+            lines.push("  ┌─────────────┐");
+            lines.push("  │   output    │");
+            lines.push("  └─────────────┘");
+
+            console.log(lines.join("\n"));
+            return null;
+          }
+        } as LeaBuiltin;
+      }
+
+      default:
+        throw new RuntimeError(`Pipeline has no property '${member}'`);
+    }
+  }
+
+  // Compare two pipelines for structural equality
+  private pipelinesEqual(a: LeaPipeline, b: LeaPipeline): boolean {
+    if (a.stages.length !== b.stages.length) {
+      return false;
+    }
+    for (let i = 0; i < a.stages.length; i++) {
+      const aName = this.describeStage(a.stages[i].expr);
+      const bName = this.describeStage(b.stages[i].expr);
+      if (aName !== bName) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Convert a stage to a callable function value
+  private stageToFunction(stage: { expr: Expr }, closure: Environment): LeaValue {
+    return this.evaluateExpr(stage.expr, closure);
+  }
+
+  // Convert a function value to a pipeline stage
+  private functionToStage(fn: LeaValue): { expr: Expr } {
+    // Create a synthetic identifier for this function
+    const syntheticName = `__dynamic_stage_${Date.now()}_${Math.random().toString(36).slice(2)}__`;
+    this.globals.define(syntheticName, fn, false);
+    return { expr: { kind: "Identifier" as const, name: syntheticName } };
+  }
+
+  // Describe a stage expression for display purposes
+  private describeStage(expr: Expr): string {
+    switch (expr.kind) {
+      case "Identifier":
+        return expr.name;
+      case "CallExpr":
+        if (expr.callee.kind === "Identifier") {
+          return expr.callee.name;
+        }
+        return "call";
+      case "FunctionExpr":
+        return "λ";
+      case "PipelineLiteral":
+        return `pipe[${expr.stages.length}]`;
+      default:
+        return "expr";
+    }
   }
 
   private async evaluateParallelBranchesAsync(inputValue: LeaValue, branches: Expr[], env: Environment): Promise<LeaValue> {
@@ -1609,7 +2471,10 @@ export class Interpreter {
     if (typeof val === "object" && "kind" in val) {
       if (val.kind === "function") return "function";
       if (val.kind === "builtin") return "function";
+      if (val.kind === "reversible_function") return "function";
       if (val.kind === "tuple") return "tuple";
+      if (val.kind === "pipeline") return "pipeline";
+      if (val.kind === "bidirectional_pipeline") return "pipeline";
     }
     return "unknown";
   }

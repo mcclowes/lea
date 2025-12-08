@@ -117,7 +117,7 @@
         },
         {
           "name": "storage.type.lea",
-          "match": "\\b(Int|String|Bool|List|Record|Function|Tuple)\\b"
+          "match": "\\b(Int|String|Bool|List|Record|Function|Tuple|Pipeline)\\b"
         }
       ]
     },
@@ -157,6 +157,16 @@
     "operators": {
       "patterns": [
         {
+          "comment": "Bidirectional pipe operator - for reversible pipelines",
+          "name": "keyword.operator.bidirectional-pipe.lea",
+          "match": "</>"
+        },
+        {
+          "comment": "Reverse pipe operator - applies value through function/pipeline in reverse",
+          "name": "keyword.operator.reverse-pipe.lea",
+          "match": "</"
+        },
+        {
           "name": "keyword.operator.pipe.lea",
           "match": "/>"
         },
@@ -170,7 +180,7 @@
           "match": "->"
         },
         {
-          "comment": "Early return operator - control flow color",
+          "comment": "Early return / reverse function arrow - control flow color",
           "name": "keyword.control.return.lea",
           "match": "<-"
         },
@@ -208,7 +218,7 @@
       "patterns": [
         {
           "name": "support.function.builtin.lea",
-          "match": "\\b(print|sqrt|abs|floor|ceil|round|min|max|length|head|tail|push|concat|map|filter|reduce|range|iterations|delay|parallel|race|then)\\b"
+          "match": "\\b(print|sqrt|abs|floor|ceil|round|min|max|length|head|tail|push|concat|reverse|zip|isEmpty|fst|snd|take|at|toString|map|filter|reduce|range|iterations|delay|parallel|race|then)\\b"
         }
       ]
     },
@@ -221,6 +231,11 @@
         {
           "name": "constant.language.placeholder.lea",
           "match": "\\b_\\b"
+        },
+        {
+          "comment": "Global objects like Pipeline",
+          "name": "support.class.global.lea",
+          "match": "\\bPipeline\\b"
         }
       ]
     },

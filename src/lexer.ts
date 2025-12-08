@@ -108,11 +108,14 @@ export class Lexer {
 
       case "<":
         if (this.match("/")) {
-          // Codeblock close </>
+          // Could be </> (codeblock close / bidirectional pipe) or </ (reverse pipe)
           if (this.match(">")) {
-            this.addToken(TokenType.CODEBLOCK_CLOSE);
+            // </> - Use BIDIRECTIONAL_PIPE for expression context
+            // The parser will distinguish between codeblock close and bidirectional pipe
+            this.addToken(TokenType.BIDIRECTIONAL_PIPE);
           } else {
-            throw new LexerError(`Expected '>' after '</'`, this.line, this.column);
+            // </ - Reverse pipe operator
+            this.addToken(TokenType.REVERSE_PIPE);
           }
         } else if (this.match(">")) {
           // Codeblock open <> - capture optional label on same line

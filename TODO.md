@@ -11,7 +11,7 @@
 - [x] Collapsing codeblocks (implicit, e.g. functions, and explicit) in the IDE, syntax highlighting (brown)
 - [ ] Implement #log-verbose to log input, output, and all variable assignment
 - [ ] Multi-line ternary
-- [ ] First-class citizen: Pipeline
+- [x] First-class citizen: Pipeline
 - [ ] Partitions
 
 ## Ternary (done)

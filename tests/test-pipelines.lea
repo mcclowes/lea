@@ -1,0 +1,155 @@
+-- Test pipeline as first-class data type
+
+-- Basic pipeline definition
+let double = (x) -> x * 2
+let addOne = (x) -> x + 1
+
+-- Pipeline literal: /> fn1 /> fn2
+let processNumbers = /> double /> addOne
+
+-- Apply pipeline to values
+5 /> processNumbers /> print   -- 11 (5 * 2 + 1)
+10 /> processNumbers /> print  -- 21 (10 * 2 + 1)
+
+-- Pipeline with builtin functions (single line)
+let listPipeline = /> filter((x) -> x > 2) /> map((x) -> x * 2)
+
+[1, 2, 3, 4, 5] /> listPipeline /> print  -- [6, 8, 10]
+
+-- Pipeline properties
+processNumbers.length /> print   -- 2
+processNumbers.stages /> print   -- ["double", "addOne"]
+
+-- Pipeline composition
+let step1 = /> double
+let step2 = /> addOne
+let combined = /> step1 /> step2
+
+3 /> combined /> print  -- 7 (3 * 2 + 1)
+
+-- Nested pipeline composition
+let pipeA = /> reverse
+let pipeB = /> reverse
+let pipeC = /> pipeA /> pipeB
+
+[1, 2, 3] /> pipeC /> print  -- [1, 2, 3] (reversed twice = original)
+
+-- Pipeline with call expressions
+let filterEvens = /> filter((x) -> x % 2 == 0)
+let doubleAll = /> map((x) -> x * 2)
+let sumPipeline = /> reduce(0, (acc, x) -> acc + x)
+
+let evenSumPipeline = /> filterEvens /> doubleAll /> sumPipeline
+
+[1, 2, 3, 4, 5, 6] /> evenSumPipeline /> print  -- 24 ((2+4+6) * 2)
+
+-- Check pipeline length of composed pipeline
+evenSumPipeline.length /> print  -- 3
+
+-- Test that pipelines capture their closure
+let multiplier = 3
+let multiplyPipeline = /> (x) -> x * multiplier
+10 /> multiplyPipeline /> print  -- 30
+
+-- Pipeline visualize (call it to see the diagram)
+-- processNumbers.visualize()
+
+-- ==========================================
+-- Pipeline Algebra Tests
+-- ==========================================
+
+"--- Pipeline Algebra Tests ---" /> print
+
+-- Pipeline.identity - passes values through unchanged
+5 /> Pipeline.identity /> print  -- 5
+"hello" /> Pipeline.identity /> print  -- "hello"
+[1, 2, 3] /> Pipeline.identity /> print  -- [1, 2, 3]
+
+-- Pipeline.empty - a pipeline with no stages
+Pipeline.empty.length /> print  -- 0
+Pipeline.empty.isEmpty() /> print  -- true
+5 /> Pipeline.empty /> print  -- 5 (no transformation)
+
+-- isEmpty method
+processNumbers.isEmpty() /> print  -- false
+Pipeline.empty.isEmpty() /> print  -- true
+
+-- equals method - structural equality
+let pipeA2 = /> double /> addOne
+processNumbers.equals(pipeA2) /> print  -- true (same structure)
+processNumbers.equals(Pipeline.empty) /> print  -- false
+
+-- first and last - get first/last stage as functions
+let triple = (x) -> x * 3
+let pipeFL = /> double /> addOne /> triple
+pipeFL.first /> print  -- <function>
+pipeFL.last /> print   -- <function>
+5 /> pipeFL.first /> print  -- 10 (double)
+5 /> pipeFL.last /> print   -- 15 (triple)
+
+-- at(index) - get stage at index
+let stage0 = pipeFL.at(0)
+let stage1 = pipeFL.at(1)
+let stage2 = pipeFL.at(2)
+5 /> stage0 /> print  -- 10 (double)
+5 /> stage1 /> print  -- 6 (addOne)
+5 /> stage2 /> print  -- 15 (triple)
+
+-- prepend - add stage at start
+let prependedPipe = processNumbers.prepend(triple)
+prependedPipe.length /> print  -- 3
+prependedPipe.stages /> print  -- [something, "double", "addOne"]
+5 /> prependedPipe /> print  -- 31 ((5 * 3) * 2 + 1)
+
+-- append - add stage at end
+let appendedPipe = processNumbers.append(triple)
+appendedPipe.length /> print  -- 3
+5 /> appendedPipe /> print  -- 33 ((5 * 2 + 1) * 3)
+
+-- reverse - reverse stage order
+let reversedPipe = processNumbers.reverse()
+reversedPipe.stages /> print  -- ["addOne", "double"]
+5 /> reversedPipe /> print  -- 12 ((5 + 1) * 2)
+
+-- slice - extract sub-pipeline
+let slicedPipe = pipeFL.slice(0, 2)
+slicedPipe.length /> print  -- 2
+slicedPipe.stages /> print  -- ["double", "addOne"]
+
+let slicedEnd = pipeFL.slice(1)
+slicedEnd.length /> print  -- 2
+slicedEnd.stages /> print  -- ["addOne", "triple"]
+
+-- Set operations
+let pipeX = /> double /> addOne /> triple
+let pipeY = /> addOne /> sqrt
+
+-- without - remove stages appearing in other pipeline
+let withoutResult = pipeX.without(pipeY)
+withoutResult.stages /> print  -- ["double", "triple"]
+
+-- intersection - keep only common stages
+let intersectResult = pipeX.intersection(pipeY)
+intersectResult.stages /> print  -- ["addOne"]
+
+-- union - combine all stages (deduplicated)
+let unionResult = pipeX.union(pipeY)
+unionResult.stages /> print  -- ["double", "addOne", "triple", "sqrt"]
+
+-- difference - stages in pipeX but not in pipeY (same as without)
+let diffResult = pipeX.difference(pipeY)
+diffResult.stages /> print  -- ["double", "triple"]
+
+-- concat - concatenate pipelines (not deduplicated)
+let concatResult = processNumbers.concat(step1)
+concatResult.length /> print  -- 3
+concatResult.stages /> print  -- ["double", "addOne", "double"]
+5 /> concatResult /> print  -- 22 ((5 * 2 + 1) * 2)
+
+-- Pipeline.from - create pipeline from list of functions
+let fnList = [double, addOne, triple]
+let fromListPipe = Pipeline.from(fnList)
+fromListPipe.length /> print  -- 3
+5 /> fromListPipe /> print  -- 33 ((5 * 2 + 1) * 3)
+
+"Pipeline algebra tests complete!" /> print
