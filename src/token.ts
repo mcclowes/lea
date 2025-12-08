@@ -60,6 +60,11 @@ export enum TokenType {
   CODEBLOCK_OPEN = "CODEBLOCK_OPEN",   // <>
   CODEBLOCK_CLOSE = "CODEBLOCK_CLOSE", // </>
 
+  // Reversible functions and bidirectional pipelines
+  BIDIRECTIONAL_PIPE = "BIDIRECTIONAL_PIPE", // </>
+  REVERSE_PIPE = "REVERSE_PIPE",             // </
+  REVERSE_ARROW = "REVERSE_ARROW",           // <- (in function context)
+
   // Special
   NEWLINE = "NEWLINE",
   EOF = "EOF",

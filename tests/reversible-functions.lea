@@ -1,0 +1,51 @@
+-- Test: Reversible Functions and Bidirectional Pipelines
+
+-- Basic reversible function
+let double = (x) -> x * 2
+let double = (x) <- x / 2
+
+-- Forward should double
+5 /> double /> print  -- Expected: 10
+
+-- Reverse should halve
+10 </ double /> print  -- Expected: 5
+
+-- Roundtrip should preserve value
+5 /> double </ double /> print  -- Expected: 5
+
+-- Another reversible function
+let addFive = (x) -> x + 5
+let addFive = (x) <- x - 5
+
+-- Forward then reverse should preserve
+7 /> addFive </ addFive /> print  -- Expected: 7
+
+-- Bidirectional pipeline
+let pipeline = </> double </> addFive
+
+-- Forward: 4 -> 8 -> 13
+4 /> pipeline /> print  -- Expected: 13
+
+-- Reverse: 13 -> 8 -> 4
+13 </ pipeline /> print  -- Expected: 4
+
+-- Complex roundtrip
+10 /> pipeline </ pipeline /> print  -- Expected: 10
+
+-- Chained operations
+let tripleNum = (x) -> x * 3
+let tripleNum = (x) <- x / 3
+
+-- Create a multi-stage bidirectional pipeline
+let complexPipe = </> double </> tripleNum </> addFive
+
+-- Forward: 2 -> 4 -> 12 -> 17
+2 /> complexPipe /> print  -- Expected: 17
+
+-- Reverse: 17 -> 12 -> 4 -> 2
+17 </ complexPipe /> print  -- Expected: 2
+
+-- Verify roundtrip with complex pipeline
+3 /> complexPipe </ complexPipe /> print  -- Expected: 3
+
+print("All tests passed!")

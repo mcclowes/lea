@@ -38,6 +38,8 @@ import {
   exprStmt,
   program,
   pipelineLiteral,
+  reversePipeExpr,
+  bidirectionalPipelineLiteral,
 } from "./ast";
 
 export class ParseError extends Error {
@@ -120,14 +122,15 @@ export class Parser {
     this.skipNewlines();
 
     // Parse statements until we hit a closing </> or EOF
+    // Note: </> now produces BIDIRECTIONAL_PIPE token (used for both codeblock close and bidirectional pipelines)
     const statements: Stmt[] = [];
-    while (!this.check(TokenType.CODEBLOCK_CLOSE) && !this.isAtEnd()) {
+    while (!this.check(TokenType.BIDIRECTIONAL_PIPE) && !this.isAtEnd()) {
       statements.push(this.statement());
       this.skipNewlines();
     }
 
-    // Consume closing </>
-    this.consume(TokenType.CODEBLOCK_CLOSE, "Expected '</>' to close codeblock");
+    // Consume closing </> (BIDIRECTIONAL_PIPE token)
+    this.consume(TokenType.BIDIRECTIONAL_PIPE, "Expected '</>' to close codeblock");
 
     return codeblockStmt(label, statements);
   }
@@ -420,6 +423,15 @@ export class Parser {
         continue;
       }
 
+      // Check for reverse pipe </
+      // Syntax: pipeline </ value (applies value through pipeline in reverse)
+      if (this.match(TokenType.REVERSE_PIPE)) {
+        this.skipNewlines();
+        const right = this.unary();
+        expr = reversePipeExpr(expr, right);
+        continue;
+      }
+
       // Check for regular pipe />
       if (!this.match(TokenType.PIPE)) {
         this.current = savedPos;
@@ -571,6 +583,12 @@ export class Parser {
       return this.pipelineLiteral();
     }
 
+    // Bidirectional pipeline literal: </> fn1 </> fn2 </> fn3
+    // A bidirectional pipeline can be applied forward or in reverse
+    if (this.match(TokenType.BIDIRECTIONAL_PIPE)) {
+      return this.bidirectionalPipelineLiteral();
+    }
+
     throw new ParseError(`Unexpected token '${this.peek().lexeme}'`, this.peek());
   }
 
@@ -636,6 +654,68 @@ export class Parser {
     return pipelineLiteral(stages);
   }
 
+  // Parse a bidirectional pipeline literal: </> fn1 </> fn2 </> fn3
+  // Returns a BidirectionalPipelineLiteral with a list of stages
+  private bidirectionalPipelineLiteral(): Expr {
+    const stages: PipelineStage[] = [];
+
+    // Parse the first stage (already consumed the initial </>)
+    this.skipNewlines();
+    let stageExpr = this.unary();  // Parse the expression after </>
+
+    // Handle call expressions after the stage
+    while (true) {
+      if (this.match(TokenType.LPAREN)) {
+        stageExpr = this.finishCall(stageExpr);
+      } else if (this.match(TokenType.LBRACKET)) {
+        const index = this.expression();
+        this.consume(TokenType.RBRACKET, "Expected ']' after index");
+        stageExpr = { kind: "IndexExpr" as const, object: stageExpr, index };
+      } else if (this.match(TokenType.DOT)) {
+        const member = this.consume(TokenType.IDENTIFIER, "Expected property name after '.'").lexeme;
+        stageExpr = { kind: "MemberExpr" as const, object: stageExpr, member };
+      } else {
+        break;
+      }
+    }
+
+    stages.push({ expr: stageExpr });
+
+    // Continue parsing more stages if there are more </> operators
+    while (true) {
+      const savedPos = this.current;
+      this.skipNewlines();
+
+      if (!this.match(TokenType.BIDIRECTIONAL_PIPE)) {
+        this.current = savedPos;
+        break;
+      }
+
+      this.skipNewlines();
+      let nextStageExpr = this.unary();
+
+      // Handle call expressions after the stage
+      while (true) {
+        if (this.match(TokenType.LPAREN)) {
+          nextStageExpr = this.finishCall(nextStageExpr);
+        } else if (this.match(TokenType.LBRACKET)) {
+          const index = this.expression();
+          this.consume(TokenType.RBRACKET, "Expected ']' after index");
+          nextStageExpr = { kind: "IndexExpr" as const, object: nextStageExpr, index };
+        } else if (this.match(TokenType.DOT)) {
+          const member = this.consume(TokenType.IDENTIFIER, "Expected property name after '.'").lexeme;
+          nextStageExpr = { kind: "MemberExpr" as const, object: nextStageExpr, member };
+        } else {
+          break;
+        }
+      }
+
+      stages.push({ expr: nextStageExpr });
+    }
+
+    return bidirectionalPipelineLiteral(stages);
+  }
+
   private record(): Expr {
     const fields: RecordField[] = [];
 
@@ -676,16 +756,23 @@ export class Parser {
   }
 
   private groupingOrFunction(): Expr {
-    // Could be: (expr), (), (params) -> body, or (expr, expr, ...) tuple
+    // Could be: (expr), (), (params) -> body, (params) <- body (reverse), or (expr, expr, ...) tuple
     const startPos = this.current;
 
-    // Check for empty params: () ->
+    // Check for empty params: () -> or () <-
     if (this.check(TokenType.RPAREN)) {
       this.advance(); // consume )
+      // Check for forward function: () ->
       if (this.match(TokenType.ARROW)) {
         const { attachments, body, typeSignature } = this.parseFunctionBody();
         const decorators = this.parseDecorators();
-        return functionExpr([], body, undefined, decorators, attachments, typeSignature);
+        return functionExpr([], body, undefined, decorators, attachments, typeSignature, false);
+      }
+      // Check for reverse function: () <-
+      if (this.match(TokenType.RETURN)) {
+        const { attachments, body, typeSignature } = this.parseFunctionBody();
+        const decorators = this.parseDecorators();
+        return functionExpr([], body, undefined, decorators, attachments, typeSignature, true);
       }
       // Empty parens () could be empty tuple
       return tupleExpr([]);
@@ -701,11 +788,21 @@ export class Parser {
         returnType = this.consume(TokenType.IDENTIFIER, "Expected return type").lexeme;
       }
 
-      this.consume(TokenType.ARROW, "Expected '->' after function parameters");
-      const { attachments, body, typeSignature } = this.parseFunctionBody();
-      const decorators = this.parseDecorators();
+      // Check for forward function: (params) ->
+      if (this.match(TokenType.ARROW)) {
+        const { attachments, body, typeSignature } = this.parseFunctionBody();
+        const decorators = this.parseDecorators();
+        return functionExpr(params, body, returnType, decorators, attachments, typeSignature, false);
+      }
 
-      return functionExpr(params, body, returnType, decorators, attachments, typeSignature);
+      // Check for reverse function: (params) <-
+      if (this.match(TokenType.RETURN)) {
+        const { attachments, body, typeSignature } = this.parseFunctionBody();
+        const decorators = this.parseDecorators();
+        return functionExpr(params, body, returnType, decorators, attachments, typeSignature, true);
+      }
+
+      throw new ParseError("Expected '->' or '<-' after function parameters", this.peek());
     }
 
     // Parse first expression
@@ -958,7 +1055,7 @@ export class Parser {
   private looksLikeFunctionParams(): boolean {
     // Look ahead to determine if this is a function definition
     // Function params: identifier followed by , or : or )
-    // Then ) followed by -> or : identifier ->
+    // Then ) followed by -> or <- or : identifier -> or : identifier <-
     const saved = this.current;
     let parenDepth = 1;
 
@@ -977,7 +1074,8 @@ export class Parser {
           this.advance(); // consume type
         }
       }
-      const isFunction = this.check(TokenType.ARROW);
+      // Check for either forward (->) or reverse (<-) function arrow
+      const isFunction = this.check(TokenType.ARROW) || this.check(TokenType.RETURN);
       this.current = saved;
       return isFunction;
     }
