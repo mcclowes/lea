@@ -22,6 +22,59 @@ let typed = (x: Int): Int -> x + 1
 
 -- With decorators (trailing, after body)
 let logged = (x) -> x * 2 #log #memo #time
+let retryable = (x) -> riskyOp(x) #retry(3)
+
+-- Multi-statement bodies (indentation-based)
+let process = (x) ->
+  let y = x * 2
+  let z = y + 1
+  z
+
+-- Multi-statement bodies (brace-delimited)
+let process2 = (x) -> {
+  let y = x * 2
+  let z = y + 1
+  z
+}
+```
+
+## Records
+
+```lea
+let user = { name: "Max", age: 30 }
+user.name /> print           -- "Max"
+user.age /> print            -- 30
+
+-- Nested records
+let data = { user: { name: "Max" }, count: 1 }
+data.user.name /> print      -- "Max"
+```
+
+## Context System
+
+```lea
+-- Define context with default value
+context Logger = { log: (msg) -> print("[DEFAULT] " ++ msg) }
+
+-- Override context value
+provide Logger { log: (msg) -> print("[PROD] " ++ msg) }
+
+-- Use context via @attachment
+let greet = (name) ->
+  @Logger
+  Logger.log("Hello " ++ name)
+
+"World" /> greet  -- prints "[PROD] Hello World"
+```
+
+## Async/Await
+
+```lea
+-- delay returns a promise
+let fetchData = () -> delay(100) #async
+
+-- await unwraps promises
+await fetchData() /> print
 ```
 
 ## Pipes
@@ -61,12 +114,12 @@ x >= y    -- Greater than or equal
 
 ```
 NUMBER, STRING, IDENTIFIER
-LET, MUT, TRUE, FALSE
+LET, MUT, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
 PIPE (/>), ARROW (->)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
-COMMA, COLON, UNDERSCORE (_), HASH (#), AT (@)
+COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@)
 NEWLINE, EOF
 ```
 

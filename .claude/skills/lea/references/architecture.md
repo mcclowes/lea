@@ -28,15 +28,21 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `UnaryExpr` - Unary operations (-)
 - `PipeExpr` - Pipe operations (/>)
 - `CallExpr` - Function calls
-- `FunctionExpr` - Function definitions (params, body, decorators)
+- `FunctionExpr` - Function definitions (params, attachments, body, decorators)
 - `ListExpr` - List literals
 - `IndexExpr` - List indexing
 - `PlaceholderExpr` - Placeholder (_) in pipe arguments
+- `RecordExpr` - Record literals { key: value }
+- `MemberExpr` - Member access (record.field)
+- `AwaitExpr` - Await expression for promises
+- `BlockBody` - Multi-statement function body
 
 ### Statements
 
 - `LetStmt` - Variable binding (name, mutable, value)
 - `ExprStmt` - Expression as statement
+- `ContextDefStmt` - Context definition (name, defaultValue)
+- `ProvideStmt` - Context override (contextName, value)
 
 ## Interpreter Details
 
@@ -55,6 +61,12 @@ Lexical scoping with parent chain for nested scopes.
 - `#log` — Logs function inputs/outputs
 - `#memo` — Caches results by JSON-stringified args
 - `#time` — Logs execution time
+- `#retry(n)` — Retry on failure up to n times
+- `#timeout(ms)` — Fail if exceeds time (async only)
+- `#validate` — Runtime type checking and null checks
+- `#pure` — Warn if side effects detected
+- `#async` — Mark function as async (returns promise)
+- `#trace` — Deep logging with call depth
 
 ### Builtins
 
@@ -63,3 +75,11 @@ Lexical scoping with parent chain for nested scopes.
 **Lists:** `length`, `head`, `tail`, `push`, `concat`, `map`, `filter`, `reduce`, `range`
 
 **IO:** `print` (returns first arg for chaining)
+
+**Async:** `delay(ms)` — Promise that resolves after ms
+
+### Context System
+
+- `context Name = expr` — Define context with default value
+- `provide Name expr` — Override context value in scope
+- `@Name` in function body — Attach context, injects into local scope

@@ -25,6 +25,28 @@ let typed = (x: Int): Int -> x + 1
 
 -- Decorators (trailing, after function body)
 let logged = (x) -> x * 2 #log #memo #time
+let retryable = (x) -> riskyOp(x) #retry(3)
+
+-- Multi-statement function bodies (indentation or braces)
+let process = (x) ->
+  let y = x * 2
+  let z = y + 1
+  z
+
+-- Records and member access
+let user = { name: "Max", age: 30 }
+user.name /> print
+
+-- Context system (dependency injection)
+context Logger = { log: (msg) -> print("[DEFAULT] " ++ msg) }
+provide Logger { log: (msg) -> print("[PROD] " ++ msg) }
+let greet = (name) ->
+  @Logger
+  Logger.log("Hello " ++ name)
+
+-- Async/await
+let fetchData = () -> delay(100) #async
+await fetchData() /> print
 
 -- Lists
 [1, 2, 3] /> map((x) -> x * 2)
@@ -58,12 +80,12 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 
 ```
 NUMBER, STRING, IDENTIFIER
-LET, MUT, TRUE, FALSE
+LET, MUT, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
 PIPE (/>), ARROW (->)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
-COMMA, COLON, UNDERSCORE (_), HASH (#), AT (@)
+COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@)
 NEWLINE, EOF
 ```
 
@@ -72,12 +94,16 @@ NEWLINE, EOF
 **Expressions:**
 - NumberLiteral, StringLiteral, BooleanLiteral, Identifier
 - BinaryExpr, UnaryExpr, PipeExpr, CallExpr
-- FunctionExpr (params, body, decorators)
+- FunctionExpr (params, attachments, body, decorators)
 - ListExpr, IndexExpr, PlaceholderExpr
+- RecordExpr, MemberExpr, AwaitExpr
+- BlockBody (multi-statement function body)
 
 **Statements:**
 - LetStmt (name, mutable, value)
 - ExprStmt (expression)
+- ContextDefStmt (name, defaultValue)
+- ProvideStmt (contextName, value)
 
 ## Parser Precedence (low to high)
 
@@ -103,12 +129,24 @@ NEWLINE, EOF
 - `#log` — logs inputs/outputs
 - `#memo` — caches results by JSON-stringified args
 - `#time` — logs execution time
+- `#retry(n)` — retry on failure up to n times
+- `#timeout(ms)` — fail if exceeds time (async only)
+- `#validate` — runtime type checking and null checks
+- `#pure` — warn if side effects detected
+- `#async` — mark function as async (returns promise)
+- `#trace` — deep logging with call depth
 
 **Builtins:**
 - `print` (returns first arg for chaining)
 - `sqrt`, `abs`, `floor`, `ceil`, `round`, `min`, `max`
 - `length`, `head`, `tail`, `push`, `concat`
 - `map`, `filter`, `reduce`, `range`
+- `delay(ms)` — returns promise that resolves after ms
+
+**Context System:**
+- `context Name = expr` — define context with default value
+- `provide Name expr` — override context value
+- `@Name` — attach context to function (inject into scope)
 
 ## Usage
 
