@@ -8,6 +8,7 @@ import {
   Decorator,
   FunctionParam,
   BlockBody,
+  TypeSignature,
 } from "./ast";
 
 export interface LeaFunction {
@@ -17,7 +18,8 @@ export interface LeaFunction {
   body: Expr | BlockBody;
   closure: Environment;
   decorators: Decorator[];
-  returnType?: string;
+  returnType?: string;  // Old style (deprecated)
+  typeSignature?: TypeSignature;  // New :: (types) :> ReturnType style
 }
 
 export interface LeaRecord {
@@ -41,6 +43,11 @@ export interface LeaParallelResult {
   values: LeaValue[];
 }
 
+export interface LeaTuple {
+  kind: "tuple";
+  elements: LeaValue[];
+}
+
 export type LeaValue =
   | number
   | string
@@ -51,6 +58,7 @@ export type LeaValue =
   | LeaPromise
   | LeaRecord
   | LeaParallelResult
+  | LeaTuple
   | null;
 
 export class RuntimeError extends Error {
@@ -330,6 +338,7 @@ function stringify(val: LeaValue): string {
   if (typeof val === "object" && "kind" in val) {
     if (val.kind === "promise") return "<promise>";
     if (val.kind === "parallel_result") return `[${val.values.map(stringify).join(", ")}]`;
+    if (val.kind === "tuple") return `(${val.elements.map(stringify).join(", ")})`;
     if (val.kind === "record") {
       const entries = Array.from(val.fields.entries())
         .map(([k, v]) => `${k}: ${stringify(v)}`)
@@ -513,6 +522,11 @@ export class Interpreter {
       case "ReturnExpr": {
         const value = this.evaluateExpr(expr.value, env);
         throw new ReturnValue(value);
+      }
+
+      case "TupleExpr": {
+        const elements = expr.elements.map((e) => this.evaluateExpr(e, env));
+        return { kind: "tuple" as const, elements };
       }
     }
   }
@@ -723,6 +737,7 @@ export class Interpreter {
       closure: env,
       decorators: expr.decorators,
       returnType: expr.returnType,
+      typeSignature: expr.typeSignature,
     };
   }
 
@@ -733,8 +748,15 @@ export class Interpreter {
     let executor = (fnArgs: LeaValue[]): LeaValue => {
       const localEnv = new Environment(fn.closure);
 
-      // Bind parameters
-      fn.params.forEach((param, i) => localEnv.define(param.name, fnArgs[i] ?? null, false));
+      // Bind parameters, using default values if argument not provided
+      fn.params.forEach((param, i) => {
+        let value = fnArgs[i];
+        if ((value === undefined || value === null) && param.defaultValue) {
+          // Evaluate default value in the closure environment
+          value = this.evaluateExpr(param.defaultValue, fn.closure);
+        }
+        localEnv.define(param.name, value ?? null, false);
+      });
 
       // Inject context attachments
       for (const attachment of fn.attachments) {
@@ -948,6 +970,11 @@ export class Interpreter {
         throw new ReturnValue(value);
       }
 
+      case "TupleExpr": {
+        const elements = await Promise.all(expr.elements.map((e) => this.evaluateExprAsync(e, env)));
+        return { kind: "tuple" as const, elements };
+      }
+
       default:
         throw new RuntimeError(`Unknown expression kind: ${(expr as Expr).kind}`);
     }
@@ -1092,8 +1119,16 @@ export class Interpreter {
   private async callFunctionAsync(fn: LeaFunction, args: LeaValue[]): Promise<LeaValue> {
     const localEnv = new Environment(fn.closure);
 
-    // Bind parameters
-    fn.params.forEach((param, i) => localEnv.define(param.name, args[i] ?? null, false));
+    // Bind parameters, using default values if argument not provided
+    for (let i = 0; i < fn.params.length; i++) {
+      const param = fn.params[i];
+      let value = args[i];
+      if ((value === undefined || value === null) && param.defaultValue) {
+        // Evaluate default value in the closure environment
+        value = await this.evaluateExprAsync(param.defaultValue, fn.closure);
+      }
+      localEnv.define(param.name, value ?? null, false);
+    }
 
     // Inject context attachments
     for (const attachment of fn.attachments) {
@@ -1168,33 +1203,44 @@ export class Interpreter {
 
       case "validate":
         return (args: LeaValue[]) => {
-          // Validate argument types
+          // Validate argument types - support both old style and new typeSignature
           fn.params.forEach((param, i) => {
             const arg = args[i];
-            if (arg === null || arg === undefined) {
+
+            // Get expected type from new typeSignature or old param.typeAnnotation
+            const expectedType = fn.typeSignature?.paramTypes[i] ?? param.typeAnnotation;
+
+            // Check for null/undefined (unless optional type)
+            const isOptional = typeof expectedType === "string" && expectedType.startsWith("?") ||
+                              typeof expectedType === "object" && expectedType.optional;
+
+            if ((arg === null || arg === undefined) && !isOptional) {
               throw new RuntimeError(`[validate] Argument '${param.name}' is null/undefined`);
             }
-            if (param.typeAnnotation) {
-              const actualType = this.getLeaType(arg);
-              if (actualType !== param.typeAnnotation.toLowerCase()) {
-                throw new RuntimeError(
-                  `[validate] Argument '${param.name}' expected ${param.typeAnnotation}, got ${actualType}`
-                );
-              }
+
+            if (expectedType && !this.matchesType(arg, expectedType)) {
+              throw new RuntimeError(
+                `[validate] Argument '${param.name}' expected ${this.formatType(expectedType)}, got ${this.getLeaType(arg)}`
+              );
             }
           });
 
           const result = executor(args);
 
-          // Validate return type
-          if (fn.returnType) {
-            if (result === null || result === undefined) {
+          // Validate return type - support both old style and new typeSignature
+          const expectedReturnType = fn.typeSignature?.returnType ?? fn.returnType;
+
+          if (expectedReturnType) {
+            const isOptional = typeof expectedReturnType === "string" && expectedReturnType.startsWith("?") ||
+                              typeof expectedReturnType === "object" && (expectedReturnType as { optional?: boolean }).optional;
+
+            if ((result === null || result === undefined) && !isOptional) {
               throw new RuntimeError(`[validate] Return value is null/undefined`);
             }
-            const actualType = this.getLeaType(result);
-            if (actualType !== fn.returnType.toLowerCase()) {
+
+            if (!this.matchesType(result, expectedReturnType)) {
               throw new RuntimeError(
-                `[validate] Expected return type ${fn.returnType}, got ${actualType}`
+                `[validate] Expected return type ${this.formatType(expectedReturnType)}, got ${this.getLeaType(result)}`
               );
             }
           }
@@ -1314,7 +1360,45 @@ export class Interpreter {
     if (typeof val === "object" && "kind" in val) {
       if (val.kind === "function") return "function";
       if (val.kind === "builtin") return "function";
+      if (val.kind === "tuple") return "tuple";
     }
     return "unknown";
+  }
+
+  // Check if a value matches an expected type annotation
+  private matchesType(val: LeaValue, expectedType: string | { tuple: string[]; optional?: boolean }): boolean {
+    // Handle optional types - if optional and value is null, it's valid
+    if (typeof expectedType === "object" && expectedType.optional && val === null) {
+      return true;
+    }
+
+    // Handle optional string types like "?Int"
+    if (typeof expectedType === "string" && expectedType.startsWith("?")) {
+      if (val === null) return true;
+      expectedType = expectedType.slice(1); // Remove the ?
+    }
+
+    // Handle tuple types
+    if (typeof expectedType === "object" && "tuple" in expectedType) {
+      if (typeof val !== "object" || val === null || !("kind" in val) || val.kind !== "tuple") {
+        return false;
+      }
+      const tuple = val as LeaTuple;
+      if (tuple.elements.length !== expectedType.tuple.length) {
+        return false;
+      }
+      return expectedType.tuple.every((t, i) => this.matchesType(tuple.elements[i], t));
+    }
+
+    // Simple type comparison
+    const actualType = this.getLeaType(val);
+    return actualType === expectedType.toLowerCase();
+  }
+
+  // Format a type annotation for error messages
+  private formatType(t: string | { tuple: string[]; optional?: boolean }): string {
+    if (typeof t === "string") return t;
+    const tupleStr = `(${t.tuple.join(", ")})`;
+    return t.optional ? `?${tupleStr}` : tupleStr;
   }
 }

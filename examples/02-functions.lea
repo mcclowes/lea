@@ -40,7 +40,7 @@ applyTwice(double, 3) /> print
 let curryAdd = (a) -> (b) -> a + b
 let add5 = curryAdd(5)
 add5(3) /> print
-add(10)(7) /> print
+curryAdd(10)(7) /> print
 
 -- Curried multiply
 let curryMultiply = (a) -> (b) -> a * b
@@ -50,7 +50,7 @@ double2(8) /> print
 triple(8) /> print
 
 -- Currying with pipes
-5 /> curryAdd(10)() /> print
-[1, 2, 3] /> map(multiply(10)) /> print
+5 /> curryAdd /> (f) -> f(10) /> print
+[1, 2, 3] /> map(curryMultiply(10)) /> print
 
 "Functions complete!" /> print

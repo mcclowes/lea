@@ -19,7 +19,8 @@ export type Expr =
   | RecordExpr
   | MemberExpr
   | TernaryExpr
-  | ReturnExpr;
+  | ReturnExpr
+  | TupleExpr;
 
 export interface NumberLiteral {
   kind: "NumberLiteral";
@@ -74,7 +75,8 @@ export interface CallExpr {
 
 export interface FunctionParam {
   name: string;
-  typeAnnotation?: string;
+  typeAnnotation?: string;  // Old style (x: Int) - deprecated
+  defaultValue?: Expr;      // Default value for optional params (x = 10)
 }
 
 export interface Decorator {
@@ -82,12 +84,22 @@ export interface Decorator {
   args: (number | string | boolean)[];
 }
 
+// Type can be a simple type name or a tuple of types
+export type TypeAnnotation = string | { tuple: string[] };
+
+// New trailing type annotation :: (Type, Type) :> ReturnType
+export interface TypeSignature {
+  paramTypes: (string | { tuple: string[]; optional?: boolean })[];
+  returnType?: string | { tuple: string[] };
+}
+
 export interface FunctionExpr {
   kind: "FunctionExpr";
   params: FunctionParam[];
   attachments: string[];
   body: Expr | BlockBody;
-  returnType?: string;
+  returnType?: string;  // Old style - deprecated
+  typeSignature?: TypeSignature;  // New trailing :: syntax
   decorators: Decorator[];
 }
 
@@ -137,6 +149,11 @@ export interface TernaryExpr {
 export interface ReturnExpr {
   kind: "ReturnExpr";
   value: Expr;
+}
+
+export interface TupleExpr {
+  kind: "TupleExpr";
+  elements: Expr[];
 }
 
 export interface BlockBody {
@@ -241,13 +258,15 @@ export const functionExpr = (
   body: Expr | BlockBody,
   returnType?: string,
   decorators: Decorator[] = [],
-  attachments: string[] = []
+  attachments: string[] = [],
+  typeSignature?: TypeSignature
 ): FunctionExpr => ({
   kind: "FunctionExpr",
   params,
   attachments,
   body,
   returnType,
+  typeSignature,
   decorators,
 });
 
@@ -292,6 +311,11 @@ export const ternaryExpr = (condition: Expr, thenBranch: Expr, elseBranch: Expr)
 export const returnExpr = (value: Expr): ReturnExpr => ({
   kind: "ReturnExpr",
   value,
+});
+
+export const tupleExpr = (elements: Expr[]): TupleExpr => ({
+  kind: "TupleExpr",
+  elements,
 });
 
 export const blockBody = (statements: Stmt[], result: Expr): BlockBody => ({

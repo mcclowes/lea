@@ -1,0 +1,151 @@
+-- Type Annotations in Lea
+-- Lea supports optional type annotations using trailing :: syntax
+-- Use the #validate decorator to enable runtime type checking
+
+-- ============================================
+-- NEW TYPE ANNOTATION SYNTAX
+-- ============================================
+
+-- Single parameter, single-line: body :: Type :> ReturnType
+let double = (x) -> x * 2 :: Int :> Int
+double(5) /> print  -- 10
+
+-- Multiple parameters: body :: (Type, Type) :> ReturnType
+let add = (a, b) -> a + b :: (Int, Int) :> Int
+add(3, 4) /> print  -- 7
+
+-- Multiline function: -> :: Type :> Type on first line
+let greet = (name) -> :: String :> String
+  "Hello " ++ name
+
+greet("World") /> print  -- Hello World
+
+-- ============================================
+-- RUNTIME VALIDATION WITH #validate
+-- ============================================
+
+"=== Runtime type checking ===" /> print
+
+-- Types are documentation only until #validate is added
+let unsafe = (x) -> x * 2 :: Int :> Int
+-- unsafe("oops") would fail at runtime, but type wasn't checked
+
+-- Add #validate for runtime type enforcement
+let safeDouble = (x) -> x * 2 :: Int :> Int #validate
+safeDouble(5) /> print  -- 10
+
+-- Multiline with validation
+let safeMultiply = (a, b) -> :: (Int, Int) :> Int
+  let result = a * b
+  result
+  #validate
+
+safeMultiply(6, 7) /> print  -- 42
+
+-- Null checking is automatic with #validate
+let requireValue = (x) -> :: Int :> Int
+  x * 2
+  #validate
+
+requireValue(10) /> print  -- 20
+
+-- ============================================
+-- SUPPORTED TYPES
+-- ============================================
+
+-- Int - integers and floats
+let processNum = (n) -> n + 1 :: Int :> Int #validate
+processNum(42) /> print     -- 43
+
+-- String
+let processStr = (s) -> s ++ "!" :: String :> String #validate
+processStr("Hello") /> print  -- Hello!
+
+-- Bool
+let negate = (b) -> b == false :: Bool :> Bool #validate
+negate(true) /> print   -- false
+negate(false) /> print  -- true
+
+-- List
+let first = (items) -> head(items) :: List :> Int #validate
+first([1, 2, 3]) /> print  -- 1
+
+-- Function
+let apply = (f, x) -> f(x) :: (Function, Int) :> Int #validate
+let triple = (n) -> n * 3
+apply(triple, 4) /> print  -- 12
+
+-- ============================================
+-- USING _ FOR IGNORED PARAMETERS
+-- ============================================
+
+-- Underscore can be used for ignored params
+let ignoreSecond = (x, _) -> x :: (Int, Int) :> Int #validate
+ignoreSecond(5, 100) /> print  -- 5
+
+-- Common in reduce where you don't need the accumulator index
+[1, 2, 3] /> reduce(0, (acc, x) -> acc + x) /> print  -- 6
+
+-- Or when you don't need the element
+iterations(3) /> reduce(10, (acc, _) -> acc * 2) /> print  -- 80
+
+-- ============================================
+-- TYPE ERRORS (commented out - would fail at runtime)
+-- ============================================
+
+-- Uncomment to see type validation errors:
+-- let badNum = (x) -> x :: Int :> Int #validate
+-- badNum("oops") /> print  -- Error: expected Int, got string
+
+-- let badReturn = (x) -> x :: Int :> String #validate
+-- badReturn(5) /> print  -- Error: expected return type String, got int
+
+-- ============================================
+-- TUPLES
+-- ============================================
+
+"=== Tuples ===" /> print
+
+-- Tuple literal syntax
+let point = (10, 20)
+point /> print  -- (10, 20)
+
+-- Tuples can have mixed types
+let mixed = (1, "hello", true)
+mixed /> print  -- (1, hello, true)
+
+-- Tuple return type
+let makePair = (x, y) -> (x, y) :: (Int, Int) :> (Int, Int)
+makePair(3, 4) /> print  -- (3, 4)
+
+-- Tuple with validation
+let validatedPair = (x, y) -> (x, y) :: (Int, String) :> (Int, String) #validate
+validatedPair(42, "answer") /> print  -- (42, answer)
+
+-- ============================================
+-- DEFAULT PARAMETERS
+-- ============================================
+
+"=== Default parameters ===" /> print
+
+-- Default value syntax: param = defaultValue
+let greetWithDefault = (name, greeting = "Hello") -> greeting ++ " " ++ name
+greetWithDefault("World") /> print  -- Hello World
+greetWithDefault("World", "Hi") /> print  -- Hi World
+
+-- Multiple defaults
+let createPoint = (x = 0, y = 0) -> (x, y)
+createPoint() /> print  -- (0, 0)
+createPoint(5) /> print  -- (5, 0)
+createPoint(5, 10) /> print  -- (5, 10)
+
+-- ============================================
+-- OPTIONAL TYPES
+-- ============================================
+
+"=== Optional types ===" /> print
+
+-- Optional parameter type with ?Type syntax
+-- (Note: optional types allow null/undefined values)
+
+"=== Type annotation examples complete ===" /> print

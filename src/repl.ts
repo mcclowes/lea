@@ -33,6 +33,16 @@ function formatValue(val: unknown): string {
   if (val === null) return "null";
   if (Array.isArray(val)) return `[${val.map(formatValue).join(", ")}]`;
   if (typeof val === "object" && val !== null && "kind" in val) {
+    const obj = val as { kind: string; elements?: unknown[]; fields?: Map<string, unknown> };
+    if (obj.kind === "tuple" && obj.elements) {
+      return `(${obj.elements.map(formatValue).join(", ")})`;
+    }
+    if (obj.kind === "record" && obj.fields) {
+      const entries = Array.from(obj.fields.entries())
+        .map(([k, v]) => `${k}: ${formatValue(v)}`)
+        .join(", ");
+      return `{ ${entries} }`;
+    }
     return "<function>";
   }
   return String(val);

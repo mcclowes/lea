@@ -4,6 +4,7 @@
   "scopeName": "source.lea",
   "patterns": [
     { "include": "#comments" },
+    { "include": "#type-annotations" },
     { "include": "#strings" },
     { "include": "#numbers" },
     { "include": "#keywords" },
@@ -20,6 +21,15 @@
         {
           "name": "comment.line.double-dash.lea",
           "match": "--.*$"
+        }
+      ]
+    },
+    "type-annotations": {
+      "patterns": [
+        {
+          "comment": "Trailing type annotation :: (Type, Type) :> ReturnType or :: Type :> (Type, Type) - styled subtly like comments",
+          "name": "comment.block.type-annotation.lea",
+          "match": "::\\s*(?:\\?)?(?:\\([^)]*\\)|[A-Z][a-zA-Z0-9]*)(?:\\s*:>\\s*(?:\\?)?(?:\\([^)]*\\)|[A-Z][a-zA-Z0-9]*))?"
         }
       ]
     },
@@ -58,7 +68,7 @@
         },
         {
           "name": "storage.type.lea",
-          "match": "\\b(Int|String|Bool|List|Record)\\b"
+          "match": "\\b(Int|String|Bool|List|Record|Function|Tuple)\\b"
         }
       ]
     },
@@ -89,8 +99,24 @@
           "match": "/>"
         },
         {
+          "name": "keyword.operator.parallel-pipe.lea",
+          "match": "\\\\>"
+        },
+        {
           "name": "keyword.operator.arrow.lea",
           "match": "->"
+        },
+        {
+          "name": "keyword.operator.return.lea",
+          "match": "<-"
+        },
+        {
+          "name": "keyword.operator.type-return.lea",
+          "match": ":>"
+        },
+        {
+          "name": "keyword.operator.type-annotation.lea",
+          "match": "::"
         },
         {
           "name": "keyword.operator.concat.lea",
@@ -118,7 +144,7 @@
       "patterns": [
         {
           "name": "support.function.builtin.lea",
-          "match": "\\b(print|sqrt|abs|floor|ceil|round|min|max|length|head|tail|push|concat|map|filter|reduce|range|delay)\\b"
+          "match": "\\b(print|sqrt|abs|floor|ceil|round|min|max|length|head|tail|push|concat|map|filter|reduce|range|iterations|delay|parallel|race|then)\\b"
         }
       ]
     },
@@ -127,6 +153,10 @@
         {
           "name": "constant.language.boolean.lea",
           "match": "\\b(true|false)\\b"
+        },
+        {
+          "name": "constant.language.placeholder.lea",
+          "match": "\\b_\\b"
         }
       ]
     },

@@ -35,7 +35,7 @@ result /> print
 
 -- Nested operations
 [[1, 2], [3, 4], [5, 6]]
-  /> map((list) -> list /> reduce(0, (a, b) -> a + b))
+  /> map((list) -> reduce(list, 0, (a, b) -> a + b))
   /> print
 
 "Lists complete!" /> print

@@ -1,3 +1,5 @@
+![An image of code flowing down a symbolic river](./banner.png)
+
 # Lea
 
 A pipe-oriented functional programming language with a tree-walk interpreter written in TypeScript.
@@ -12,8 +14,6 @@ let sumOfSquares = numbers
 
 sumOfSquares /> print  -- 50
 ```
-
-![An image of code flowing down a symbolic river](./banner.png)
 
 ## Features
 

@@ -8,6 +8,7 @@ After modifying or adding functionality, always update:
 1. **Documentation** — `CLAUDE.md` and skill reference docs
 2. **Examples** — Add/update files in `examples/`
 3. **Tests** — Add/update files in `tests/`
+4. **Syntax highlighting** - Update the syntax highlighting vscode extension to support this functionality appropriately
 
 ## Syntax
 
@@ -28,7 +29,32 @@ let mut counter = 0
 -- Functions (no fn keyword)
 let double = (x) -> x * 2
 let add = (a, b) -> a + b
-let typed = (x: Int): Int -> x + 1
+
+-- Type annotations (trailing :: syntax)
+-- Single-line: body :: Type :> ReturnType
+let double = (x) -> x * 2 :: Int :> Int
+-- Multiple params: body :: (Type, Type) :> ReturnType
+let add = (a, b) -> a + b :: (Int, Int) :> Int
+-- Multiline: type signature after arrow
+let greet = (name) -> :: String :> String
+  "Hello " ++ name
+-- Use #validate for runtime type checking
+let safe = (x) -> x * 2 :: Int :> Int #validate
+-- Supported types: Int, String, Bool, List, Function, Tuple
+-- Optional types with ?: ?Int allows null
+-- Tuple types: (Int, String) :> (Int, String)
+-- Underscore for ignored params
+let ignoreSecond = (x, _) -> x
+
+-- Tuples (immutable fixed-size collections)
+let point = (10, 20)
+let pair = (1, "hello")       -- mixed types allowed
+(x, y) /> print               -- prints: (10, 20)
+
+-- Default parameters
+let greet = (name, greeting = "Hello") -> greeting ++ " " ++ name
+greet("World")                -- uses default: "Hello World"
+greet("World", "Hi")          -- overrides: "Hi World"
 
 -- Decorators (trailing, after function body)
 let logged = (x) -> x * 2 #log #memo #time
@@ -94,11 +120,12 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 ```
 NUMBER, STRING, IDENTIFIER
 LET, MUT, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE
-PIPE (/>), ARROW (->), RETURN (<-)
+PIPE (/>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
+DOUBLE_COLON (::), COLON_GT (:>)
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
-COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@)
+COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
 NEWLINE, EOF
 ```
 
@@ -107,8 +134,8 @@ NEWLINE, EOF
 **Expressions:**
 - NumberLiteral, StringLiteral, BooleanLiteral, Identifier
 - BinaryExpr, UnaryExpr, PipeExpr, CallExpr
-- FunctionExpr (params, attachments, body, decorators)
-- ListExpr, IndexExpr, PlaceholderExpr
+- FunctionExpr (params, attachments, body, decorators, typeSignature?)
+- ListExpr, IndexExpr, PlaceholderExpr, TupleExpr
 - RecordExpr, MemberExpr, AwaitExpr
 - BlockBody (multi-statement function body)
 - ReturnExpr (early return with <-)

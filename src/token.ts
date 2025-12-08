@@ -38,6 +38,10 @@ export enum TokenType {
   // Ternary
   QUESTION = "QUESTION",   // ?
 
+  // Type annotations
+  DOUBLE_COLON = "DOUBLE_COLON",   // ::
+  COLON_GT = "COLON_GT",           // :>
+
   // Delimiters
   LPAREN = "LPAREN",       // (
   RPAREN = "RPAREN",       // )

@@ -6,6 +6,9 @@
 - [ ] String interpolation / coercion (currently `++` only works with strings)
 - [ ] Multi-line records and arrays in parser
 - [x] Early return
+- [ ] Additional syntax highlighting - \> operator, @Logger (orange colour?), #validate (a darker blue), the implicit or explicit return statement of a function
+- [ ] Codeblocks 
+- [ ] Collapsing codeblocks (implicit, e.g. functions, and explicit) in the IDE, syntax highlighting (brown)
 
 ## Ternary (done)
 
@@ -43,4 +46,19 @@ let clamp = (x) ->
 
 clamp(10) /> print   -- 21 (no early return)
 clamp(60) /> print   -- 100 (early return triggered)
+```
+
+## Codeblocks
+
+```lea
+<> -- Clamping logic
+
+let clamp = (x) ->
+  let doubled = x * 2
+  doubled > 100 ? <- 100 : 0
+  doubled + 1
+
+clamp(10) /> print   -- 21 (no early return)
+clamp(60) /> print   -- 100 (early return triggered)
+<>
 ```

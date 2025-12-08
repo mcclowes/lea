@@ -5,6 +5,7 @@ import {
   Program,
   FunctionParam,
   Decorator,
+  TypeSignature,
   LetStmt,
   BlockBody,
   RecordField,
@@ -26,6 +27,7 @@ import {
   memberExpr,
   ternaryExpr,
   returnExpr,
+  tupleExpr,
   blockBody,
   contextDefStmt,
   provideStmt,
@@ -356,19 +358,19 @@ export class Parser {
   }
 
   private groupingOrFunction(): Expr {
-    // Could be: (expr), (), (params) -> body
+    // Could be: (expr), (), (params) -> body, or (expr, expr, ...) tuple
     const startPos = this.current;
 
     // Check for empty params: () ->
     if (this.check(TokenType.RPAREN)) {
       this.advance(); // consume )
       if (this.match(TokenType.ARROW)) {
-        const { attachments, body } = this.parseFunctionBody();
+        const { attachments, body, typeSignature } = this.parseFunctionBody();
         const decorators = this.parseDecorators();
-        return functionExpr([], body, undefined, decorators, attachments);
+        return functionExpr([], body, undefined, decorators, attachments, typeSignature);
       }
-      // Empty parens not followed by arrow - error
-      throw new ParseError("Empty parentheses", this.peek());
+      // Empty parens () could be empty tuple
+      return tupleExpr([]);
     }
 
     // Try to parse as function parameters
@@ -382,37 +384,118 @@ export class Parser {
       }
 
       this.consume(TokenType.ARROW, "Expected '->' after function parameters");
-      const { attachments, body } = this.parseFunctionBody();
+      const { attachments, body, typeSignature } = this.parseFunctionBody();
       const decorators = this.parseDecorators();
 
-      return functionExpr(params, body, returnType, decorators, attachments);
+      return functionExpr(params, body, returnType, decorators, attachments, typeSignature);
+    }
+
+    // Parse first expression
+    const firstExpr = this.expression();
+
+    // Check for tuple: (expr, expr, ...)
+    if (this.match(TokenType.COMMA)) {
+      const elements: Expr[] = [firstExpr];
+      do {
+        elements.push(this.expression());
+      } while (this.match(TokenType.COMMA));
+      this.consume(TokenType.RPAREN, "Expected ')' after tuple elements");
+      return tupleExpr(elements);
     }
 
     // Otherwise it's a grouping expression
-    const expr = this.expression();
     this.consume(TokenType.RPAREN, "Expected ')' after expression");
-    return expr;
+    return firstExpr;
   }
 
-  private parseFunctionBody(): { attachments: string[]; body: Expr | BlockBody } {
+  // Parse a single type annotation, which can be:
+  // - Simple type: Int, String, etc.
+  // - Optional type: ?Int
+  // - Tuple type: (Int, String)
+  private parseTypeAnnotation(): string | { tuple: string[]; optional?: boolean } {
+    const optional = this.match(TokenType.QUESTION);
+
+    if (this.match(TokenType.LPAREN)) {
+      // Tuple type: (Int, String, ...)
+      const types: string[] = [];
+      if (!this.check(TokenType.RPAREN)) {
+        do {
+          types.push(this.consume(TokenType.IDENTIFIER, "Expected type name").lexeme);
+        } while (this.match(TokenType.COMMA));
+      }
+      this.consume(TokenType.RPAREN, "Expected ')' after tuple types");
+      return { tuple: types, optional };
+    }
+
+    // Simple type
+    const typeName = this.consume(TokenType.IDENTIFIER, "Expected type name").lexeme;
+    return optional ? `?${typeName}` : typeName;
+  }
+
+  // Parse trailing type signature: :: (Type, Type) :> ReturnType
+  private parseTypeSignature(): TypeSignature | undefined {
+    if (!this.match(TokenType.DOUBLE_COLON)) {
+      return undefined;
+    }
+
+    const paramTypes: (string | { tuple: string[]; optional?: boolean })[] = [];
+
+    // Parse parameter types - can be single type or (Type, Type, ...)
+    if (this.match(TokenType.LPAREN)) {
+      // Multiple parameter types
+      if (!this.check(TokenType.RPAREN)) {
+        do {
+          paramTypes.push(this.parseTypeAnnotation());
+        } while (this.match(TokenType.COMMA));
+      }
+      this.consume(TokenType.RPAREN, "Expected ')' after parameter types");
+    } else {
+      // Single parameter type (could be ?Type or (Tuple))
+      paramTypes.push(this.parseTypeAnnotation());
+    }
+
+    // Parse optional return type with :>
+    let returnType: string | { tuple: string[] } | undefined;
+    if (this.match(TokenType.COLON_GT)) {
+      returnType = this.parseTypeAnnotation();
+    }
+
+    return { paramTypes, returnType };
+  }
+
+  private parseFunctionBody(): { attachments: string[]; body: Expr | BlockBody; typeSignature?: TypeSignature } {
     const arrowLine = this.previous().line;
 
-    // Check for brace-delimited block: -> { ... }
+    // Check for type signature immediately after arrow: -> :: Int :> Int
+    let typeSignature: TypeSignature | undefined;
+    if (this.check(TokenType.DOUBLE_COLON)) {
+      typeSignature = this.parseTypeSignature();
+    }
+
+    // Check for brace-delimited block: -> { ... } or -> :: Type :> Type { ... }
     if (this.check(TokenType.LBRACE)) {
       this.advance(); // consume {
-      return this.parseBlockBody();
+      const result = this.parseBlockBody();
+      return { ...result, typeSignature };
     }
 
     // Check for newline after arrow (indentation-based block)
     if (this.check(TokenType.NEWLINE)) {
       this.advance(); // consume newline
-      return this.parseIndentedBody();
+      const result = this.parseIndentedBody();
+      return { ...result, typeSignature };
     }
 
     // Single expression on same line - use ternary() to allow conditionals
     // but prevent consuming pipes that belong to outer expressions.
     const body = this.ternary();
-    return { attachments: [], body };
+
+    // For single-line, type signature comes after body
+    if (!typeSignature && this.check(TokenType.DOUBLE_COLON)) {
+      typeSignature = this.parseTypeSignature();
+    }
+
+    return { attachments: [], body, typeSignature };
   }
 
   private parseBlockBody(): { attachments: string[]; body: BlockBody } {
@@ -587,14 +670,27 @@ export class Parser {
     const params: FunctionParam[] = [];
 
     do {
-      const name = this.consume(TokenType.IDENTIFIER, "Expected parameter name").lexeme;
+      // Allow underscore as parameter name (for ignored/unused params)
+      let name: string;
+      if (this.match(TokenType.UNDERSCORE)) {
+        name = "_";
+      } else {
+        name = this.consume(TokenType.IDENTIFIER, "Expected parameter name").lexeme;
+      }
       let typeAnnotation: string | undefined;
+      let defaultValue: Expr | undefined;
 
+      // Check for type annotation (old style: x: Int)
       if (this.match(TokenType.COLON)) {
         typeAnnotation = this.consume(TokenType.IDENTIFIER, "Expected type").lexeme;
       }
 
-      params.push({ name, typeAnnotation });
+      // Check for default value: x = 10
+      if (this.match(TokenType.EQ)) {
+        defaultValue = this.ternary(); // Use ternary to avoid consuming pipes
+      }
+
+      params.push({ name, typeAnnotation, defaultValue });
     } while (this.match(TokenType.COMMA));
 
     return params;
