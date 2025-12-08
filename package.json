@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "scripts": {
     "repl": "ts-node src/repl.ts",
-    "run": "ts-node src/index.ts"
+    "lea": "ts-node src/index.ts",
+    "examples": "for f in examples/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done",
+    "test": "for f in tests/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done"
   },
   "devDependencies": {
     "@types/node": "^20.19.25",

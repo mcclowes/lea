@@ -45,6 +45,7 @@ export class Lexer {
       case ".": this.addToken(TokenType.DOT); break;
       case "#": this.addToken(TokenType.HASH); break;
       case "@": this.addToken(TokenType.AT); break;
+      case "?": this.addToken(TokenType.QUESTION); break;
       case "*": this.addToken(TokenType.STAR); break;
       case "%": this.addToken(TokenType.PERCENT); break;
       case "\\":

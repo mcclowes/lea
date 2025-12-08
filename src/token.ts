@@ -12,6 +12,7 @@ export enum TokenType {
   AWAIT = "AWAIT",
   CONTEXT = "CONTEXT",
   PROVIDE = "PROVIDE",
+  DECORATOR = "DECORATOR",
 
   // Operators
   PIPE = "PIPE",           // />
@@ -32,6 +33,9 @@ export enum TokenType {
   GT = "GT",               // >
   LTE = "LTE",             // <=
   GTE = "GTE",             // >=
+
+  // Ternary
+  QUESTION = "QUESTION",   // ?
 
   // Delimiters
   LPAREN = "LPAREN",       // (
@@ -68,6 +72,7 @@ export const KEYWORDS: Record<string, TokenType> = {
   await: TokenType.AWAIT,
   context: TokenType.CONTEXT,
   provide: TokenType.PROVIDE,
+  decorator: TokenType.DECORATOR,
 };
 
 export const createToken = (

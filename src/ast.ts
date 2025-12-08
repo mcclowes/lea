@@ -17,7 +17,8 @@ export type Expr =
   | PlaceholderExpr
   | AwaitExpr
   | RecordExpr
-  | MemberExpr;
+  | MemberExpr
+  | TernaryExpr;
 
 export interface NumberLiteral {
   kind: "NumberLiteral";
@@ -125,6 +126,13 @@ export interface MemberExpr {
   member: string;
 }
 
+export interface TernaryExpr {
+  kind: "TernaryExpr";
+  condition: Expr;
+  thenBranch: Expr;
+  elseBranch: Expr;
+}
+
 export interface BlockBody {
   kind: "BlockBody";
   statements: Stmt[];
@@ -132,7 +140,7 @@ export interface BlockBody {
 }
 
 // Statement types
-export type Stmt = LetStmt | ExprStmt | ContextDefStmt | ProvideStmt;
+export type Stmt = LetStmt | ExprStmt | ContextDefStmt | ProvideStmt | DecoratorDefStmt;
 
 export interface LetStmt {
   kind: "LetStmt";
@@ -156,6 +164,12 @@ export interface ProvideStmt {
   kind: "ProvideStmt";
   contextName: string;
   value: Expr;
+}
+
+export interface DecoratorDefStmt {
+  kind: "DecoratorDefStmt";
+  name: string;
+  transformer: Expr;
 }
 
 // Program
@@ -262,6 +276,13 @@ export const memberExpr = (object: Expr, member: string): MemberExpr => ({
   member,
 });
 
+export const ternaryExpr = (condition: Expr, thenBranch: Expr, elseBranch: Expr): TernaryExpr => ({
+  kind: "TernaryExpr",
+  condition,
+  thenBranch,
+  elseBranch,
+});
+
 export const blockBody = (statements: Stmt[], result: Expr): BlockBody => ({
   kind: "BlockBody",
   statements,
@@ -278,6 +299,12 @@ export const provideStmt = (contextName: string, value: Expr): ProvideStmt => ({
   kind: "ProvideStmt",
   contextName,
   value,
+});
+
+export const decoratorDefStmt = (name: string, transformer: Expr): DecoratorDefStmt => ({
+  kind: "DecoratorDefStmt",
+  name,
+  transformer,
 });
 
 export const letStmt = (name: string, mutable: boolean, value: Expr): LetStmt => ({

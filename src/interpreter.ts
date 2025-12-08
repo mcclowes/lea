@@ -332,6 +332,7 @@ export class Interpreter {
   private memoCache = new Map<string, Map<string, LeaValue>>();
   private traceDepth = 0;
   private contextRegistry = new Map<string, { default: LeaValue; current: LeaValue }>();
+  private customDecorators = new Map<string, LeaFunction>();
 
   constructor() {
     this.globals = new Environment();
@@ -384,6 +385,15 @@ export class Interpreter {
         const newValue = this.evaluateExpr(stmt.value, env);
         ctx.current = newValue;
         return newValue;
+      }
+
+      case "DecoratorDefStmt": {
+        const transformer = this.evaluateExpr(stmt.transformer, env);
+        if (!transformer || typeof transformer !== "object" || !("kind" in transformer) || transformer.kind !== "function") {
+          throw new RuntimeError("Decorator must be a function");
+        }
+        this.customDecorators.set(stmt.name, transformer as LeaFunction);
+        return null;
       }
     }
   }
@@ -475,6 +485,15 @@ export class Interpreter {
           return record.fields.get(expr.member)!;
         }
         throw new RuntimeError("Member access requires a record");
+      }
+
+      case "TernaryExpr": {
+        const condition = this.evaluateExpr(expr.condition, env);
+        if (condition) {
+          return this.evaluateExpr(expr.thenBranch, env);
+        } else {
+          return this.evaluateExpr(expr.elseBranch, env);
+        }
       }
     }
   }
@@ -1197,9 +1216,39 @@ export class Interpreter {
         };
       }
 
-      default:
+      default: {
+        // Check for custom decorator
+        const customDecorator = this.customDecorators.get(decorator.name);
+        if (customDecorator) {
+          return (args: LeaValue[]) => {
+            // Create a wrapped function that the decorator can call
+            const wrappedFn: LeaFunction = {
+              kind: "function",
+              params: fn.params,
+              attachments: [],
+              body: fn.body,
+              closure: fn.closure,
+              decorators: [],
+              returnType: fn.returnType,
+            };
+
+            // The custom decorator receives the wrapped function and returns a new function
+            // Call the decorator with the wrapped function
+            const transformedFn = this.callFunction(customDecorator, [wrappedFn]);
+
+            // If it returns a function, call it with the args
+            if (transformedFn && typeof transformedFn === "object" && "kind" in transformedFn && transformedFn.kind === "function") {
+              return this.callFunction(transformedFn as LeaFunction, args);
+            }
+
+            // Otherwise just call the original with original behavior
+            return executor(args);
+          };
+        }
+
         console.warn(`Unknown decorator: #${decorator.name}`);
         return executor;
+      }
     }
   }
 

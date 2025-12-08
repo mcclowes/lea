@@ -1,0 +1,37 @@
+-- Lea Basics: Variables, pipes, and simple functions
+
+-- Immutable bindings
+let name = "Lea"
+let version = 1
+
+-- Basic arithmetic with pipes
+10 /> print
+10 + 5 /> print
+10 - 3 /> print
+10 * 2 /> print
+10 / 2 /> print
+10 % 3 /> print
+
+-- String concatenation
+"Hello, " ++ name ++ "!" /> print
+
+-- Math builtins
+16 /> sqrt /> print
+-5 /> abs /> print
+3.7 /> floor /> print
+3.2 /> ceil /> print
+3.5 /> round /> print
+
+-- Min/max
+3 /> min(7) /> print
+3 /> max(7) /> print
+
+-- Comparisons
+5 == 5 /> print
+5 != 3 /> print
+5 > 3 /> print
+5 < 10 /> print
+5 >= 5 /> print
+5 <= 5 /> print
+
+"Basics complete!" /> print

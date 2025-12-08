@@ -1,0 +1,45 @@
+-- Data pipeline example
+
+-- Sample data
+let transactions = [{ id: 1, amount: 100, category: "food" }, { id: 2, amount: 250, category: "tech" }, { id: 3, amount: 50, category: "food" }, { id: 4, amount: 500, category: "tech" }, { id: 5, amount: 75, category: "food" }]
+
+-- Calculate total spending
+let total = transactions
+  /> map((t) -> t.amount)
+  /> reduce(0, (acc, x) -> acc + x)
+
+"Total spending:" /> print
+total /> print
+
+-- Filter by category
+let foodSpending = transactions
+  /> filter((t) -> t.category == "food")
+  /> map((t) -> t.amount)
+  /> reduce(0, (acc, x) -> acc + x)
+
+"Food spending:" /> print
+foodSpending /> print
+
+-- Large transactions (> 100)
+let largeTransactions = transactions
+  /> filter((t) -> t.amount > 100)
+  /> map((t) -> t.id)
+
+"Large transaction IDs: " /> print
+largeTransactions /> print
+
+-- Count by category helper
+let countFood = transactions
+  /> filter((t) -> t.category == "food")
+  /> length
+
+"Food transactions:" /> print
+countFood /> print
+
+-- Average transaction size
+let count = transactions /> length
+let average = total / count
+"Average transaction:" /> print
+average /> print
+
+"Pipeline complete!" /> print
