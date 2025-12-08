@@ -113,7 +113,7 @@
       "patterns": [
         {
           "name": "keyword.control.lea",
-          "match": "\\b(let|maybe|await|context|provide|decorator)\\b"
+          "match": "\\b(let|maybe|await|context|provide|decorator|match|if)\\b"
         },
         {
           "name": "storage.type.lea",
@@ -211,6 +211,11 @@
         {
           "name": "keyword.operator.assignment.lea",
           "match": "="
+        },
+        {
+          "comment": "Pattern match case separator",
+          "name": "keyword.operator.match-case.lea",
+          "match": "\\|"
         }
       ]
     },

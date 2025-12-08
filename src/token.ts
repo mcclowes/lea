@@ -14,6 +14,8 @@ export enum TokenType {
   CONTEXT = "CONTEXT",
   PROVIDE = "PROVIDE",
   DECORATOR = "DECORATOR",
+  MATCH = "MATCH",
+  IF = "IF",
 
   // Operators
   PIPE = "PIPE",           // />
@@ -56,6 +58,7 @@ export enum TokenType {
   UNDERSCORE = "UNDERSCORE", // _
   HASH = "HASH",           // #
   AT = "AT",               // @
+  PIPE_CHAR = "PIPE_CHAR", // | (for pattern matching)
 
   // Codeblocks
   CODEBLOCK_OPEN = "CODEBLOCK_OPEN",   // <>
@@ -88,6 +91,8 @@ export const KEYWORDS: Record<string, TokenType> = Object.create(null, {
   context: { value: TokenType.CONTEXT, enumerable: true },
   provide: { value: TokenType.PROVIDE, enumerable: true },
   decorator: { value: TokenType.DECORATOR, enumerable: true },
+  match: { value: TokenType.MATCH, enumerable: true },
+  if: { value: TokenType.IF, enumerable: true },
 });
 
 export const createToken = (

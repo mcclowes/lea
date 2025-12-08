@@ -1,0 +1,66 @@
+-- Test match expressions
+
+-- Basic pattern matching
+let describe = (x) -> match x
+  | 0 -> "zero"
+  | 1 -> "one"
+  | 2 -> "two"
+  | "other"
+
+describe(0) /> print
+describe(1) /> print
+describe(2) /> print
+describe(5) /> print
+
+-- Guard patterns
+let classify = (x) -> match x
+  | if _ < 0 -> "negative"
+  | if _ == 0 -> "zero"
+  | if _ > 0 -> "positive"
+  | "unknown"
+
+classify(-5) /> print
+classify(0) /> print
+classify(10) /> print
+
+-- Mix of patterns and guards
+let fizzbuzz = (n) -> match n
+  | if _ % 15 == 0 -> "fizzbuzz"
+  | if _ % 3 == 0 -> "fizz"
+  | if _ % 5 == 0 -> "buzz"
+  | n
+
+fizzbuzz(15) /> print
+fizzbuzz(9) /> print
+fizzbuzz(10) /> print
+fizzbuzz(7) /> print
+
+-- Match in pipeline
+let processValue = (x) -> match x
+  | 0 -> "nothing"
+  | if _ > 100 -> "big"
+  | "small"
+
+5 /> processValue /> print
+150 /> processValue /> print
+0 /> processValue /> print
+
+-- Match with string patterns
+let greet = (lang) -> match lang
+  | "en" -> "Hello"
+  | "es" -> "Hola"
+  | "fr" -> "Bonjour"
+  | "Hi"
+
+greet("en") /> print
+greet("es") /> print
+greet("de") /> print
+
+-- Using _ in the body too
+let doubleIfPositive = (x) -> match x
+  | if _ > 0 -> _ * 2
+  | 0
+
+doubleIfPositive(5) /> print
+doubleIfPositive(-3) /> print
+doubleIfPositive(0) /> print

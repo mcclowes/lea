@@ -5,6 +5,7 @@ import {
   PipelineStage,
   AnyPipelineStage,
   ParallelPipelineStage,
+  MatchCase,
   numberLiteral,
   stringLiteral,
   templateStringExpr,
@@ -18,9 +19,10 @@ import {
   bidirectionalPipelineLiteral,
   indexExpr,
   memberExpr,
+  matchExpr,
 } from "../ast";
 import { ParserContext, ParseError } from "./types";
-import { parseExpression, parseUnary, finishCall } from "./expressions";
+import { parseExpression, parseUnary, finishCall, parseEquality } from "./expressions";
 import { parseGroupingOrFunction } from "./functions";
 import { Lexer } from "../lexer";
 
@@ -78,6 +80,14 @@ export function parsePrimary(ctx: ParserContext): Expr {
   // A bidirectional pipeline can be applied forward or in reverse
   if (ctx.match(TokenType.BIDIRECTIONAL_PIPE)) {
     return parseBidirectionalPipelineLiteral(ctx);
+  }
+
+  // Match expression: match value
+  //   | pattern -> result
+  //   | if guard -> result
+  //   | default
+  if (ctx.match(TokenType.MATCH)) {
+    return parseMatch(ctx);
   }
 
   throw new ParseError(`Unexpected token '${ctx.peek().lexeme}'`, ctx.peek());
@@ -427,4 +437,75 @@ export function parseDecorators(ctx: ParserContext): { name: string; args: (numb
   }
 
   return decorators;
+}
+
+/**
+ * Parse a match expression: match value
+ *   | pattern -> result
+ *   | if guard -> result
+ *   | default
+ */
+export function parseMatch(ctx: ParserContext): Expr {
+  // Parse the value being matched
+  const value = parseEquality(ctx);
+  const cases: MatchCase[] = [];
+
+  // Skip newlines before cases
+  ctx.skipNewlines();
+
+  // Parse cases while we see |
+  while (ctx.check(TokenType.PIPE_CHAR)) {
+    ctx.advance(); // consume |
+    ctx.skipNewlines();
+
+    let pattern: Expr | null = null;
+    let guard: Expr | null = null;
+    let body: Expr;
+
+    // Check if this is a guard case: | if condition -> result
+    if (ctx.check(TokenType.IF)) {
+      ctx.advance(); // consume if
+      ctx.skipNewlines();
+      // Parse the guard condition (which may use _ as placeholder for the matched value)
+      guard = parseEquality(ctx);
+      ctx.skipNewlines();
+      ctx.consume(TokenType.ARROW, "Expected '->' after guard condition");
+      ctx.skipNewlines();
+      body = parseExpression(ctx);
+    } else {
+      // Try to parse a pattern
+      // Save position to check if this is a default case (no arrow)
+      const savedPos = ctx.current;
+      const possiblePattern = parseExpression(ctx);
+
+      // Check if there's an arrow after the pattern
+      const beforeArrow = ctx.current;
+      ctx.skipNewlines();
+
+      if (ctx.check(TokenType.ARROW)) {
+        // This is a pattern case: | pattern -> result
+        ctx.advance(); // consume ->
+        ctx.skipNewlines();
+        pattern = possiblePattern;
+        body = parseExpression(ctx);
+      } else {
+        // No arrow - this is a default case: | result
+        // Restore position and re-parse as the body (in case skipNewlines moved us)
+        ctx.setCurrent(savedPos);
+        body = parseExpression(ctx);
+        pattern = null;
+      }
+    }
+
+    cases.push({ pattern, guard, body });
+
+    // Skip newlines before potentially more cases
+    ctx.skipNewlines();
+  }
+
+  if (cases.length === 0) {
+    throw new ParseError("Match expression must have at least one case", ctx.peek());
+  }
+
+  return matchExpr(value, cases);
 }
