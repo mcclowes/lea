@@ -1,0 +1,77 @@
+-- Test edge cases
+
+-- Empty list operations
+let empty = []
+empty /> length /> print  -- 0
+empty /> print            -- []
+
+-- Single element list
+[42] /> head /> print     -- 42
+[42] /> tail /> print     -- []
+[42] /> length /> print   -- 1
+
+-- List indexing
+let nums = [10, 20, 30]
+nums[0] /> print  -- 10
+nums[1] /> print  -- 20
+nums[2] /> print  -- 30
+
+-- Nested lists
+let matrix = [[1, 2], [3, 4]]
+matrix[0] /> print     -- [1, 2]
+matrix[0][1] /> print  -- 2
+matrix[1][0] /> print  -- 3
+
+-- Deeply nested pipes
+let step1 = (x) -> x + 1
+let step2 = (x) -> x * 2
+let step3 = (x) -> x + 3
+let step4 = (x) -> x * 4
+1 /> step1 /> step2 /> step3 /> step4 /> print  -- 28
+
+-- Higher-order function
+let applyTwice = (f, x) -> x /> f /> f
+let double = (x) -> x * 2
+applyTwice(double, 5) /> print  -- 20
+
+-- Recursive-style with reduce
+let factorial = (n) ->
+  range(1, n + 1) /> reduce(1, (acc, x) -> acc * x)
+
+5 /> factorial /> print  -- 120
+
+-- Empty string
+"" /> length /> print  -- 0
+"" ++ "test" /> print  -- "test"
+
+-- Nested records
+let deep = {
+  level1: {
+    level2: {
+      value: 42
+    }
+  }
+}
+deep.level1.level2.value /> print  -- 42
+
+-- Record with function values
+let obj = {
+  double: (x) -> x * 2,
+  triple: (x) -> x * 3
+}
+let objDouble = obj.double
+let objTriple = obj.triple
+5 /> objDouble /> print  -- 10
+5 /> objTriple /> print  -- 15
+
+-- Multiple decorators on multi-line body
+let complex = (x) ->
+  let y = x * 2
+  let z = y + 1
+  z
+  #log
+  #time
+
+10 /> complex /> print
+
+"Done!" /> print

@@ -1,0 +1,59 @@
+-- Test core language features
+
+-- Bindings
+let x = 10
+x /> print
+
+let mut counter = 0
+counter /> print
+
+-- Pipes with placeholder
+let subtract = (a, b) -> a - b
+10 /> subtract(3) /> print        -- 7 (10 - 3)
+10 /> subtract(3, _) /> print     -- -7 (3 - 10)
+
+-- Comparison operators
+let eq = 5 == 5
+let neq = 5 != 3
+let lt = 3 < 5
+let gt = 5 > 3
+let lte = 5 <= 5
+let gte = 5 >= 5
+
+eq /> print   -- true
+neq /> print  -- true
+lt /> print   -- true
+gt /> print   -- true
+lte /> print  -- true
+gte /> print  -- true
+
+-- Arithmetic
+let sum = 10 + 5
+let diff = 10 - 5
+let prod = 10 * 5
+let quot = 10 / 5
+let rem = 10 % 3
+
+sum /> print   -- 15
+diff /> print  -- 5
+prod /> print  -- 50
+quot /> print  -- 2
+rem /> print   -- 1
+
+-- Unary minus
+let neg = -5
+neg /> print  -- -5
+
+-- String concatenation
+"Hello" ++ " " ++ "World" /> print
+
+-- Boolean literals
+true /> print
+false /> print
+
+-- Chained pipes
+let double = (x) -> x * 2
+let addOne = (x) -> x + 1
+5 /> double /> addOne /> print  -- 11
+
+"Done!" /> print

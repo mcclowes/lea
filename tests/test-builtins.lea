@@ -1,0 +1,48 @@
+-- Test builtin functions
+
+-- Math builtins
+16 /> sqrt /> print      -- 4
+-5 /> abs /> print       -- 5
+3.7 /> floor /> print    -- 3
+3.2 /> ceil /> print     -- 4
+3.5 /> round /> print    -- 4
+min(3, 7) /> print       -- 3
+max(3, 7) /> print       -- 7
+
+-- List builtins
+let nums = [1, 2, 3, 4, 5]
+
+nums /> length /> print  -- 5
+nums /> head /> print    -- 1
+nums /> tail /> print    -- [2, 3, 4, 5]
+
+-- push adds to end
+[1, 2] /> push(3) /> print  -- [1, 2, 3]
+
+-- concat joins lists
+[1, 2] /> concat([3, 4]) /> print  -- [1, 2, 3, 4]
+
+-- range generates sequences
+range(1, 5) /> print  -- [1, 2, 3, 4]
+range(0, 3) /> print  -- [0, 1, 2]
+
+-- map transforms elements
+[1, 2, 3] /> map((x) -> x * 2) /> print  -- [2, 4, 6]
+
+-- filter selects elements
+[1, 2, 3, 4, 5] /> filter((x) -> x > 2) /> print  -- [3, 4, 5]
+
+-- reduce accumulates
+[1, 2, 3, 4] /> reduce(0, (acc, x) -> acc + x) /> print  -- 10
+
+-- String length
+"hello" /> length /> print  -- 5
+
+-- Chained list operations
+range(1, 10)
+  /> filter((x) -> x % 2 == 0)
+  /> map((x) -> x * x)
+  /> reduce(0, (acc, x) -> acc + x)
+  /> print  -- 120 (4 + 16 + 36 + 64)
+
+"Done!" /> print
