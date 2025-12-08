@@ -1,0 +1,63 @@
+-- Example 08: Parallel Pipe Operator (\>)
+-- The parallel pipe fans out a value to multiple branches, then combines results
+
+-- Basic parallel: two branches
+let double = (x) -> x * 2
+let addOne = (x) -> x + 1
+
+-- Fan out 5 to both branches, then combine results
+let sum = 5 \> double \> addOne /> (a, b) -> a + b
+sum /> print
+-- Output: 16 (10 + 6)
+
+-- Named functions for clarity
+let process = 10
+  \> (x) -> x + 5    -- branch 1: 10 -> 15
+  \> (x) -> x * 2    -- branch 2: 10 -> 20
+  /> (a, b) -> a + b -- combine: 15 + 20 = 35
+
+process /> print
+-- Output: 35
+
+-- More than two branches
+let triple = 10
+  \> (x) -> x + 1
+  \> (x) -> x * 2
+  \> (x) -> x - 3
+  /> (a, b, c) -> a + b + c
+
+triple /> print
+-- Output: 38 (11 + 20 + 7)
+
+-- Nested pipes within parallel branches
+let nested = 5
+  \> (x) -> x + 1
+    /> (y) -> y * 2   -- branch 1 nested: 5 -> 6 -> 12
+  \> (x) -> x * 2
+    /> (y) -> y + 1   -- branch 2 nested: 5 -> 10 -> 11
+  /> (a, b) -> a + b
+
+nested /> print
+-- Output: 23
+
+-- Working with lists in parallel
+let data = [1, 2, 3, 4, 5]
+  \> head            -- branch 1: first element = 1
+  \> tail            -- branch 2: rest = [2, 3, 4, 5]
+  /> (first, rest) -> (first, rest)
+
+data /> print
+-- Output: (1, [2, 3, 4, 5])
+
+-- Practical example: parallel transformations
+let user = { name: "Alice", age: 30 }
+
+let greeting = user
+  \> (u) -> "Hello, " ++ u.name ++ "!"
+  \> (u) -> "You are " ++ u.age ++ " years old"
+  /> (greet, info) -> greet ++ " " ++ info
+
+greeting /> print
+-- Output: Hello, Alice! You are 30 years old
+
+"Done!" /> print
