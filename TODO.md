@@ -6,6 +6,7 @@
 - [ ] Refine for, while, do approaches
 - [ ] String interpolation / coercion (currently `++` only works with strings)
 - [ ] Multi-line records and arrays in parser
+- [ ] Early return
 
 ## Ternary (done)
 
@@ -24,7 +25,7 @@ let double = (x) -> x * 2 #bump
 double(5) /> print  -- 11
 ```
 
-## Iterating
+## Simple iterating
 
 If you want to do something 6 times...
 
@@ -32,3 +33,11 @@ If you want to do something 6 times...
 let foo = (x) -> for(6)
   /> map
 ```
+
+## Early return
+
+let process = (x) ->
+  let doubled = x * 2
+  if doubled > 100 then <- 100
+  let incremented = doubled + 1
+  <- incremented -- explicit return syntax

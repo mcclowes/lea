@@ -2,6 +2,13 @@
 
 Tree-walk interpreter in TypeScript for a pipe-oriented functional language.
 
+## Development Guidelines
+
+After modifying or adding functionality, always update:
+1. **Documentation** — `CLAUDE.md` and skill reference docs
+2. **Examples** — Add/update files in `examples/`
+3. **Tests** — Add/update files in `tests/`
+
 ## Syntax
 
 ```
@@ -140,8 +147,17 @@ NEWLINE, EOF
 - `print` (returns first arg for chaining)
 - `sqrt`, `abs`, `floor`, `ceil`, `round`, `min`, `max`
 - `length`, `head`, `tail`, `push`, `concat`
-- `map`, `filter`, `reduce`, `range`
-- `delay(ms)` — returns promise that resolves after ms
+- `map`, `filter`, `reduce`, `range`, `iterations`
+- `delay(ms, value)` — returns promise that resolves after ms
+- `parallel(list, fn, opts?)` — concurrent map with optional `{ limit: n }`
+- `race(fns)` — returns first promise to resolve
+- `then(promise, fn)` — chain promise transformations
+
+**Parallel Pipe Operator:**
+```
+value \> fn1 \> fn2 /> combine
+```
+Fan-out to run branches concurrently, fan-in to combine results.
 
 **Context System:**
 - `context Name = expr` — define context with default value

@@ -1,14 +1,31 @@
 -- Async operations in Lea
 
+-- delay(ms, value) returns a promise
+"Basic delay:" /> print
+delay(50, "waited 50ms") /> print
+
 -- #async marks a function as asynchronous
-let fetchData = (id) ->
-  delay(100)
-  #async
+let fetchUser = (id) ->
+  delay(30, "User-" ++ id)
+#async
 
--- Async functions return promises
-let getData = () -> delay(50) #async
+-- Call async functions with await
+"Async function:" /> print
+await fetchUser("123") /> print
 
--- All async operations are demonstrated in tests/test-async.lea
--- The interpreter handles await at the top level
+-- Pipes auto-await promises on the left side
+"Auto-await in pipes:" /> print
+delay(20, 5)
+  /> (x) -> x * 2
+  /> print  -- 10
 
-"Async example - see tests/test-async.lea for full examples" /> print
+-- Chain async operations
+"Chained async:" /> print
+delay(10, 3)
+  /> (x) -> x + 1
+  /> (x) -> x * 2
+  /> print  -- 8
+
+-- See examples/10-concurrency.lea for parallel operations
+
+"Done!" /> print

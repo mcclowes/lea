@@ -172,6 +172,12 @@ const builtins: Record<string, BuiltinFn> = {
     for (let i = start; i < end; i++) result.push(i);
     return result;
   },
+  iterations: (args) => {
+    const count = asNumber(args[0]);
+    const result: number[] = [];
+    for (let i = 0; i < count; i++) result.push(i);
+    return result;
+  },
   map: (args) => {
     const list = asList(args[0]);
     const fn = asFunction(args[1]);
@@ -801,6 +807,9 @@ export class Interpreter {
         ctx.current = newValue;
         return newValue;
       }
+
+      default:
+        throw new RuntimeError(`Unknown statement kind: ${(stmt as Stmt).kind}`);
     }
   }
 
@@ -897,6 +906,18 @@ export class Interpreter {
         }
         throw new RuntimeError("Member access requires a record");
       }
+
+      case "TernaryExpr": {
+        const condition = await this.evaluateExprAsync(expr.condition, env);
+        if (condition) {
+          return this.evaluateExprAsync(expr.thenBranch, env);
+        } else {
+          return this.evaluateExprAsync(expr.elseBranch, env);
+        }
+      }
+
+      default:
+        throw new RuntimeError(`Unknown expression kind: ${(expr as Expr).kind}`);
     }
   }
 

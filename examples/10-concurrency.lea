@@ -1,0 +1,115 @@
+-- Concurrency in Lea
+-- Lea provides several primitives for concurrent and async operations
+
+-- ============================================
+-- PARALLEL PIPE OPERATOR (\>)
+-- ============================================
+
+-- Fan-out: run multiple operations on the same input concurrently
+"Basic fan-out:" /> print
+10
+  \> (x) -> x + 1
+  \> (x) -> x * 2
+  /> print  -- [11, 20]
+
+-- Fan-in: combine parallel results with a multi-arg function
+"Fan-in (combine results):" /> print
+10
+  \> (x) -> x + 1
+  \> (x) -> x * 2
+  /> (a, b) -> a + b
+  /> print  -- 31
+
+-- Three branches
+"Three parallel branches:" /> print
+5
+  \> (x) -> x + 1
+  \> (x) -> x * 2
+  \> (x) -> x * x
+  /> print  -- [6, 10, 25]
+
+-- ============================================
+-- ASYNC FUNCTIONS
+-- ============================================
+
+-- delay(ms, value) returns a promise that resolves after ms milliseconds
+"Async with delay:" /> print
+delay(50, "hello") /> print  -- "hello" (after 50ms)
+
+-- #async decorator marks a function as async
+let fetchUser = (id) ->
+  delay(30, "User-" ++ id)
+#async
+
+await fetchUser("123") /> print  -- "User-123"
+
+-- ============================================
+-- PARALLEL WITH ASYNC
+-- ============================================
+
+-- Parallel pipes work seamlessly with async operations
+"Parallel async operations:" /> print
+"user1"
+  \> (id) -> delay(30, "Profile-" ++ id)
+  \> (id) -> delay(30, "Posts-" ++ id)
+  /> (profile, posts) -> profile ++ " | " ++ posts
+  /> print  -- "Profile-user1 | Posts-user1"
+
+-- ============================================
+-- parallel() BUILTIN
+-- ============================================
+
+-- parallel() maps a function over a list concurrently
+"parallel() builtin:" /> print
+let nums1 = [1, 2, 3, 4]
+nums1 /> parallel((x) -> x * 2) /> print  -- [2, 4, 6, 8]
+
+-- With async operations
+let slowSquare = (x) -> delay(20, x * x)
+let nums2 = [1, 2, 3]
+nums2 /> parallel(slowSquare) /> print  -- [1, 4, 9]
+
+-- With concurrency limit (limits how many run at once)
+"With concurrency limit:" /> print
+let opts = { limit: 2 }
+let nums3 = [1, 2, 3, 4, 5]
+nums3 /> parallel((x) -> delay(10, x * 2), opts) /> print
+
+-- ============================================
+-- race() BUILTIN
+-- ============================================
+
+-- race() returns the first promise to resolve
+"race() - first wins:" /> print
+let fast = () -> delay(10, "fast")
+let slow = () -> delay(100, "slow")
+let racers = [fast, slow]
+racers /> race /> print  -- "fast"
+
+-- ============================================
+-- then() BUILTIN
+-- ============================================
+
+-- then() chains promise transformations
+"then() chaining:" /> print
+delay(20, 5)
+  /> then((x) -> x * 2)
+  /> then((x) -> x + 1)
+  /> print  -- 11
+
+-- ============================================
+-- REAL-WORLD PATTERN: Fetch Multiple Resources
+-- ============================================
+
+"Real-world pattern:" /> print
+
+let userId = "abc123"
+
+-- Fetch user data and preferences in parallel, then combine
+userId
+  \> (id) -> delay(30, "User-" ++ id)
+  \> (id) -> delay(30, "Prefs-" ++ id)
+  /> (user, prefs) -> user ++ " with " ++ prefs
+  /> print
+
+"Done!" /> print
