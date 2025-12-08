@@ -1,17 +1,9 @@
-- [x] Implement ternary statements
-- [x] Custom decorators
-- [x] Linting for IDEs/VSCode
+# todo
+
 - [ ] Refinement Types (Liquid Haskell, F*) — Types with predicates. Not just int, but int where x > 0 && x < 100. The compiler proves your code satisfies the constraints.
 - [ ] Canvas visualisation of our 'pipeline's
-- [x] String interpolation / coercion (currently `++` only works with strings)
 - [ ] Multi-line records and arrays in parser
-- [x] Early return
-- [x] Additional syntax highlighting - \> operator, @Logger (orange colour?), #validate (a darker blue), the implicit or explicit return statement of a function
-- [x] Codeblocks
-- [x] Collapsing codeblocks (implicit, e.g. functions, and explicit) in the IDE, syntax highlighting (brown)
 - [ ] Implement #log-verbose to log input, output, and all variable assignment, or the values passed between pipeline stages
-- [X] Multi-line ternary
-- [x] First-class citizen: Pipeline
 - [ ] Partitions
 - [ ] Explicit types for pipelines
 - [ ] List types syntax - ❌ List , ✅ [Int]
@@ -28,14 +20,14 @@ let buildParts = (components) ->
   components
     /> filter((c) -> fst(c) > 0)
     /> map((c) -> formatComponent(fst(c), snd(c)))
-  
+
 buildParts([a, b, c])
 ```
 
 After:
 ```lea
 -- Filter out zero components and format each
-let buildParts = 
+let buildParts =
   /> filter((c) -> fst(c) > 0)
   /> map((c) -> formatComponent(fst(c), snd(c)))
 
@@ -74,7 +66,7 @@ let [evens, odds] = /> partition((x) -> x % 2 == 0)
 equivalent to
 ```
 -- Split pipeline
-let [evens, odds] = 
+let [evens, odds] =
   \> filter((x) -> x % 2 == 0)
   \> filter((x) -> x % 2 != 0)
 ```
@@ -124,9 +116,9 @@ Formatter - Auto-format Lea code (like Prettier)
 ## Array vs value handling - resolve ambiguity
 
 ```lea
-let foo = 
-  \> (x) -> x + 1 
-  \> (x) -> x * 2 
+let foo =
+  \> (x) -> x + 1
+  \> (x) -> x * 2
   /> print
 
 10 /> foo -- prints [11, 20]
@@ -135,9 +127,9 @@ let foo =
 ### New token - />>
 
 ```lea
-let foo = 
-  \> (x) -> x + 1 
-  \> (x) -> x * 2 
+let foo =
+  \> (x) -> x + 1
+  \> (x) -> x * 2
   />> print
 
 10 /> foo -- prints 11 and then 20
@@ -145,9 +137,9 @@ let foo =
 
 Equivalent to:
 ```lea
-let foo = 
-  \> (x) -> x + 1 
-  \> (x) -> x * 2 
+let foo =
+  \> (x) -> x + 1
+  \> (x) -> x * 2
   /> map((x) -> print(x))
 
 10 /> foo -- prints 11 and then 20
@@ -155,9 +147,9 @@ let foo =
 
 On inputs...
 ```lea
-let foo = 
-  \> (x) -> x + 1 
-  \> (x) -> x * 2 
+let foo =
+  \> (x) -> x + 1
+  \> (x) -> x * 2
   /> print
 
 [10, 10, 10] /> foo -- Should fail as [10, 10, 10] + 1 makes no sense
@@ -165,16 +157,16 @@ let foo =
 
 Whereas
 ```lea
-let foo = 
-  \> (x) -> x + 1 
-  \> (x) -> x * 2 
+let foo =
+  \> (x) -> x + 1
+  \> (x) -> x * 2
   /> print
 
 [10, 10, 10] />> foo -- prints [11, 20] three times
 ```
 
 ```lea
-let foo = 
+let foo =
   /> double
   /> min(4, 5, 6)
   /> print
@@ -184,7 +176,7 @@ let foo =
 
 Equivalent
 ```lea
-let foo = 
+let foo =
   />> double
   />> min(4, 5, 6)
   /> print
@@ -194,7 +186,7 @@ let foo =
 
 Equivalent
 ```lea
-let foo = 
+let foo =
   />> double
   />> min(..._, 4, 5, 6) -- spread placeholder (this syntax is horrible though)
   /> print
@@ -209,3 +201,18 @@ Not sure what they'll do yet...
 +>
 *>
 >>>
+
+---
+
+## Done
+
+- [x] Implement ternary statements
+- [x] Custom decorators
+- [x] Linting for IDEs/VSCode
+- [x] String interpolation / coercion (currently `++` only works with strings)
+- [x] Early return
+- [x] Additional syntax highlighting - \> operator, @Logger (orange colour?), #validate (a darker blue), the implicit or explicit return statement of a function
+- [x] Codeblocks
+- [x] Collapsing codeblocks (implicit, e.g. functions, and explicit) in the IDE, syntax highlighting (brown)
+- [X] Multi-line ternary
+- [x] First-class citizen: Pipeline
