@@ -1,0 +1,44 @@
+-- Test explicit pipeline types
+
+{-- Basic Pipeline Type Annotations --}
+
+let double = (x) -> x * 2
+let addOne = (x) -> x + 1
+let square = (x) -> x * x
+
+-- Pipeline with input type only
+let intPipe = /> double /> addOne :: Int
+5 /> intPipe /> print
+
+-- Pipeline with list input type
+let listDoublePipe = /> map(double) :: [Int]
+[1, 2, 3] /> listDoublePipe /> print
+
+-- Pipeline with input and output types
+let listTransform = /> map(double) /> map(addOne) :: [Int] /> [Int]
+[10, 20, 30] /> listTransform /> print
+
+{/--}
+
+{-- Type Validation in Strict Mode --}
+
+-- Note: Run with --strict to test type validation
+
+-- Valid: list input to list pipeline
+let numPipe = /> map(square) :: [Int]
+[2, 3, 4] /> numPipe /> print
+
+-- Valid: Int input to Int pipeline  
+let intMath = /> double /> addOne :: Int /> Int
+7 /> intMath /> print
+
+{/--}
+
+{-- Pipeline Types with Decorators --}
+
+let debugPipe = /> map(double) :: [Int] #log
+[5, 6] /> debugPipe
+
+{/--}
+
+"All pipeline type tests passed!" /> print

@@ -11,6 +11,7 @@ import {
   Decorator,
   BlockBody,
   TypeSignature,
+  PipelineTypeSignature,
   AnyPipelineStage,
 } from "../ast";
 
@@ -64,6 +65,7 @@ export interface LeaPipeline {
   closure: Environment;        // Captured environment for evaluating the stages
   decorators: Decorator[];     // Decorators applied to the pipeline
   memoCache?: Map<string, LeaValue>;  // Optional cache for #memo decorator
+  typeSignature?: PipelineTypeSignature;  // Optional input/output type signature
 }
 
 // A bidirectional pipeline that can be applied in either direction
@@ -72,6 +74,7 @@ export interface LeaBidirectionalPipeline {
   stages: { expr: Expr }[];  // Each stage holds an AST expression to apply
   closure: Environment;       // Captured environment for evaluating the stages
   decorators: Decorator[];    // Decorators applied to the pipeline
+  typeSignature?: PipelineTypeSignature;  // Optional input/output type signature
 }
 
 // A reversible function that has both forward and reverse implementations
