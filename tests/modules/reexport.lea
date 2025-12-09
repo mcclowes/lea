@@ -1,0 +1,5 @@
+-- Re-export from math module
+let { double, triple } = use "./math" #export
+
+-- Add our own export
+let quadruple = (x) -> x * 4 #export

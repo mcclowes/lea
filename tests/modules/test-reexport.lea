@@ -1,0 +1,8 @@
+-- Test re-exports
+let { double, triple, quadruple } = use "./reexport"
+
+double(5) /> print       -- Should print 10
+triple(5) /> print       -- Should print 15
+quadruple(5) /> print    -- Should print 20
+
+print("Re-export test passed!")

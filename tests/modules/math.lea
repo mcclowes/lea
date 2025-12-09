@@ -1,0 +1,14 @@
+-- Math module with exported functions
+
+let double = (x) -> x * 2 #export
+let triple = (x) -> x * 3 #export
+let add = (a, b) -> a + b #export
+
+-- Private function (not exported)
+let private = (x) -> x * 10
+
+-- Export a pipeline
+let processNumbers = /> double /> triple #export
+
+-- Export a simple value
+let PI = 3.14159 #export

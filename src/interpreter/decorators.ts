@@ -711,6 +711,11 @@ export function applyPipelineDecorator(
       };
     }
 
+    case "export":
+      // Export decorator is a marker for the module system, not a runtime decorator
+      // Just return the executor unchanged
+      return executor;
+
     default:
       // Unknown decorator - log warning and return unchanged
       console.warn(`Unknown pipeline decorator: #${decorator.name}`);
@@ -944,6 +949,11 @@ export function applyPipelineDecoratorAsync(
         }
       };
     }
+
+    case "export":
+      // Export decorator is a marker for the module system, not a runtime decorator
+      // Just return the executor unchanged
+      return executor;
 
     default:
       console.warn(`Unknown pipeline decorator: #${decorator.name}`);

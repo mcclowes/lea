@@ -1,0 +1,2 @@
+-- Test module not found error
+let { foo } = use "./nonexistent"

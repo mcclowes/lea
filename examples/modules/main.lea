@@ -1,0 +1,35 @@
+-- Module System Example
+-- Demonstrates importing and using modules in Lea
+
+-- Import specific exports from the math module
+let { double, triple, add, PI, processNumbers } = use "./math"
+
+-- Use imported functions
+print("=== Basic imports ===")
+double(5) /> print                 -- 10
+triple(4) /> print                 -- 12
+add(2, 3) /> print                 -- 5
+PI /> print                        -- 3.14159
+
+-- Use imported pipeline
+print("\n=== Imported pipeline ===")
+5 /> processNumbers /> print       -- 30 (5 * 2 * 3)
+
+-- Decorate imported functions
+print("\n=== Decorated imports ===")
+let timedDouble = double #time
+10 /> timedDouble /> print         -- 20 (with timing)
+
+-- Compose with local functions
+print("\n=== Composition ===")
+let quadruple = (x) -> x /> double /> double
+5 /> quadruple /> print            -- 20
+
+-- Use in pipelines
+print("\n=== In pipelines ===")
+[1, 2, 3, 4, 5]
+  /> map(double)
+  /> filter((x) -> x > 4)
+  /> print                         -- [6, 8, 10]
+
+print("\nModule example complete!")

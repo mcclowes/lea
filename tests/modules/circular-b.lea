@@ -1,0 +1,4 @@
+-- Test circular dependency detection (b imports a)
+let { funcA } = use "./circular-a"
+
+let funcB = (x) -> x * 2 #export

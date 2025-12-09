@@ -11,7 +11,11 @@
  * - overloads.ts: Overload resolution
  */
 
+import * as fs from "fs";
+import * as path from "path";
 import { TokenType } from "../token";
+import { Lexer } from "../lexer";
+import { Parser } from "../parser";
 import {
   Expr,
   Stmt,
@@ -114,6 +118,11 @@ export class Interpreter implements InterpreterContext {
   contextRegistry = new Map<string, { default: LeaValue; current: LeaValue }>();
   customDecorators = new Map<string, LeaFunction>();
   strictMode: boolean;
+
+  // Module system state
+  private moduleCache = new Map<string, LeaRecord>();  // Cache loaded modules by absolute path
+  private currentFilePath: string | null = null;       // Current file being executed
+  private loadingModules = new Set<string>();          // Track modules currently being loaded (circular detection)
 
   constructor(strictMode: boolean = false) {
     this.strictMode = strictMode;
@@ -482,6 +491,15 @@ export class Interpreter implements InterpreterContext {
 
       case "ReactivePipeExpr": {
         return this.evaluateReactivePipe(expr, env);
+      }
+
+      case "UseExpr": {
+        // Module imports are handled specially - they need file system access
+        // and should be resolved relative to the importing file
+        throw new RuntimeError(
+          `Module imports are not yet supported in synchronous evaluation. ` +
+          `Use 'let { name } = use "./path"' with the async interpreter.`
+        );
       }
     }
   }
@@ -1496,6 +1514,11 @@ export class Interpreter implements InterpreterContext {
         return this.evaluateReactivePipe(expr as ReactivePipeExpr, env);
       }
 
+      case "UseExpr": {
+        // Load and evaluate the module, returning its exports as a record
+        return this.loadModule(expr.path, env);
+      }
+
       default:
         throw new RuntimeError(`Unknown expression kind: ${(expr as Expr).kind}`);
     }
@@ -1979,5 +2002,147 @@ export class Interpreter implements InterpreterContext {
 
   describeAnyStage(stage: AnyPipelineStage): string {
     return describeAnyStage(stage);
+  }
+
+  // Module system methods
+
+  /**
+   * Set the current file path for relative module resolution
+   */
+  setCurrentFile(filePath: string): void {
+    this.currentFilePath = path.resolve(filePath);
+  }
+
+  /**
+   * Resolve a module path relative to the current file
+   */
+  private resolveModulePath(modulePath: string): string {
+    // Add .lea extension if not present
+    if (!modulePath.endsWith(".lea")) {
+      modulePath = modulePath + ".lea";
+    }
+
+    // Resolve relative to current file's directory
+    if (this.currentFilePath) {
+      const currentDir = path.dirname(this.currentFilePath);
+      return path.resolve(currentDir, modulePath);
+    }
+
+    // No current file, resolve relative to cwd
+    return path.resolve(process.cwd(), modulePath);
+  }
+
+  /**
+   * Load a module and return its exports as a record
+   */
+  private async loadModule(modulePath: string, env: Environment): Promise<LeaRecord> {
+    const resolvedPath = this.resolveModulePath(modulePath);
+
+    // Check cache first
+    if (this.moduleCache.has(resolvedPath)) {
+      return this.moduleCache.get(resolvedPath)!;
+    }
+
+    // Check for circular dependency
+    if (this.loadingModules.has(resolvedPath)) {
+      throw new RuntimeError(
+        `Circular dependency detected: ${modulePath} is already being loaded`
+      );
+    }
+
+    // Check if file exists
+    if (!fs.existsSync(resolvedPath)) {
+      throw new RuntimeError(`Module not found: ${modulePath} (resolved to ${resolvedPath})`);
+    }
+
+    // Mark as loading
+    this.loadingModules.add(resolvedPath);
+
+    // Save and update current file
+    const previousFilePath = this.currentFilePath;
+    this.currentFilePath = resolvedPath;
+
+    try {
+      // Read and parse the module
+      const source = fs.readFileSync(resolvedPath, "utf-8");
+      const lexer = new Lexer(source);
+      const tokens = lexer.scanTokens();
+      const parser = new Parser(tokens);
+      const program = parser.parse();
+
+      // Create a fresh environment for the module
+      const moduleEnv = new Environment();
+
+      // Copy builtins to module environment
+      for (const [name, fn] of Object.entries(builtins)) {
+        moduleEnv.define(name, { kind: "builtin", fn } as LeaBuiltin, false);
+      }
+
+      // Add Pipeline global
+      moduleEnv.define("Pipeline", createPipelineGlobal(moduleEnv), false);
+
+      // Execute the module's statements and collect exports
+      const exports = new Map<string, LeaValue>();
+
+      for (const stmt of program.statements) {
+        await this.executeStmtAsync(stmt, moduleEnv);
+
+        // Check if this statement has #export decorator
+        if (stmt.kind === "LetStmt" && this.isExported(stmt)) {
+          // Handle destructured exports
+          if (stmt.pattern) {
+            if (stmt.pattern.kind === "RecordPattern") {
+              for (const field of stmt.pattern.fields) {
+                exports.set(field, moduleEnv.get(field));
+              }
+            } else if (stmt.pattern.kind === "TuplePattern") {
+              for (const name of stmt.pattern.names) {
+                exports.set(name, moduleEnv.get(name));
+              }
+            }
+          } else {
+            exports.set(stmt.name, moduleEnv.get(stmt.name));
+          }
+        }
+      }
+
+      // Create the module record
+      const moduleRecord: LeaRecord = {
+        kind: "record",
+        fields: exports,
+      };
+
+      // Cache the module
+      this.moduleCache.set(resolvedPath, moduleRecord);
+
+      return moduleRecord;
+    } finally {
+      // Restore previous file and remove from loading set
+      this.currentFilePath = previousFilePath;
+      this.loadingModules.delete(resolvedPath);
+    }
+  }
+
+  /**
+   * Check if a let statement is exported
+   * Checks both the statement decorators and the value expression's decorators
+   */
+  private isExported(stmt: { decorators?: { name: string }[]; value: Expr }): boolean {
+    // Check statement-level decorators
+    if (stmt.decorators?.some(d => d.name === "export")) {
+      return true;
+    }
+    // Check expression-level decorators (for functions and pipelines)
+    const expr = stmt.value;
+    if (expr.kind === "FunctionExpr" && expr.decorators.some(d => d.name === "export")) {
+      return true;
+    }
+    if (expr.kind === "PipelineLiteral" && expr.decorators.some(d => d.name === "export")) {
+      return true;
+    }
+    if (expr.kind === "BidirectionalPipelineLiteral" && expr.decorators.some(d => d.name === "export")) {
+      return true;
+    }
+    return false;
   }
 }

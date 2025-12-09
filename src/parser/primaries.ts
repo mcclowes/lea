@@ -22,6 +22,7 @@ import {
   indexExpr,
   memberExpr,
   matchExpr,
+  useExpr,
 } from "../ast";
 import { ParserContext, ParseError } from "./types";
 import { parseExpression, parseUnary, finishCall, parseEquality } from "./expressions";
@@ -91,6 +92,12 @@ export function parsePrimary(ctx: ParserContext): Expr {
   //   | default
   if (ctx.match(TokenType.MATCH)) {
     return parseMatch(ctx);
+  }
+
+  // Use expression: use "./path" or use "./path.lea"
+  // Returns a record containing all exported values from the module
+  if (ctx.match(TokenType.USE)) {
+    return parseUse(ctx);
   }
 
   throw new ParseError(`Unexpected token '${ctx.peek().lexeme}'`, ctx.peek());
@@ -527,4 +534,16 @@ export function parseMatch(ctx: ParserContext): Expr {
   }
 
   return matchExpr(value, cases);
+}
+
+/**
+ * Parse a use expression: use "./path" or use "./path.lea"
+ * Returns a UseExpr node with the module path
+ */
+export function parseUse(ctx: ParserContext): Expr {
+  // Expect a string literal for the path
+  const pathToken = ctx.consume(TokenType.STRING, "Expected module path string after 'use'");
+  const path = pathToken.literal as string;
+
+  return useExpr(path);
 }

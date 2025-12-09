@@ -1,0 +1,20 @@
+-- Test module imports
+
+let { double, triple, add, processNumbers, PI } = use "./math"
+
+-- Test imported functions
+double(5) /> print            -- Should print 10
+triple(4) /> print            -- Should print 12
+add(2, 3) /> print            -- Should print 5
+
+-- Test imported pipeline
+5 /> processNumbers /> print  -- Should print 30 (5 * 2 * 3)
+
+-- Test imported value
+PI /> print                   -- Should print 3.14159
+
+-- Test decorating imported function
+let loggedDouble = double #log
+10 /> loggedDouble /> print   -- Should log and print 20
+
+print("All module tests passed!")

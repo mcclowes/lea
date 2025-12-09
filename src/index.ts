@@ -3,7 +3,7 @@ import { Lexer, LexerError } from "./lexer";
 import { Parser, ParseError } from "./parser";
 import { Interpreter, RuntimeError } from "./interpreter";
 
-async function run(source: string, cliStrict: boolean = false): Promise<void> {
+async function run(source: string, filename: string, cliStrict: boolean = false): Promise<void> {
   const lexer = new Lexer(source);
   const tokens = lexer.scanTokens();
   const parser = new Parser(tokens);
@@ -13,6 +13,8 @@ async function run(source: string, cliStrict: boolean = false): Promise<void> {
   const strictMode = cliStrict || program.strict;
 
   const interpreter = new Interpreter(strictMode);
+  // Set the current file for module resolution
+  interpreter.setCurrentFile(filename);
   // Use interpretAsync to properly handle top-level await and promises
   await interpreter.interpretAsync(program);
 }
@@ -42,7 +44,7 @@ async function main(): Promise<void> {
   const source = fs.readFileSync(filename, "utf-8");
 
   try {
-    await run(source, strictFlag);
+    await run(source, filename, strictFlag);
   } catch (err) {
     if (err instanceof LexerError || err instanceof ParseError || err instanceof RuntimeError) {
       console.error(`Error: ${err.message}`);
