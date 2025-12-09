@@ -31,18 +31,13 @@ let bar = (x) -> :: [Int] :> [Int]
     /> map((x) -> x * 2)
     /> filter((x) -> x > 10)
   /> concat
+  #async
   #profile
   #log
+and bar = (x) -> x + 1 :: Int :> Int
+and bar = (x) <- x - 1 :: Int :> Int
 
-and bar = (x) -> :: Int :> Int
-  x
-  /> (x) -> x + 1
-
-and bar = (x) <- :: Int :> Int
-  x
-  /> (x) -> x - 1
-
-await bar([1,2, 3, 4, 5]) /> print
+await bar([1,2, 3, 4, 5]) /> print -- await not needed as pipeline forces await
 bar([1,2, 3, 4, 5]) /> print
 let abc = bar([1,2, 3, 4, 5]) 
 abc /> print
