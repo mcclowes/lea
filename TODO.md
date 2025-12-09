@@ -3,9 +3,9 @@
 ## Active Tasks
 
 - [ ] Expand or remove the /docs dir
-- [ ] Bump syntax highlighting package & publish
+- [x] Bump syntax highlighting package & publish (v0.2.1)
 - [x] Codeblocks - sticky positioning in IDE (like markdown headers)
-- [ ] Review syntax highlighting against all of the more recent language additions
+- [x] Review syntax highlighting against all of the more recent language additions
 - [ ] Enforce types by default? Or just warn (with #validate to throw)? Introduce a decorator to ignore it?
 
 ## Feature Ideas
