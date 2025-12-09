@@ -158,9 +158,14 @@ value
 
 -- Spread pipe (map over elements)
 -- Applies function/pipeline to each element of a list
+-- Callback receives (element, index) like map/filter/reduce
 [1, 2, 3] />>>double              -- [2, 4, 6]
 [1, 2, 3] />>>add(10)             -- [11, 12, 13]
-[1, 2, 3] />>>print               -- prints 1, 2, 3 (returns [1, 2, 3])
+[1, 2, 3] />>>print               -- prints "1 0", "2 1", "3 2" (element and index)
+
+-- Spread pipe with index access
+["a", "b", "c"] />>>(x, i) -> `{i}: {x}`  -- ["0: a", "1: b", "2: c"]
+[10, 20, 30] />>>(x, i) -> x + i          -- [10, 21, 32]
 
 -- Spread pipe with parallel results
 5 \> addOne \> double />>>print   -- prints each branch result individually
@@ -401,8 +406,11 @@ value
 list />>>fn
 ```
 Maps a function or pipeline over each element of a list or parallel result.
+Callback receives `(element, index)` as arguments, similar to map/filter/reduce.
 
 - `[1, 2, 3] />>>double` returns `[2, 4, 6]` (maps double over each element)
+- `[1, 2, 3] />>>(x, i) -> x + i` returns `[1, 3, 5]` (element + index)
+- `["a", "b"] />>>(x, i) -> \`{i}: {x}\`` returns `["0: a", "1: b"]`
 - `parallelResult />>>print` applies print to each branch result individually
 - If the left side is not a list or parallel result, throws a RuntimeError
 - Returns an array of results from applying the function to each element
