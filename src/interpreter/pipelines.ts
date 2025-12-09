@@ -364,107 +364,270 @@ export function getPipelineMember(
     }
 
     case "visualize": {
-      // Return a builtin function that prints an ASCII diagram
+      // Return a builtin function that prints an ASCII diagram with ANSI colors
       return {
         kind: "builtin" as const,
         fn: (): LeaValue => {
           const lines: string[] = [];
-          const boxWidth = 13;
+          const boxWidth = 15;
 
-          // Helper to pad text within box
-          const padBox = (text: string): string => {
-            const inner = boxWidth - 2; // Account for "│ " and " │"
-            if (text.length > inner) {
-              return text.substring(0, inner);
-            }
-            return text.padStart(Math.floor((inner + text.length) / 2)).padEnd(inner);
+          // ANSI color codes
+          const colors = {
+            reset: "\x1b[0m",
+            bold: "\x1b[1m",
+            dim: "\x1b[2m",
+            // Stage type colors
+            function: "\x1b[36m",     // Cyan for named functions
+            lambda: "\x1b[35m",       // Magenta for lambdas
+            pipeline: "\x1b[34m",     // Blue for nested pipelines
+            call: "\x1b[33m",         // Yellow for function calls
+            spread: "\x1b[32m",       // Green for spread operations
+            parallel: "\x1b[91m",     // Bright red for parallel fan-out/in
+            // Structural colors
+            box: "\x1b[37m",          // White for box borders
+            connector: "\x1b[90m",    // Gray for connectors
+            decorator: "\x1b[93m",    // Bright yellow for decorators
+            io: "\x1b[94m",           // Bright blue for input/output
           };
 
-          lines.push("Pipeline:");
-          lines.push("  ┌─────────────┐");
-          lines.push("  │   input     │");
-          lines.push("  └──────┬──────┘");
+          // Helper to get visible length (excluding ANSI codes)
+          const visibleLength = (text: string): number => {
+            return text.replace(/\x1b\[[0-9;]*m/g, "").length;
+          };
+
+          // Helper to pad text within box (accounting for ANSI codes)
+          const padBox = (text: string, width: number = boxWidth - 2): string => {
+            const visible = visibleLength(text);
+            if (visible > width) {
+              // Need to truncate carefully to not break ANSI codes
+              let result = "";
+              let count = 0;
+              let i = 0;
+              while (i < text.length && count < width - 1) {
+                if (text[i] === "\x1b") {
+                  // Copy ANSI sequence
+                  const endIdx = text.indexOf("m", i);
+                  if (endIdx !== -1) {
+                    result += text.substring(i, endIdx + 1);
+                    i = endIdx + 1;
+                    continue;
+                  }
+                }
+                result += text[i];
+                count++;
+                i++;
+              }
+              return result + "…" + colors.reset;
+            }
+            const leftPad = Math.floor((width - visible) / 2);
+            const rightPad = width - visible - leftPad;
+            return " ".repeat(leftPad) + text + " ".repeat(rightPad);
+          };
+
+          // Helper to describe a stage with color and decorators
+          const describeStageColored = (expr: Expr): { text: string; decorators: string[] } => {
+            let text = "";
+            let decorators: string[] = [];
+
+            switch (expr.kind) {
+              case "Identifier":
+                text = `${colors.function}${expr.name}${colors.reset}`;
+                break;
+              case "CallExpr":
+                if (expr.callee.kind === "Identifier") {
+                  text = `${colors.call}${expr.callee.name}()${colors.reset}`;
+                } else {
+                  text = `${colors.call}call${colors.reset}`;
+                }
+                break;
+              case "FunctionExpr":
+                text = `${colors.lambda}λ${colors.reset}`;
+                decorators = expr.decorators.map(d => d.name);
+                break;
+              case "PipelineLiteral":
+                text = `${colors.pipeline}pipe[${expr.stages.length}]${colors.reset}`;
+                decorators = expr.decorators.map(d => d.name);
+                break;
+              case "SpreadPipeExpr":
+                text = `${colors.spread}/>>>spread${colors.reset}`;
+                break;
+              default:
+                text = `${colors.dim}expr${colors.reset}`;
+            }
+
+            return { text, decorators };
+          };
+
+          // Helper to describe a branch expression
+          const describeBranchColored = (branchExpr: Expr): { text: string; decorators: string[] } => {
+            return describeStageColored(branchExpr);
+          };
+
+          // Helper to create a box line
+          const boxTop = (width: number = boxWidth): string =>
+            `${colors.box}┌${"─".repeat(width)}┐${colors.reset}`;
+          const boxMid = (content: string, width: number = boxWidth): string =>
+            `${colors.box}│${colors.reset} ${padBox(content, width - 2)} ${colors.box}│${colors.reset}`;
+          const boxBot = (width: number = boxWidth): string =>
+            `${colors.box}└${"─".repeat(Math.floor(width / 2))}┬${"─".repeat(width - Math.floor(width / 2) - 1)}┘${colors.reset}`;
+          const boxBotNoConnector = (width: number = boxWidth): string =>
+            `${colors.box}└${"─".repeat(width)}┘${colors.reset}`;
+
+          // Helper to format decorators
+          const formatDecorators = (decorators: string[]): string => {
+            if (decorators.length === 0) return "";
+            return `${colors.decorator}#${decorators.join(" #")}${colors.reset}`;
+          };
+
+          // Calculate center position
+          const center = Math.floor(boxWidth / 2) + 2;
+          const centerPad = " ".repeat(center);
+
+          // Pipeline header with decorators
+          const pipelineDecoratorStr = pipeline.decorators.length > 0
+            ? ` ${formatDecorators(pipeline.decorators.map(d => d.name))}`
+            : "";
+          lines.push(`${colors.bold}Pipeline:${colors.reset}${pipelineDecoratorStr}`);
+
+          // Input box
+          lines.push(`  ${boxTop()}`);
+          lines.push(`  ${boxMid(`${colors.io}input${colors.reset}`)}`);
+          lines.push(`  ${boxBot()}`);
 
           for (let i = 0; i < pipeline.stages.length; i++) {
             const stage = pipeline.stages[i];
 
             if (isParallelStage(stage)) {
-              // Parallel stage - show branching
+              // Parallel stage - improved branching visualization
               const numBranches = stage.branches.length;
+              const branchDescs = stage.branches.map(describeBranchColored);
 
-              // Fan-out diamond
-              lines.push("         │");
-              lines.push("         ▼");
-              lines.push("        ◆◆◆");
-              lines.push("      ╱     ╲");
+              // Fan-out with colored diamond
+              lines.push(`${centerPad}${colors.connector}│${colors.reset}`);
+              lines.push(`${centerPad}${colors.connector}▼${colors.reset}`);
+              lines.push(`${" ".repeat(center - 2)}${colors.parallel}◆─┬─◆${colors.reset}`);
 
-              // Calculate branch descriptions
-              const branchDescs = stage.branches.map((branchExpr) => {
-                if (branchExpr.kind === "Identifier") {
-                  return branchExpr.name;
-                } else if (branchExpr.kind === "CallExpr" && branchExpr.callee.kind === "Identifier") {
-                  return branchExpr.callee.name;
-                } else if (branchExpr.kind === "FunctionExpr") {
-                  return "λ";
+              // Calculate total width needed for branches
+              const branchBoxWidth = 13;
+              const branchSpacing = 2;
+              const totalWidth = numBranches * branchBoxWidth + (numBranches - 1) * branchSpacing;
+              const startOffset = Math.max(0, Math.floor((boxWidth + 4 - totalWidth) / 2));
+
+              // Draw branch connectors
+              let connectorLine = " ".repeat(startOffset);
+              for (let b = 0; b < numBranches; b++) {
+                const mid = Math.floor(branchBoxWidth / 2);
+                if (b === 0) {
+                  connectorLine += " ".repeat(mid) + `${colors.connector}│${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
+                } else {
+                  connectorLine += " ".repeat(branchSpacing + mid) + `${colors.connector}│${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
                 }
-                return "expr";
-              });
+              }
+              lines.push(connectorLine);
 
-              // Draw branches based on count
-              if (numBranches === 2) {
-                const leftDesc = padBox(branchDescs[0]);
-                const rightDesc = padBox(branchDescs[1]);
-                lines.push("     │         │");
-                lines.push("     ▼         ▼");
-                lines.push(`┌─────────────┐ ┌─────────────┐`);
-                lines.push(`│ ${leftDesc} │ │ ${rightDesc} │`);
-                lines.push(`└──────┬──────┘ └──────┬──────┘`);
-                lines.push("       │               │");
-                lines.push("       ╲       ╱");
-              } else {
-                // For 3+ branches, show them in a simpler format
+              // Draw branch arrows
+              let arrowLine = " ".repeat(startOffset);
+              for (let b = 0; b < numBranches; b++) {
+                const mid = Math.floor(branchBoxWidth / 2);
+                if (b === 0) {
+                  arrowLine += " ".repeat(mid) + `${colors.connector}▼${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
+                } else {
+                  arrowLine += " ".repeat(branchSpacing + mid) + `${colors.connector}▼${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
+                }
+              }
+              lines.push(arrowLine);
+
+              // Draw branch boxes - top
+              let topLine = " ".repeat(startOffset);
+              for (let b = 0; b < numBranches; b++) {
+                topLine += `${colors.box}┌${"─".repeat(branchBoxWidth - 2)}┐${colors.reset}`;
+                if (b < numBranches - 1) topLine += " ".repeat(branchSpacing);
+              }
+              lines.push(topLine);
+
+              // Draw branch boxes - content
+              let contentLine = " ".repeat(startOffset);
+              for (let b = 0; b < numBranches; b++) {
+                const { text } = branchDescs[b];
+                contentLine += `${colors.box}│${colors.reset}${padBox(text, branchBoxWidth - 2)}${colors.box}│${colors.reset}`;
+                if (b < numBranches - 1) contentLine += " ".repeat(branchSpacing);
+              }
+              lines.push(contentLine);
+
+              // Draw branch decorators if any
+              const hasDecorators = branchDescs.some(d => d.decorators.length > 0);
+              if (hasDecorators) {
+                let decoratorLine = " ".repeat(startOffset);
                 for (let b = 0; b < numBranches; b++) {
-                  const desc = padBox(branchDescs[b]);
-                  if (b === 0) {
-                    lines.push(`  ├──► ┌─────────────┐`);
-                    lines.push(`  │    │ ${desc} │`);
-                    lines.push(`  │    └──────┬──────┘`);
-                  } else if (b === numBranches - 1) {
-                    lines.push(`  └──► ┌─────────────┐`);
-                    lines.push(`       │ ${desc} │`);
-                    lines.push(`       └──────┬──────┘`);
-                  } else {
-                    lines.push(`  ├──► ┌─────────────┐`);
-                    lines.push(`  │    │ ${desc} │`);
-                    lines.push(`  │    └──────┬──────┘`);
-                  }
+                  const { decorators } = branchDescs[b];
+                  const decoratorStr = decorators.length > 0 ? formatDecorators(decorators) : "";
+                  decoratorLine += `${colors.box}│${colors.reset}${padBox(decoratorStr, branchBoxWidth - 2)}${colors.box}│${colors.reset}`;
+                  if (b < numBranches - 1) decoratorLine += " ".repeat(branchSpacing);
                 }
-                lines.push("  ╲         │         ╱");
+                lines.push(decoratorLine);
               }
 
+              // Draw branch boxes - bottom with connectors
+              let botLine = " ".repeat(startOffset);
+              for (let b = 0; b < numBranches; b++) {
+                const mid = Math.floor((branchBoxWidth - 2) / 2);
+                botLine += `${colors.box}└${"─".repeat(mid)}┬${"─".repeat(branchBoxWidth - 3 - mid)}┘${colors.reset}`;
+                if (b < numBranches - 1) botLine += " ".repeat(branchSpacing);
+              }
+              lines.push(botLine);
+
+              // Draw connectors from boxes to fan-in
+              let connector2Line = " ".repeat(startOffset);
+              for (let b = 0; b < numBranches; b++) {
+                const mid = Math.floor(branchBoxWidth / 2);
+                if (b === 0) {
+                  connector2Line += " ".repeat(mid) + `${colors.connector}│${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
+                } else {
+                  connector2Line += " ".repeat(branchSpacing + mid) + `${colors.connector}│${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
+                }
+              }
+              lines.push(connector2Line);
+
               // Fan-in diamond
-              lines.push("        ◆◆◆");
-              lines.push("         │");
+              lines.push(`${" ".repeat(center - 2)}${colors.parallel}◆─┴─◆${colors.reset}`);
+              lines.push(`${centerPad}${colors.connector}│${colors.reset}`);
+
             } else {
-              // Regular stage - show as box
-              const stageDesc = describeStage(stage.expr);
-              const padded = padBox(stageDesc);
-              lines.push("         │");
-              lines.push("         ▼");
-              lines.push("  ┌─────────────┐");
-              lines.push(`  │ ${padded} │`);
-              lines.push("  └──────┬──────┘");
+              // Regular stage or spread pipe - show as box
+              const { text, decorators } = describeStageColored(stage.expr);
+
+              // Check if this is a spread pipe stage by examining the expression
+              const isSpread = stage.expr.kind === "SpreadPipeExpr";
+
+              lines.push(`${centerPad}${colors.connector}│${colors.reset}`);
+              lines.push(`${centerPad}${colors.connector}▼${colors.reset}`);
+
+              if (isSpread) {
+                // Spread pipe gets special treatment with spread indicator
+                lines.push(`  ${colors.box}┌${colors.spread}>>>${"─".repeat(boxWidth - 4)}${colors.box}┐${colors.reset}`);
+              } else {
+                lines.push(`  ${boxTop()}`);
+              }
+              lines.push(`  ${boxMid(text)}`);
+
+              // Show decorators if present
+              if (decorators.length > 0) {
+                lines.push(`  ${boxMid(formatDecorators(decorators))}`);
+              }
+
+              lines.push(`  ${boxBot()}`);
             }
           }
 
-          lines.push("         │");
-          lines.push("         ▼");
-          lines.push("  ┌─────────────┐");
-          lines.push("  │   output    │");
-          lines.push("  └─────────────┘");
+          // Output box
+          lines.push(`${centerPad}${colors.connector}│${colors.reset}`);
+          lines.push(`${centerPad}${colors.connector}▼${colors.reset}`);
+          lines.push(`  ${boxTop()}`);
+          lines.push(`  ${boxMid(`${colors.io}output${colors.reset}`)}`);
+          lines.push(`  ${boxBotNoConnector()}`);
 
           console.log(lines.join("\n"));
-          return null;
+          return lines.join("\n");
         }
       } as LeaBuiltin;
     }
