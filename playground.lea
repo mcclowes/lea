@@ -23,6 +23,7 @@ foo.visualize()
 
 {-- function tests --}
 let bar = (x) -> :: [Int] :> [Int]
+  x
   /> map((x) -> x + 1)
   \> filter((x) -> x < 20)
     /> map((x) -> x * 7)
@@ -30,11 +31,13 @@ let bar = (x) -> :: [Int] :> [Int]
     /> map((x) -> x * 2)
     /> filter((x) -> x > 10)
   /> concat
-  #memo
   #profile
+  #log
 and bar = (x) -> :: Int :> Int
+  x
   /> (x) -> x + 1
 
+await bar([1,2, 3, 4, 5]) /> print
 bar([1,2, 3, 4, 5]) /> print
 let abc = bar([1,2, 3, 4, 5]) 
 abc /> print

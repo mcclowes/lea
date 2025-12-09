@@ -140,8 +140,9 @@ export class Interpreter implements InterpreterContext {
   async interpretAsync(program: Program): Promise<LeaValue> {
     let result: LeaValue = null;
     for (const stmt of program.statements) {
-      result = this.executeStmt(stmt, this.globals);
-      // If result is a promise at top level, await it
+      // Use async execution to properly handle await expressions
+      result = await this.executeStmtAsync(stmt, this.globals);
+      // If result is still a promise, unwrap it
       result = await unwrapPromise(result);
     }
     return result;

@@ -406,6 +406,49 @@ export function applyFunctionDecorator(
       };
     }
 
+    case "profile": {
+      // Profile function execution time
+      return (args: LeaValue[]) => {
+        const start = performance.now();
+        const result = executor(args);
+        const elapsed = performance.now() - start;
+        console.log(`[profile] Function executed in ${elapsed.toFixed(3)}ms`);
+        return result;
+      };
+    }
+
+    case "debug": {
+      // Debug function execution with input/output logging
+      return (args: LeaValue[]) => {
+        console.log(`[debug] ─────────────────────────────────`);
+        console.log(`[debug] Input:`, args.map(stringify).join(", "));
+        const start = performance.now();
+        const result = executor(args);
+        const elapsed = performance.now() - start;
+        console.log(`[debug] Output:`, stringify(result));
+        console.log(`[debug] Time: ${elapsed.toFixed(3)}ms`);
+        console.log(`[debug] ─────────────────────────────────`);
+        return result;
+      };
+    }
+
+    case "tap": {
+      // Inspect the return value without modifying it (like pipeline #tap)
+      const tapFnName = decorator.args[0] as string | undefined;
+      return (args: LeaValue[]) => {
+        const result = executor(args);
+        if (tapFnName) {
+          const tapFn = ctx.globals.get(tapFnName);
+          if (tapFn && typeof tapFn === "object" && "kind" in tapFn && tapFn.kind === "function") {
+            ctx.callFunction(tapFn as LeaFunction, [result]);
+          }
+        } else {
+          console.log(stringify(result));
+        }
+        return result;
+      };
+    }
+
     default: {
       // Check for custom decorator
       const customDecorator = ctx.customDecorators.get(decorator.name);
