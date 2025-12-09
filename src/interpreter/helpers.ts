@@ -18,6 +18,7 @@ import {
   LeaBidirectionalPipeline,
   LeaReversibleFunction,
   LeaReactiveValue,
+  LeaRecord,
   RuntimeError,
   Environment,
 } from "./types";
@@ -84,6 +85,16 @@ export function isLeaTuple(val: LeaValue): val is LeaTuple {
 export function isReactiveValue(val: LeaValue): val is LeaReactiveValue {
   return val !== null && typeof val === "object" && "kind" in val && val.kind === "reactive";
 }
+
+// Type guard for LeaRecord
+export function isRecord(val: LeaValue): val is LeaRecord {
+  return val !== null && typeof val === "object" && "kind" in val && val.kind === "record";
+}
+
+// Convenience aliases
+export const isFunction = isLeaFunction;
+export const isBuiltin = isLeaBuiltin;
+export const isTuple = isLeaTuple;
 
 // Unwrap a LeaPromise to its underlying value
 export async function unwrapPromise(val: LeaValue): Promise<LeaValue> {

@@ -149,91 +149,12 @@ export class Interpreter implements InterpreterContext {
     switch (stmt.kind) {
       case "LetStmt": {
         const value = this.evaluateExpr(stmt.value, env);
-
-        // Handle destructuring patterns
-        if (stmt.pattern) {
-          if (stmt.pattern.kind === "RecordPattern") {
-            // Record destructuring: let { name, age } = record
-            if (!value || typeof value !== "object" || !("kind" in value) || value.kind !== "record") {
-              throw new RuntimeError("Cannot destructure non-record value with record pattern");
-            }
-            const record = value as LeaRecord;
-            for (const field of stmt.pattern.fields) {
-              if (!record.fields.has(field)) {
-                throw new RuntimeError(`Record does not have field '${field}'`);
-              }
-              env.define(field, record.fields.get(field)!, stmt.mutable);
-            }
-          } else if (stmt.pattern.kind === "TuplePattern") {
-            // Tuple destructuring: let (x, y) = tuple
-            if (value && typeof value === "object" && "kind" in value && value.kind === "tuple") {
-              const tuple = value as LeaTuple;
-              if (tuple.elements.length < stmt.pattern.names.length) {
-                throw new RuntimeError(`Tuple has ${tuple.elements.length} elements but pattern expects ${stmt.pattern.names.length}`);
-              }
-              for (let i = 0; i < stmt.pattern.names.length; i++) {
-                env.define(stmt.pattern.names[i], tuple.elements[i], stmt.mutable);
-              }
-            } else if (Array.isArray(value)) {
-              // Also support destructuring lists
-              if (value.length < stmt.pattern.names.length) {
-                throw new RuntimeError(`List has ${value.length} elements but pattern expects ${stmt.pattern.names.length}`);
-              }
-              for (let i = 0; i < stmt.pattern.names.length; i++) {
-                env.define(stmt.pattern.names[i], value[i], stmt.mutable);
-              }
-            } else {
-              throw new RuntimeError("Cannot destructure non-tuple/non-list value with tuple pattern");
-            }
-          }
-          return value;
-        }
-
-        // Check if this is a function
-        const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
-        const fn = isFunction ? (value as LeaFunction) : null;
-        const hasTypeSignature = fn && fn.typeSignature !== undefined;
-        const isReverse = fn && fn.isReverse === true;
-
-        if (isReverse && env.hasInCurrentScope(stmt.name)) {
-          // This is a reverse function definition - add it to existing forward function
-          env.addReverse(stmt.name, fn);
-        } else if (hasTypeSignature && env.hasInCurrentScope(stmt.name)) {
-          // This is a function with a type signature and the name already exists
-          // Add it as an overload
-          env.addOverload(stmt.name, fn);
-        } else {
-          env.define(stmt.name, value, stmt.mutable);
-        }
-        return value;
+        return this.handleLetBinding(stmt, value, env);
       }
 
       case "AndStmt": {
-        // 'and' extends an existing function definition (overload or reverse)
         const value = this.evaluateExpr(stmt.value, env);
-
-        // The name must already exist
-        if (!env.hasInCurrentScope(stmt.name)) {
-          throw new RuntimeError(`Cannot use 'and' - '${stmt.name}' is not defined. Use 'let' to define it first.`);
-        }
-
-        // Must be a function
-        const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
-        if (!isFunction) {
-          throw new RuntimeError(`'and' can only be used with function definitions`);
-        }
-
-        const fn = value as LeaFunction;
-        const isReverse = fn.isReverse === true;
-
-        if (isReverse) {
-          // Add reverse function definition
-          env.addReverse(stmt.name, fn);
-        } else {
-          // Add as overload
-          env.addOverload(stmt.name, fn);
-        }
-        return value;
+        return this.handleAndBinding(stmt, value, env);
       }
 
       case "ExprStmt":
@@ -265,7 +186,6 @@ export class Interpreter implements InterpreterContext {
       }
 
       case "CodeblockStmt": {
-        // Codeblocks are transparent - just execute their statements
         let result: LeaValue = null;
         for (const innerStmt of stmt.statements) {
           result = this.executeStmt(innerStmt, env);
@@ -279,6 +199,80 @@ export class Interpreter implements InterpreterContext {
         return value;
       }
     }
+  }
+
+  // Shared helper: handle let binding destructuring and definition
+  private handleLetBinding(stmt: { name: string; mutable: boolean; pattern?: RecordPattern | TuplePattern }, value: LeaValue, env: Environment): LeaValue {
+    // Handle destructuring patterns
+    if (stmt.pattern) {
+      if (stmt.pattern.kind === "RecordPattern") {
+        if (!value || typeof value !== "object" || !("kind" in value) || value.kind !== "record") {
+          throw new RuntimeError("Cannot destructure non-record value with record pattern");
+        }
+        const record = value as LeaRecord;
+        for (const field of stmt.pattern.fields) {
+          if (!record.fields.has(field)) {
+            throw new RuntimeError(`Record does not have field '${field}'`);
+          }
+          env.define(field, record.fields.get(field)!, stmt.mutable);
+        }
+      } else if (stmt.pattern.kind === "TuplePattern") {
+        if (value && typeof value === "object" && "kind" in value && value.kind === "tuple") {
+          const tuple = value as LeaTuple;
+          if (tuple.elements.length < stmt.pattern.names.length) {
+            throw new RuntimeError(`Tuple has ${tuple.elements.length} elements but pattern expects ${stmt.pattern.names.length}`);
+          }
+          for (let i = 0; i < stmt.pattern.names.length; i++) {
+            env.define(stmt.pattern.names[i], tuple.elements[i], stmt.mutable);
+          }
+        } else if (Array.isArray(value)) {
+          if (value.length < stmt.pattern.names.length) {
+            throw new RuntimeError(`List has ${value.length} elements but pattern expects ${stmt.pattern.names.length}`);
+          }
+          for (let i = 0; i < stmt.pattern.names.length; i++) {
+            env.define(stmt.pattern.names[i], value[i], stmt.mutable);
+          }
+        } else {
+          throw new RuntimeError("Cannot destructure non-tuple/non-list value with tuple pattern");
+        }
+      }
+      return value;
+    }
+
+    // Check if this is a function
+    const isFunc = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
+    const fn = isFunc ? (value as LeaFunction) : null;
+    const hasTypeSignature = fn && fn.typeSignature !== undefined;
+    const isReverse = fn && fn.isReverse === true;
+
+    if (isReverse && env.hasInCurrentScope(stmt.name)) {
+      env.addReverse(stmt.name, fn);
+    } else if (hasTypeSignature && env.hasInCurrentScope(stmt.name)) {
+      env.addOverload(stmt.name, fn);
+    } else {
+      env.define(stmt.name, value, stmt.mutable);
+    }
+    return value;
+  }
+
+  // Shared helper: handle 'and' statement for overloads/reverses
+  private handleAndBinding(stmt: { name: string }, value: LeaValue, env: Environment): LeaValue {
+    if (!env.hasInCurrentScope(stmt.name)) {
+      throw new RuntimeError(`Cannot use 'and' - '${stmt.name}' is not defined. Use 'let' to define it first.`);
+    }
+
+    const isFunc = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
+    if (!isFunc) {
+      throw new RuntimeError(`'and' can only be used with function definitions`);
+    }
+
+    const fn = value as LeaFunction;
+    if (fn.isReverse === true) {
+      env.addReverse(stmt.name, fn);
+    } else {
+      env.addOverload(stmt.name, fn);
+    }
+    return value;
   }
 
   evaluateExpr(expr: Expr, env: Environment): LeaValue {
@@ -1205,91 +1199,12 @@ export class Interpreter implements InterpreterContext {
     switch (stmt.kind) {
       case "LetStmt": {
         const value = await this.evaluateExprAsync(stmt.value, env);
-
-        // Handle destructuring patterns
-        if (stmt.pattern) {
-          if (stmt.pattern.kind === "RecordPattern") {
-            // Record destructuring: let { name, age } = record
-            if (!value || typeof value !== "object" || !("kind" in value) || value.kind !== "record") {
-              throw new RuntimeError("Cannot destructure non-record value with record pattern");
-            }
-            const record = value as LeaRecord;
-            for (const field of stmt.pattern.fields) {
-              if (!record.fields.has(field)) {
-                throw new RuntimeError(`Record does not have field '${field}'`);
-              }
-              env.define(field, record.fields.get(field)!, stmt.mutable);
-            }
-          } else if (stmt.pattern.kind === "TuplePattern") {
-            // Tuple destructuring: let (x, y) = tuple
-            if (value && typeof value === "object" && "kind" in value && value.kind === "tuple") {
-              const tuple = value as LeaTuple;
-              if (tuple.elements.length < stmt.pattern.names.length) {
-                throw new RuntimeError(`Tuple has ${tuple.elements.length} elements but pattern expects ${stmt.pattern.names.length}`);
-              }
-              for (let i = 0; i < stmt.pattern.names.length; i++) {
-                env.define(stmt.pattern.names[i], tuple.elements[i], stmt.mutable);
-              }
-            } else if (Array.isArray(value)) {
-              // Also support destructuring lists
-              if (value.length < stmt.pattern.names.length) {
-                throw new RuntimeError(`List has ${value.length} elements but pattern expects ${stmt.pattern.names.length}`);
-              }
-              for (let i = 0; i < stmt.pattern.names.length; i++) {
-                env.define(stmt.pattern.names[i], value[i], stmt.mutable);
-              }
-            } else {
-              throw new RuntimeError("Cannot destructure non-tuple/non-list value with tuple pattern");
-            }
-          }
-          return value;
-        }
-
-        // Check if this is a function
-        const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
-        const fn = isFunction ? (value as LeaFunction) : null;
-        const hasTypeSignature = fn && fn.typeSignature !== undefined;
-        const isReverse = fn && fn.isReverse === true;
-
-        if (isReverse && env.hasInCurrentScope(stmt.name)) {
-          // This is a reverse function definition - add it to existing forward function
-          env.addReverse(stmt.name, fn);
-        } else if (hasTypeSignature && env.hasInCurrentScope(stmt.name)) {
-          // This is a function with a type signature and the name already exists
-          // Add it as an overload
-          env.addOverload(stmt.name, fn);
-        } else {
-          env.define(stmt.name, value, stmt.mutable);
-        }
-        return value;
+        return this.handleLetBinding(stmt, value, env);
       }
 
       case "AndStmt": {
-        // 'and' extends an existing function definition (overload or reverse)
         const value = await this.evaluateExprAsync(stmt.value, env);
-
-        // The name must already exist
-        if (!env.hasInCurrentScope(stmt.name)) {
-          throw new RuntimeError(`Cannot use 'and' - '${stmt.name}' is not defined. Use 'let' to define it first.`);
-        }
-
-        // Must be a function
-        const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
-        if (!isFunction) {
-          throw new RuntimeError(`'and' can only be used with function definitions`);
-        }
-
-        const fn = value as LeaFunction;
-        const isReverse = fn.isReverse === true;
-
-        if (isReverse) {
-          // Add reverse function definition
-          env.addReverse(stmt.name, fn);
-        } else {
-          // Add as overload
-          env.addOverload(stmt.name, fn);
-        }
-        return value;
+        return this.handleAndBinding(stmt, value, env);
       }
 
       case "ExprStmt":
@@ -1321,7 +1236,6 @@ export class Interpreter implements InterpreterContext {
       }
 
       case "CodeblockStmt": {
-        // Codeblocks are transparent - just execute their statements
         let result: LeaValue = null;
         for (const innerStmt of stmt.statements) {
           result = await this.executeStmtAsync(innerStmt, env);
