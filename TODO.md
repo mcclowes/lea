@@ -66,9 +66,11 @@ Spread Operator - For records and lists
 let updated = { ...user, age: 31 }
 let combined = [...list1, ...list2]
 
-## Autoformatting - prettier style
+## ~~Autoformatting - prettier style~~ ✅ DONE
 
 Formatter - Auto-format Lea code (like Prettier)
+
+Implemented! See `src/formatter.ts` and `npm run format`.
 
 ## Array vs value handling - resolve ambiguity
 
@@ -207,3 +209,4 @@ seed /*> nextRandom, (x) -> x < 0.1 -- generate until threshold
 - [x] Collapsing codeblocks (implicit, e.g. functions, and explicit) in the IDE, syntax highlighting (brown)
 - [X] Multi-line ternary
 - [x] First-class citizen: Pipeline
+- [x] Autoformatting (Prettier-style formatter)
