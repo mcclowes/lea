@@ -52,7 +52,8 @@ export function parsePrimary(ctx: ParserContext): Expr {
     return booleanLiteral(false);
   }
 
-  if (ctx.match(TokenType.UNDERSCORE)) {
+  // 'input' keyword is the placeholder for piped values and matched values
+  if (ctx.match(TokenType.INPUT)) {
     return placeholderExpr();
   }
 

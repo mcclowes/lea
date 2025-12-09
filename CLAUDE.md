@@ -27,7 +27,7 @@ counter = 10
 -- Pipes (value flows into first argument)
 16 /> sqrt
 5 /> add(3)          -- becomes add(5, 3)
-5 /> add(3, _)       -- placeholder: becomes add(3, 5)
+5 /> add(3, input)   -- placeholder: becomes add(3, 5)
 
 -- Functions (no fn keyword)
 let double = (x) -> x * 2
@@ -171,16 +171,16 @@ x == y, x != y, x < y, x > y, x <= y, x >= y
 let describe = (x) -> match x
   | 0 -> "zero"                  -- pattern match against literal
   | 1 -> "one"
-  | if _ < 0 -> "negative"       -- guard with _ as matched value
-  | if _ > 100 -> "big"          -- multiple guards allowed
+  | if input < 0 -> "negative"   -- guard with 'input' as matched value
+  | if input > 100 -> "big"      -- multiple guards allowed
   | "default"                    -- default case (no pattern/guard)
 
 5 /> describe /> print           -- "default"
 -3 /> describe /> print          -- "negative"
 
--- Using _ in result body
+-- Using input in result body
 let double = (x) -> match x
-  | if _ > 0 -> _ * 2            -- _ available in body too
+  | if input > 0 -> input * 2    -- input available in body too
   | 0
 
 -- Parallel pipes (fan-out/fan-in)
@@ -319,7 +319,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 
 ```
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
-LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF, RETURN
+LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF, RETURN, INPUT
 PIPE (/>), SPREAD_PIPE (/>>>), PARALLEL_PIPE (\>), ARROW (->), REVERSE_ARROW (<-)
 REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), REACTIVE_PIPE (@>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
@@ -376,7 +376,7 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 **Environment:** Lexical scoping with parent chain.
 
 **Pipe evaluation:**
-- If right side is CallExpr with placeholder `_` in args, substitute piped value there
+- If right side is CallExpr with placeholder `input` in args, substitute piped value there
 - Otherwise prepend piped value as first argument
 - If right side is just Identifier, call it with piped value as single arg
 
@@ -499,10 +499,10 @@ Callback receives `(element, index)` as arguments, similar to map/filter/reduce.
 **Pattern Matching:**
 - `match expr` starts a match expression, followed by cases
 - `| pattern -> body` — match against a literal value
-- `| if guard -> body` — guard condition with `_` bound to matched value
+- `| if guard -> body` — guard condition with `input` bound to matched value
 - `| body` — default case (no pattern or guard, always matches)
 - Cases are evaluated in order; first match wins
-- `_` in guards refers to the matched value and can be used in the body
+- `input` in guards refers to the matched value and can be used in the body
 - Throws error if no case matches
 
 **Pipelines (First-Class):**

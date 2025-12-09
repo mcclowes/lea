@@ -49,27 +49,27 @@ and logTransform = (x) <- x * x
 
 -- Categorize transaction by amount using pattern matching
 let categorizeAmount = (amount) -> match amount
-  | if _ < 0 -> "refund"
-  | if _ == 0 -> "void"
-  | if _ < 50 -> "micro"
-  | if _ < 200 -> "small"
-  | if _ < 500 -> "medium"
-  | if _ < 1000 -> "large"
-  | if _ < 5000 -> "premium"
+  | if input < 0 -> "refund"
+  | if input == 0 -> "void"
+  | if input < 50 -> "micro"
+  | if input < 200 -> "small"
+  | if input < 500 -> "medium"
+  | if input < 1000 -> "large"
+  | if input < 5000 -> "premium"
   | "enterprise"
 
 -- Risk assessment with guards (returns record)
 let assessRisk = (amount) -> match amount
-  | if _ < 0 -> { level: "low", reason: "refund" }
-  | if _ > 10000 -> { level: "critical", reason: "high_value" }
-  | if _ > 5000 -> { level: "high", reason: "large_transaction" }
-  | if _ > 1000 -> { level: "medium", reason: "moderate_value" }
+  | if input < 0 -> { level: "low", reason: "refund" }
+  | if input > 10000 -> { level: "critical", reason: "high_value" }
+  | if input > 5000 -> { level: "high", reason: "large_transaction" }
+  | if input > 1000 -> { level: "medium", reason: "moderate_value" }
   | { level: "low", reason: "normal" }
 
 -- Transaction status determination
 let determineStatus = (transaction) -> match transaction.amount
-  | if _ < 0 -> "reversed"
-  | if _ == 0 -> "cancelled"
+  | if input < 0 -> "reversed"
+  | if input == 0 -> "cancelled"
   | "completed"
 
 -- Priority scoring using pattern matching

@@ -11,11 +11,11 @@ describe(0) /> print
 describe(1) /> print
 describe(5) /> print
 
--- Guard patterns using 'if' with _ as the matched value
+-- Guard patterns using 'if' with 'input' as the matched value
 let classify = (x) -> match x
-  | if _ < 0 -> "negative"
-  | if _ == 0 -> "zero"
-  | if _ > 0 -> "positive"
+  | if input < 0 -> "negative"
+  | if input == 0 -> "zero"
+  | if input > 0 -> "positive"
   | "unknown"
 
 classify(-5) /> print
@@ -24,9 +24,9 @@ classify(10) /> print
 
 -- Classic FizzBuzz using match
 let fizzbuzz = (n) -> match n
-  | if _ % 15 == 0 -> "fizzbuzz"
-  | if _ % 3 == 0 -> "fizz"
-  | if _ % 5 == 0 -> "buzz"
+  | if input % 15 == 0 -> "fizzbuzz"
+  | if input % 3 == 0 -> "fizz"
+  | if input % 5 == 0 -> "buzz"
   | n
 
 fizzbuzz(15) /> print
@@ -34,9 +34,9 @@ fizzbuzz(9) /> print
 fizzbuzz(10) /> print
 fizzbuzz(7) /> print
 
--- Using _ in the result body
+-- Using 'input' in the result body
 let doubleIfPositive = (x) -> match x
-  | if _ > 0 -> _ * 2
+  | if input > 0 -> input * 2
   | 0
 
 doubleIfPositive(5) /> print
@@ -57,17 +57,17 @@ greet("jp") /> print
 -- Match in a pipeline
 let processValue = (x) -> match x
   | 0 -> "nothing"
-  | if _ > 100 -> "big"
+  | if input > 100 -> "big"
   | "small"
 
 [0, 50, 150] /> map(processValue) /> print
 
 -- Grade calculator
 let grade = (score) -> match score
-  | if _ >= 90 -> "A"
-  | if _ >= 80 -> "B"
-  | if _ >= 70 -> "C"
-  | if _ >= 60 -> "D"
+  | if input >= 90 -> "A"
+  | if input >= 80 -> "B"
+  | if input >= 70 -> "C"
+  | if input >= 60 -> "D"
   | "F"
 
 grade(95) /> print

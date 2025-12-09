@@ -1118,7 +1118,9 @@ export class Interpreter implements InterpreterContext {
       const localEnv = new Environment(fn.closure);
 
       // Bind parameters, using default values if argument not provided
+      // Skip parameters named '_' (ignored/discarded parameters)
       fn.params.forEach((param, i) => {
+        if (param.name === "_") return; // Skip ignored parameters
         let value = fnArgs[i];
         if ((value === undefined || value === null) && param.defaultValue) {
           // Evaluate default value in the closure environment
@@ -1868,8 +1870,10 @@ export class Interpreter implements InterpreterContext {
     const localEnv = new Environment(fn.closure);
 
     // Bind parameters, using default values if argument not provided
+    // Skip parameters named '_' (ignored/discarded parameters)
     for (let i = 0; i < fn.params.length; i++) {
       const param = fn.params[i];
+      if (param.name === "_") continue; // Skip ignored parameters
       let value = args[i];
       if ((value === undefined || value === null) && param.defaultValue) {
         // Evaluate default value in the closure environment

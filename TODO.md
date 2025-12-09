@@ -2,17 +2,9 @@
 
 ## Active Tasks
 
-- [x] Expand or remove the /docs dir
-- [x] Bump syntax highlighting package & publish (v0.2.1)
-- [x] Codeblocks - sticky positioning in IDE (like markdown headers)
-- [x] Review syntax highlighting against all of the more recent language additions
-- [x] Enforce types by default? Or just warn (with #validate to throw)? Introduce a decorator to ignore it?
-  - Implemented #strict pragma and --strict CLI flag for opt-in strict type checking
-- [x] Replace big comments with codeblocks throughout example files
-- [x] Make codeblocks appear the same colours as comments in syntax highlighting
-- [x] \`\`\`lea syntax highlighting in markdown
 - [ ] Leveraging Lea functionality within TypeScript?
-- [ ] Ambiguity with ignored and templated params? - Ignored Parameters - let ignoreSecond = (x, _) -> x
+- [ ] Ambiguity with ignored and templated params? - `let ignoreSecond = (x, _) -> x`
+- [ ] Explicit Pipeline Types
 
 ## Feature Ideas
 
@@ -21,9 +13,9 @@
 ```lea
 let pipe = /> double /> reverse :: [Int]            -- input type only
 let pipe = /> double /> reverse :: [Int] /> [Int]   -- input and output
-let pipe = :: [Int] /> [Int]  -- multi-line
-  /> double 
-  /> reverse 
+let pipe = :: [Int] /> [Int]                        -- multi-line pipelines
+  /> double
+  /> reverse
 ```
 
 ### Refinement Types
@@ -175,3 +167,13 @@ Alternative: `window(n)` builtin that creates overlapping windows.
 - [x] Pattern matching
 - [x] Record destructuring + spread operator
 - [x] Split interpreter into smaller files
+- [x] Expand or remove the /docs dir
+- [x] Bump syntax highlighting package & publish (v0.2.1)
+- [x] Codeblocks - sticky positioning in IDE (like markdown headers)
+- [x] Review syntax highlighting against all of the more recent language additions
+- [x] Enforce types by default? Or just warn (with #validate to throw)?
+  - Implemented #strict pragma and --strict CLI flag for opt-in strict type checking
+- [x] Replace big comments with codeblocks throughout example files
+- [x] Make codeblocks appear the same colours as comments in syntax highlighting
+- [x] \`\`\`lea syntax highlighting in markdown
+- [x] Replace <- early return with `return` keyword

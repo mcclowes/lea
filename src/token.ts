@@ -18,6 +18,7 @@ export enum TokenType {
   MATCH = "MATCH",
   IF = "IF",
   RETURN = "RETURN",       // return keyword for early return
+  INPUT = "INPUT",         // input keyword for placeholder/matched value
 
   // Operators
   PIPE = "PIPE",           // />
@@ -101,6 +102,7 @@ export const KEYWORDS: Record<string, TokenType> = Object.create(null, {
   match: { value: TokenType.MATCH, enumerable: true },
   if: { value: TokenType.IF, enumerable: true },
   return: { value: TokenType.RETURN, enumerable: true },
+  input: { value: TokenType.INPUT, enumerable: true },
 });
 
 export const createToken = (

@@ -236,7 +236,7 @@ export class Formatter {
       case "IndexExpr":
         return this.formatIndexExpr(expr, ctx);
       case "PlaceholderExpr":
-        return "_";
+        return "input";
       case "AwaitExpr":
         return this.formatAwaitExpr(expr, ctx);
       case "RecordExpr":

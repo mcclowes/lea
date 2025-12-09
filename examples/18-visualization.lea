@@ -49,7 +49,7 @@ let complex = [1, 2, 3]
 let describe = (x) -> match x
   | 0 -> "zero"
   | 1 -> "one"
-  | if _ < 0 -> "negative"
+  | if input < 0 -> "negative"
   | "positive"
 
 let described = 5 /> describe

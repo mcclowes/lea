@@ -36,11 +36,15 @@ let bar = (x) -> :: [Int] :> [Int]
 and bar = (x) -> :: Int :> Int
   x
   /> (x) -> x + 1
+and bar = (x) <- :: Int :> Int
+  x
+  /> (x) -> x - 1
 
 await bar([1,2, 3, 4, 5]) /> print
 bar([1,2, 3, 4, 5]) /> print
 let abc = bar([1,2, 3, 4, 5]) 
 abc /> print
 bar(1) /> print
+bar(2) </ print
 
 {/--}

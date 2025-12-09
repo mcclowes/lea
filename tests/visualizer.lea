@@ -56,7 +56,7 @@ let conditional = 50
 let matchTest = 5 /> (x) -> match x
   | 0 -> "zero"
   | 1 -> "one"
-  | if _ > 10 -> "big"
+  | if input > 10 -> "big"
   | "other"
 
 -- Test 10: Template strings in pipe

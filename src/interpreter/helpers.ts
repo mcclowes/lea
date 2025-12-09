@@ -127,7 +127,10 @@ export function asFunction(val: LeaValue): (args: LeaValue[]) => LeaValue {
     const fn = val as LeaFunction;
     return (args: LeaValue[]) => {
       const env = new Environment(fn.closure);
-      fn.params.forEach((param, i) => env.define(param.name, args[i] ?? null, false));
+      fn.params.forEach((param, i) => {
+        if (param.name === "_") return; // Skip ignored parameters
+        env.define(param.name, args[i] ?? null, false);
+      });
       // Note: This is a simplified version - the real implementation uses the Interpreter
       // This is primarily used by builtin functions like map/filter/reduce
       const { Interpreter } = require("./index");

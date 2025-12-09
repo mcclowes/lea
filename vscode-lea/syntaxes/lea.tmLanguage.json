@@ -113,7 +113,7 @@
       "patterns": [
         {
           "name": "keyword.control.lea",
-          "match": "\\b(let|and|maybe|await|context|provide|decorator|match|if|return)\\b"
+          "match": "\\b(let|and|maybe|await|context|provide|decorator|match|if|return|input)\\b"
         },
         {
           "name": "storage.type.lea",
@@ -250,7 +250,8 @@
           "match": "\\b(true|false)\\b"
         },
         {
-          "name": "constant.language.placeholder.lea",
+          "comment": "Underscore as ignored parameter in function definitions",
+          "name": "variable.language.ignored.lea",
           "match": "\\b_\\b"
         },
         {
