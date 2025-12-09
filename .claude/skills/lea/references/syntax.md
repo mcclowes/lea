@@ -124,6 +124,11 @@ let process = /> double /> addOne
 [1, 2, 3] /> filter((x) -> x > 1)
 [1, 2, 3] /> reduce(0, (acc, x) -> acc + x)
 
+-- Callbacks can receive index as optional second argument
+["a", "b", "c"] /> map((x, i) -> `{i}: {x}`)       -- ["0: a", "1: b", "2: c"]
+[10, 20, 30, 40] /> filter((_, i) -> i < 2)        -- [10, 20] (first 2 elements)
+["a", "b"] /> reduce("", (acc, x, i) -> acc ++ `{i}:{x} `)  -- "0:a 1:b "
+
 -- Additional list operations
 [3, 1, 2] /> reverse        -- [2, 1, 3]
 [[1, 2], [3, 4]] /> zip     -- [[1, 3], [2, 4]]

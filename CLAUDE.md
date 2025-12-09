@@ -110,6 +110,11 @@ await fetchData() /> print
 [1, 2, 3] /> filter((x) -> x > 1)
 [1, 2, 3] /> reduce(0, (acc, x) -> acc + x)
 
+-- Array index access (callbacks receive index as optional second argument)
+["a", "b", "c"] /> map((x, i) -> `{i}: {x}`)       -- ["0: a", "1: b", "2: c"]
+[10, 20, 30, 40] /> filter((_, i) -> i < 2)        -- [10, 20] (first 2 elements)
+["a", "b"] /> reduce("", (acc, x, i) -> acc ++ `{i}:{x} `)  -- "0:a 1:b "
+
 -- String concatenation (with automatic type coercion)
 "Hello" ++ " World"
 "The answer is " ++ 42       -- "The answer is 42"
@@ -335,12 +340,15 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 - `print` (returns first arg for chaining)
 - `sqrt`, `abs`, `floor`, `ceil`, `round`, `min`, `max`
 - `length`, `head`, `tail`, `push`, `concat`, `reverse`, `zip`, `isEmpty`
-- `map`, `filter`, `reduce`, `range`, `iterations`
+- `map(list, fn)` — transform each element; callback receives `(element, index)`
+- `filter(list, fn)` — keep elements matching predicate; callback receives `(element, index)`
+- `reduce(list, initial, fn)` — fold into single value; callback receives `(acc, element, index)`
+- `range`, `iterations`
 - `fst`, `snd` — first/second element of tuple or list
 - `take(list, n)`, `at(list, index)` — list access
 - `toString` — convert value to string
 - `delay(ms, value)` — returns promise that resolves after ms
-- `parallel(list, fn, opts?)` — concurrent map with optional `{ limit: n }`
+- `parallel(list, fn, opts?)` — concurrent map with optional `{ limit: n }`; callback receives `(element, index)`
 - `race(fns)` — returns first promise to resolve
 - `then(promise, fn)` — chain promise transformations
 
