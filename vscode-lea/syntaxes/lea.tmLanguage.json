@@ -158,22 +158,22 @@
       "patterns": [
         {
           "comment": "Reactive pipe operator - creates auto-recomputing reactive binding",
-          "name": "keyword.operator.reactive-pipe.lea",
+          "name": "keyword.operator.pipe.lea",
           "match": "@>"
         },
         {
           "comment": "Bidirectional pipe operator - for reversible pipelines",
-          "name": "keyword.operator.bidirectional-pipe.lea",
+          "name": "keyword.operator.pipe.lea",
           "match": "</>"
         },
         {
           "comment": "Reverse pipe operator - applies value through function/pipeline in reverse",
-          "name": "keyword.operator.reverse-pipe.lea",
+          "name": "keyword.operator.pipe.lea",
           "match": "</"
         },
         {
           "comment": "Spread pipe operator - maps function over list elements",
-          "name": "keyword.operator.spread-pipe.lea",
+          "name": "keyword.operator.pipe.lea",
           "match": "/>>>"
         },
         {
@@ -181,7 +181,8 @@
           "match": "/>"
         },
         {
-          "name": "keyword.operator.parallel-pipe.lea",
+          "comment": "Parallel pipe operator - fan-out for concurrent execution",
+          "name": "keyword.operator.pipe.lea",
           "match": "\\\\>"
         },
         {

@@ -29,7 +29,7 @@ let formatComponent = (c) ->
 
 -- Join parts with commas and "and" for last item
 let commas = (commaPart) -> 
-  commaPart ++ " and " ++ (parts /> at(len - 1))
+  `{commaPart} and {parts /> at(len - 1)}`
 
 -- ==========================================
 -- Pipeline stages for duration processing
