@@ -3,7 +3,7 @@
 ## Active Tasks
 
 - [ ] Leveraging Lea functionality within TypeScript?
-- [ ] Ambiguity with ignored and templated params? - `let ignoreSecond = (x, _) -> x`
+- [X] Ambiguity with ignored and templated params? - `let ignoreSecond = (x, _) -> x`
 - [ ] Explicit Pipeline Types
 
 ## Feature Ideas
