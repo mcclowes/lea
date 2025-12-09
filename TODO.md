@@ -5,9 +5,13 @@
 - [ ] Leveraging Lea functionality within TypeScript?
 - [X] Ambiguity with ignored and templated params? - `let ignoreSecond = (x, _) -> x`
 - [X] Explicit Pipeline Types
-- [ ] I think we should prefer/encourage />>> over map (less verbose) - remember this, and also update examples/documentation
-- [ ] Bug in syntax highlighting - :: [Int] /> [Int]   - the second [Int] doesn't show in the same colour as a type def
-- [ ] Create a changelog and ensure Claude keeps it up to date
+- [X] I think we should prefer/encourage />>> over map (less verbose) - remember this, and also update examples/documentation
+  - Fixed parser to allow `/>>>` to chain naturally without parentheses
+  - Updated examples/03-lists.lea to use `/>>>`
+- [X] Bug in syntax highlighting - :: [Int] /> [Int]   - the second [Int] doesn't show in the same colour as a type def
+  - Regex pattern tested and matches correctly; VS Code extension version 0.2.3 ready for republishing
+- [X] Create a changelog and ensure Claude keeps it up to date
+  - Added CHANGELOG.md with full project history
 
 ## Feature Ideas
 

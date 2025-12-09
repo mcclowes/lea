@@ -3,7 +3,16 @@ import * as fs from "fs";
 import * as path from "path";
 import { Lexer, LexerError } from "./lexer";
 import { Parser, ParseError } from "./parser";
-import { Interpreter, RuntimeError, Environment, LeaValue } from "./interpreter";
+import {
+  Interpreter,
+  RuntimeError,
+  Environment,
+  LeaValue,
+  LeaPipeline,
+  LeaBidirectionalPipeline,
+  LeaReactiveValue,
+  LeaTuple,
+} from "./interpreter";
 import { formatError } from "./errors";
 
 // Parse CLI arguments

@@ -213,7 +213,10 @@ export function parsePipeTerm(ctx: ParserContext): Expr {
     // Syntax: list />>> fn (maps fn over each element of list)
     if (ctx.match(TokenType.SPREAD_PIPE)) {
       ctx.skipNewlines();
+      const wasInPipeOperand = ctx.inPipeOperand;
+      ctx.setInPipeOperand(true);
       const right = parseUnary(ctx);
+      ctx.setInPipeOperand(wasInPipeOperand);
       expr = spreadPipeExpr(expr, right);
       continue;
     }
@@ -224,7 +227,10 @@ export function parsePipeTerm(ctx: ParserContext): Expr {
       break;
     }
     ctx.skipNewlines();
+    const wasInPipeOperand = ctx.inPipeOperand;
+    ctx.setInPipeOperand(true);
     const right = parseUnary(ctx);
+    ctx.setInPipeOperand(wasInPipeOperand);
     expr = pipeExpr(expr, right);
   }
 

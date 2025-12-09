@@ -25,7 +25,8 @@ range(1, 5) /> print
 range(0, 3) /> print
 
 -- Map: transform each element
-numbers /> map((x) -> x * 2) /> print
+-- Use />>> (spread pipe) for concise mapping, or map() for familiarity
+numbers />>> (x) -> x * 2 /> print
 
 -- Filter: keep elements matching predicate
 numbers /> filter((x) -> x > 2) /> print

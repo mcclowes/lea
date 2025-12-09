@@ -2,7 +2,7 @@
   "name": "lea-language",
   "displayName": "Lea Language",
   "description": "Syntax highlighting for the Lea programming language - a pipe-oriented functional language",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "publisher": "mcclowes",
   "author": {
     "name": "Max Clayton Clowes"

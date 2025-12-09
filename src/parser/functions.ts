@@ -183,10 +183,10 @@ export function parseFunctionBody(ctx: ParserContext): { attachments: string[]; 
   }
 
   // Single expression on same line.
-  // If we're inside a parallel pipe branch, don't consume ANY pipes (regular or parallel)
-  // since those pipes belong to the outer parallel expression.
+  // If we're inside a parallel pipe branch or a pipe operand (e.g., RHS of />>> or />),
+  // don't consume ANY pipes since those pipes belong to the outer expression.
   // Otherwise, allow regular pipes but not parallel pipes.
-  const body = ctx.inParallelPipeBranch ? parseTernaryNoPipes(ctx) : parseTernaryNoParallelPipe(ctx);
+  const body = (ctx.inParallelPipeBranch || ctx.inPipeOperand) ? parseTernaryNoPipes(ctx) : parseTernaryNoParallelPipe(ctx);
 
   // For single-line, type signature comes after body
   if (!typeSignature && ctx.check(TokenType.DOUBLE_COLON)) {
