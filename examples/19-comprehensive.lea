@@ -123,9 +123,10 @@ let calculateTax = (amount) ->
 -- SECTION: First-Class Pipelines
 -- ============================================================
 
--- Helper function to enrich a transaction
+-- Helper function to enrich a transaction (using spread to preserve original fields)
+-- Note: parentheses required around record literal to disambiguate from block body
 let enrichTransaction = (t) ->
-  { id: t.id, amount: t.amount, category: t.category, size: categorizeAmount(t.amount), risk: assessRisk(t.amount), status: determineStatus(t) }
+  ({ ...t, size: categorizeAmount(t.amount), risk: assessRisk(t.amount), status: determineStatus(t) })
 
 -- Core transformation pipelines
 let validatePipeline = /> filter((t) -> t.amount != 0)
@@ -211,9 +212,10 @@ analysisPipeline.stages /> print
 "" /> print
 "═══ Section 2: Parallel Processing ═══" /> print
 
--- Helper to build metrics record
+-- Helper to build metrics record (deriving computed fields from base metrics)
 let buildMetrics = (revenue, refunds, count) ->
-  { totalRevenue: revenue, totalRefunds: refunds, transactionCount: count, netRevenue: revenue + refunds, averageTransaction: revenue / count }
+  let base = { totalRevenue: revenue, totalRefunds: refunds, transactionCount: count }
+  ({ ...base, netRevenue: revenue + refunds, averageTransaction: revenue / count })
 
 -- Helper functions for aggregation (using function calls for parallel pipe compatibility)
 let sumAmounts = (list) -> list /> map((t) -> t.amount) /> reduce(0, (acc, x) -> acc + x)
@@ -252,9 +254,9 @@ categoryAnalysis /> print
 "" /> print
 "═══ Section 3: Spread Pipe Operations ═══" /> print
 
--- Helper to build indexed transaction record
+-- Helper to build indexed transaction record (spreading original transaction)
 let buildIndexedTx = (t, i) ->
-  { index: i, id: t.id, amount: t.amount, priority: i < 3 ? "high" : "normal" }
+  ({ index: i, ...t, priority: i < 3 ? "high" : "normal" })
 
 -- Apply transformation to each transaction with index
 let indexedTransactions = transactions />>> buildIndexedTx
@@ -313,9 +315,10 @@ let reversed = transformed </ currencyPipeline
 "" /> print
 "═══ Section 5: Pattern Matching ═══" /> print
 
--- Helper to build category info
+-- Helper to build category info (using destructuring and spread)
 let buildCategoryInfo = (t) ->
-  { id: t.id, amount: t.amount, size: categorizeAmount(t.amount) }
+  let { id, amount } = t
+  { id: id, amount: amount, size: categorizeAmount(amount) }
 
 -- Categorize all transactions
 let categories = transactions /> map(buildCategoryInfo)
@@ -323,9 +326,10 @@ let categories = transactions /> map(buildCategoryInfo)
 "Transaction size categories:" /> print
 categories /> print
 
--- Helper for risk info
+-- Helper for risk info (spreading base transaction fields)
 let buildRiskInfo = (t) ->
-  { id: t.id, amount: t.amount, risk: assessRisk(t.amount) }
+  let { id, amount } = t
+  { id: id, amount: amount, risk: assessRisk(amount) }
 
 -- Risk assessment for high-value transactions
 let highValueTx = transactions
@@ -441,16 +445,17 @@ format(1234, 2) /> print
 "" /> print
 "═══ Section 8: Context System ═══" /> print
 
--- Function using injected contexts
+-- Function using injected contexts (with destructuring)
 let processWithContext = (transaction) ->
   @Logger
   @AppConfig
   @Analytics
-  Logger.log(`Processing transaction {transaction.id}`)
-  let taxAmount = transaction.amount * AppConfig.taxRate
-  let total = transaction.amount + taxAmount
-  Analytics.trackEvent(`Transaction {transaction.id} processed`)
-  { id: transaction.id, subtotal: transaction.amount, tax: taxAmount, total: total, currency: AppConfig.currency }
+  let { id, amount } = transaction
+  Logger.log(`Processing transaction {id}`)
+  let taxAmount = amount * AppConfig.taxRate
+  let total = amount + taxAmount
+  Analytics.trackEvent(`Transaction {id} processed`)
+  ({ ...transaction, subtotal: amount, tax: taxAmount, total: total, currency: AppConfig.currency })
 
 -- Process a sample transaction
 let sampleTx = { id: 999, amount: 500, category: "test" }
@@ -491,11 +496,107 @@ validateAndProcess(-10) /> print
 validateAndProcess(500000) /> print
 
 -- ============================================================
--- Section 10: Advanced List Operations with Index
+-- Section 10: Spread Operators and Destructuring
 -- ============================================================
 
 "" /> print
-"═══ Section 10: Advanced List Operations ═══" /> print
+"═══ Section 10: Spread Operators and Destructuring ═══" /> print
+
+-- List spreading: combining lists
+let q1Sales = [150, 200, 175]
+let q2Sales = [225, 180, 195]
+let q3Sales = [210, 240, 185]
+let q4Sales = [300, 275, 320]
+
+let allSales = [...q1Sales, ...q2Sales, ...q3Sales, ...q4Sales]
+"Combined quarterly sales:" /> print
+allSales /> print
+
+-- List spreading with new elements
+let baseTaxRates = [0.05, 0.08, 0.10]
+let extendedRates = [0.03, ...baseTaxRates, 0.12, 0.15]
+"Extended tax rates:" /> print
+extendedRates /> print
+
+-- Record spreading: merging configurations
+let defaultConfig = {
+  currency: "USD",
+  locale: "en-US",
+  taxRate: 0.08
+}
+let userConfig = {
+  currency: "EUR",
+  theme: "dark"
+}
+let mergedConfig = { ...defaultConfig, ...userConfig }
+"Merged configuration (user overrides defaults):" /> print
+mergedConfig /> print
+
+-- Record spreading: transaction enrichment
+let baseTransaction = { id: 100, amount: 500, category: "services" }
+let enrichedTx = {
+  ...baseTransaction,
+  timestamp: "2024-01-15",
+  processed: true,
+  tax: baseTransaction.amount * 0.08
+}
+"Enriched transaction via spread:" /> print
+enrichedTx /> print
+
+-- Tuple destructuring
+let coords = (100, 250)
+let (x, y) = coords
+`Destructured coordinates: x={x}, y={y}` /> print
+
+-- List destructuring
+let topThree = [8500, 2500, 1100]
+let (first, second, third) = topThree
+`Top transactions: 1st=${first}, 2nd=${second}, 3rd=${third}` /> print
+
+-- Record destructuring in processing
+let invoice = {
+  invoiceId: "INV-001",
+  clientName: "Acme Corp",
+  amount: 2500,
+  paid: false
+}
+let { invoiceId, amount, paid } = invoice
+`Invoice {invoiceId}: ${amount} - Paid: {paid}` /> print
+
+-- Nested destructuring with spread
+let accountData = {
+  accountId: "ACC-123",
+  balance: 15000,
+  metadata: { createdAt: "2024-01-01", tier: "premium" }
+}
+let { accountId, balance } = accountData
+let updatedAccount = { ...accountData, balance: balance + 500, lastModified: "2024-03-15" }
+"Updated account with new balance:" /> print
+updatedAccount /> print
+
+-- Combining spread with pipelines
+let recentTransactions = [
+  { id: 201, amount: 75 },
+  { id: 202, amount: 150 }
+]
+let historicalTransactions = [
+  { id: 101, amount: 500 },
+  { id: 102, amount: 320 }
+]
+
+let allTransactions = [...historicalTransactions, ...recentTransactions]
+  /> map((t) -> ({ ...t, verified: true }))
+  /> filter((t) -> t.amount > 100)
+
+"All verified transactions over $100:" /> print
+allTransactions /> print
+
+-- ============================================================
+-- Section 11: Advanced List Operations with Index
+-- ============================================================
+
+"" /> print
+"═══ Section 11: Advanced List Operations ═══" /> print
 
 -- Map with index
 let indexed = ["apple", "banana", "cherry"]
@@ -518,9 +619,9 @@ let weightedSum = [10, 20, 30, 40]
 
 `Weighted sum (val * position): {weightedSum}` /> print
 
--- Helper for ranked transaction
+-- Helper for ranked transaction (spread with computed fields)
 let buildRankedTx = (t, i) ->
-  { rank: i + 1, id: t.id, amount: t.amount, doubled: t.amount * 2 }
+  ({ rank: i + 1, ...t, doubled: t.amount * 2 })
 
 -- Complex list pipeline
 let complexResult = transactions
@@ -532,11 +633,11 @@ let complexResult = transactions
 complexResult /> print
 
 -- ============================================================
--- Section 11: Decorated Pipeline Demo
+-- Section 12: Decorated Pipeline Demo
 -- ============================================================
 
 "" /> print
-"═══ Section 11: Decorated Pipelines ═══" /> print
+"═══ Section 12: Decorated Pipelines ═══" /> print
 
 -- Debug pipeline shows step-by-step
 let debugPipe = /> double /> addOne /> square #debug
@@ -557,11 +658,11 @@ let memoPipe = /> double /> addOne #memo
 10 /> memoPipe /> print
 
 -- ============================================================
--- Section 12: String Operations and Templates
+-- Section 13: String Operations and Templates
 -- ============================================================
 
 "" /> print
-"═══ Section 12: String Operations ═══" /> print
+"═══ Section 13: String Operations ═══" /> print
 
 -- Template strings with interpolation
 let name = "Financial Analytics"
@@ -588,15 +689,16 @@ let padded = padStart("42", 6, "0")
 `Padded: {padded}` /> print
 
 -- ============================================================
--- Section 13: Complete Analytics Summary
+-- Section 14: Complete Analytics Summary
 -- ============================================================
 
 "" /> print
-"═══ Section 13: Final Analytics Summary ═══" /> print
+"═══ Section 14: Final Analytics Summary ═══" /> print
 
--- Helper to build summary
+-- Helper to build summary (base record with spread-computed fields)
 let buildSummary = (revenue, count, highValue, critical) ->
-  { totalRevenue: revenue, transactionCount: count, averageValue: revenue / count, highValueCount: highValue, criticalRiskCount: critical, highValuePercentage: (highValue * 100) / count }
+  let base = { totalRevenue: revenue, transactionCount: count, highValueCount: highValue, criticalRiskCount: critical }
+  ({ ...base, averageValue: revenue / count, highValuePercentage: (highValue * 100) / count })
 
 -- Additional helpers for summary
 let filterHighValue = (list) -> filter(list, (t) -> t.amount > 1000)
@@ -623,11 +725,11 @@ summary /> print
 "╚══════════════════════════════════════════╝" /> print
 
 -- ============================================================
--- Section 14: Pipeline Visualization
+-- Section 15: Pipeline Visualization
 -- ============================================================
 
 "" /> print
-"═══ Pipeline Visualization ═══" /> print
+"═══ Section 15: Pipeline Visualization ═══" /> print
 
 "Analysis pipeline structure:" /> print
 analysisPipeline.visualize()
@@ -660,6 +762,8 @@ numericPipeline.visualize()
 "║  - Early return (<-)                                     ║" /> print
 "║  - Tuples                                                ║" /> print
 "║  - Records                                               ║" /> print
+"║  - Spread operators (...)                                ║" /> print
+"║  - Destructuring                                         ║" /> print
 "║  - Template strings                                      ║" /> print
 "║  - Index access in callbacks                             ║" /> print
 "╚══════════════════════════════════════════════════════════╝" /> print
