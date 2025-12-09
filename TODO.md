@@ -4,7 +4,7 @@
 
 - [ ] Expand or remove the /docs dir
 - [ ] Bump syntax highlighting package & publish
-- [ ] Codeblocks - sticky positioning in IDE (like markdown headers)
+- [x] Codeblocks - sticky positioning in IDE (like markdown headers)
 - [ ] Review syntax highlighting against all of the more recent language additions
 
 ## Feature Ideas
