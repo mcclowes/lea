@@ -141,4 +141,79 @@ squared(3) /> print
 let traced = (x) -> x + 10 #bump #log
 traced(5) /> print
 
+-- ==========================================
+-- Type Coercion Decorators
+-- ==========================================
+
+"=== Type Coercion Decorators ===" /> print
+
+-- #coerce(Type) - strict type coercion of inputs
+"--- #coerce decorator ---" /> print
+
+-- Coerce string to Int
+let parseNumber = (x) -> x * 2 #coerce(Int)
+"21" /> parseNumber /> print
+-- 42
+
+-- Coerce to Bool
+let checkTruthy = (x) -> x #coerce(Bool)
+"yes" /> checkTruthy /> print
+-- true
+0 /> checkTruthy /> print
+-- false
+
+-- Coerce to List
+let makeList = (x) -> x #coerce(List)
+"abc" /> makeList /> print
+-- [a, b, c]
+42 /> makeList /> print
+-- [42]
+
+-- #tease(Type) - best-effort type coercion of output
+"--- #tease decorator ---" /> print
+
+-- Extract numbers from strings (e.g., "42px" -> 42)
+let extractNumber = (x) -> x #tease(Int)
+"42px" /> extractNumber /> print
+-- 42
+"The answer is 99" /> extractNumber /> print
+-- 99
+[1, 2, 3, 4, 5] /> extractNumber /> print
+-- 5 (list length)
+
+-- Tease to boolean
+let toBool = (x) -> x #tease(Bool)
+"hello" /> toBool /> print
+-- true (non-empty string)
+[] /> toBool /> print
+-- false (empty list)
+
+-- #parse - auto-parse string inputs as JSON or numbers
+"--- #parse decorator ---" /> print
+
+let doubleInput = (x) -> x * 2 #parse
+"21" /> doubleInput /> print
+-- 42
+
+let processArray = (x) -> x /> map((n) -> n * 2) #parse
+"[1, 2, 3]" /> processArray /> print
+-- [2, 4, 6]
+
+-- #stringify - convert output to string
+"--- #stringify decorator ---" /> print
+
+let asString = (x) -> x #stringify
+[1, 2, 3] /> asString /> print
+-- [1, 2, 3] (as string)
+(10, "hello") /> asString /> print
+-- (10, hello)
+
+-- Combining type coercion decorators
+"--- Combining coercion decorators ---" /> print
+
+-- Parse input then stringify output
+let roundTrip = (x) -> x + 100 #parse #stringify
+"50" /> roundTrip /> print
+-- 150 (as string)
+
 "Decorators complete!" /> print

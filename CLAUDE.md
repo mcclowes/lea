@@ -67,6 +67,20 @@ greet("World", "Hi")          -- overrides: "Hi World"
 let logged = (x) -> x * 2 #log #memo #time
 let retryable = (x) -> riskyOp(x) #retry(3)
 
+-- Type coercion decorators
+let parseNum = (x) -> x * 2 #coerce(Int)   -- coerce input: "42" becomes 42
+"21" /> parseNum                            -- 42
+
+let extract = (x) -> x #tease(Int)          -- best-effort: extract number
+"42px" /> extract                           -- 42
+"Price: $99" /> extract                     -- 99
+
+let stringify = (x) -> x #stringify         -- convert output to string
+[1, 2] /> stringify                         -- "[1, 2]"
+
+let parseInput = (x) -> x #parse            -- parse JSON or numbers from string
+"[1, 2, 3]" /> parseInput                   -- [1, 2, 3]
+
 -- Multi-statement function bodies (indentation or braces)
 let process = (x) ->
   let y = x * 2
@@ -319,6 +333,10 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 - `#pure` — warn if side effects detected
 - `#async` — mark function as async (returns promise)
 - `#trace` — deep logging with call depth
+- `#coerce(Type)` — coerce inputs to type (Int, String, Bool, List)
+- `#parse` — auto-parse string inputs as JSON or numbers
+- `#stringify` — convert output to string representation
+- `#tease(Type)` — best-effort coercion of output (extracts numbers from strings, etc.)
 
 **Decorators (Pipelines):**
 - `#log` — logs pipeline input/output
