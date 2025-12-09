@@ -458,11 +458,6 @@ export function getPipelineMember(
             return { text, decorators };
           };
 
-          // Helper to describe a branch expression
-          const describeBranchColored = (branchExpr: Expr): { text: string; decorators: string[] } => {
-            return describeStageColored(branchExpr);
-          };
-
           // Helper to create a box line
           const boxTop = (width: number = boxWidth): string =>
             `${colors.box}┌${"─".repeat(width)}┐${colors.reset}`;
@@ -479,8 +474,11 @@ export function getPipelineMember(
             return `${colors.decorator}#${decorators.join(" #")}${colors.reset}`;
           };
 
-          // Calculate center position
-          const center = Math.floor(boxWidth / 2) + 2;
+          // Calculate center position to align with box connector
+          // Box is prefixed with 2 spaces, └ is 1 char, then floor(width/2) dashes to ┬
+          // So connector is at: 2 + 1 + floor(width/2) = 3 + 7 = 10 (for width=15)
+          // Arrow should be at same position, so padding is 10 - 1 = 9 (since │ is 1 char)
+          const center = 2 + 1 + Math.floor(boxWidth / 2);  // position of ┬
           const centerPad = " ".repeat(center);
 
           // Pipeline header with decorators
@@ -494,103 +492,123 @@ export function getPipelineMember(
           lines.push(`  ${boxMid(`${colors.io}input${colors.reset}`)}`);
           lines.push(`  ${boxBot()}`);
 
+          // Helper to get all stages from a branch expression (expands pipelines)
+          const getBranchStages = (expr: Expr): { text: string; decorators: string[] }[] => {
+            if (expr.kind === "PipelineLiteral") {
+              // Expand pipeline into its individual stages
+              return expr.stages.map(s => {
+                if ("isParallel" in s && s.isParallel) {
+                  return { text: `${colors.parallel}parallel${colors.reset}`, decorators: [] };
+                }
+                return describeStageColored(s.expr);
+              });
+            }
+            // Single expression - just return it
+            return [describeStageColored(expr)];
+          };
+
           for (let i = 0; i < pipeline.stages.length; i++) {
             const stage = pipeline.stages[i];
 
             if (isParallelStage(stage)) {
-              // Parallel stage - improved branching visualization
+              // Parallel stage - show each branch's stages vertically
               const numBranches = stage.branches.length;
-              const branchDescs = stage.branches.map(describeBranchColored);
+              const branchStagesList = stage.branches.map(getBranchStages);
+              const maxStages = Math.max(...branchStagesList.map(s => s.length));
 
-              // Fan-out with colored diamond
+              const branchBoxWidth = 13;
+              const branchSpacing = 4;
+              const totalWidth = numBranches * branchBoxWidth + (numBranches - 1) * branchSpacing;
+              const startOffset = Math.max(2, Math.floor((boxWidth + 4 - totalWidth) / 2));
+
+              // Helper to draw connector line at branch centers
+              const drawConnectors = (char: string, color: string = colors.connector): string => {
+                let line = " ".repeat(startOffset);
+                for (let b = 0; b < numBranches; b++) {
+                  const mid = Math.floor(branchBoxWidth / 2);
+                  line += " ".repeat(mid) + `${color}${char}${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
+                  if (b < numBranches - 1) line += " ".repeat(branchSpacing);
+                }
+                return line;
+              };
+
+              // Helper to draw horizontal lines between branch centers
+              const drawHorizontalJoin = (leftChar: string, midChar: string, rightChar: string, color: string): string => {
+                let line = " ".repeat(startOffset);
+                const mid = Math.floor(branchBoxWidth / 2);
+                for (let b = 0; b < numBranches; b++) {
+                  if (b === 0) {
+                    line += " ".repeat(mid) + `${color}${leftChar}${colors.reset}`;
+                  } else if (b === numBranches - 1) {
+                    line += `${color}${"─".repeat(branchSpacing + branchBoxWidth - 1)}${rightChar}${colors.reset}`;
+                  } else {
+                    line += `${color}${"─".repeat(branchSpacing + mid)}${midChar}${"─".repeat(branchBoxWidth - mid - 1)}${colors.reset}`;
+                  }
+                }
+                return line;
+              };
+
+              // Fan-out connector and diamond
               lines.push(`${centerPad}${colors.connector}│${colors.reset}`);
               lines.push(`${centerPad}${colors.connector}▼${colors.reset}`);
-              lines.push(`${" ".repeat(center - 2)}${colors.parallel}◆─┬─◆${colors.reset}`);
+              lines.push(drawHorizontalJoin("◆", "┬", "◆", colors.parallel));
+              lines.push(drawConnectors("│"));
+              lines.push(drawConnectors("▼"));
 
-              // Calculate total width needed for branches
-              const branchBoxWidth = 13;
-              const branchSpacing = 2;
-              const totalWidth = numBranches * branchBoxWidth + (numBranches - 1) * branchSpacing;
-              const startOffset = Math.max(0, Math.floor((boxWidth + 4 - totalWidth) / 2));
-
-              // Draw branch connectors
-              let connectorLine = " ".repeat(startOffset);
-              for (let b = 0; b < numBranches; b++) {
-                const mid = Math.floor(branchBoxWidth / 2);
-                if (b === 0) {
-                  connectorLine += " ".repeat(mid) + `${colors.connector}│${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
-                } else {
-                  connectorLine += " ".repeat(branchSpacing + mid) + `${colors.connector}│${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
-                }
-              }
-              lines.push(connectorLine);
-
-              // Draw branch arrows
-              let arrowLine = " ".repeat(startOffset);
-              for (let b = 0; b < numBranches; b++) {
-                const mid = Math.floor(branchBoxWidth / 2);
-                if (b === 0) {
-                  arrowLine += " ".repeat(mid) + `${colors.connector}▼${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
-                } else {
-                  arrowLine += " ".repeat(branchSpacing + mid) + `${colors.connector}▼${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
-                }
-              }
-              lines.push(arrowLine);
-
-              // Draw branch boxes - top
-              let topLine = " ".repeat(startOffset);
-              for (let b = 0; b < numBranches; b++) {
-                topLine += `${colors.box}┌${"─".repeat(branchBoxWidth - 2)}┐${colors.reset}`;
-                if (b < numBranches - 1) topLine += " ".repeat(branchSpacing);
-              }
-              lines.push(topLine);
-
-              // Draw branch boxes - content
-              let contentLine = " ".repeat(startOffset);
-              for (let b = 0; b < numBranches; b++) {
-                const { text } = branchDescs[b];
-                contentLine += `${colors.box}│${colors.reset}${padBox(text, branchBoxWidth - 2)}${colors.box}│${colors.reset}`;
-                if (b < numBranches - 1) contentLine += " ".repeat(branchSpacing);
-              }
-              lines.push(contentLine);
-
-              // Draw branch decorators if any
-              const hasDecorators = branchDescs.some(d => d.decorators.length > 0);
-              if (hasDecorators) {
-                let decoratorLine = " ".repeat(startOffset);
+              // Draw each row of stages across all branches
+              for (let row = 0; row < maxStages; row++) {
+                // Box top
+                let topLine = " ".repeat(startOffset);
                 for (let b = 0; b < numBranches; b++) {
-                  const { decorators } = branchDescs[b];
-                  const decoratorStr = decorators.length > 0 ? formatDecorators(decorators) : "";
-                  decoratorLine += `${colors.box}│${colors.reset}${padBox(decoratorStr, branchBoxWidth - 2)}${colors.box}│${colors.reset}`;
-                  if (b < numBranches - 1) decoratorLine += " ".repeat(branchSpacing);
+                  if (row < branchStagesList[b].length) {
+                    topLine += `${colors.box}┌${"─".repeat(branchBoxWidth - 2)}┐${colors.reset}`;
+                  } else {
+                    // Empty placeholder - just connector
+                    const mid = Math.floor(branchBoxWidth / 2);
+                    topLine += " ".repeat(mid) + `${colors.connector}│${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
+                  }
+                  if (b < numBranches - 1) topLine += " ".repeat(branchSpacing);
                 }
-                lines.push(decoratorLine);
-              }
+                lines.push(topLine);
 
-              // Draw branch boxes - bottom with connectors
-              let botLine = " ".repeat(startOffset);
-              for (let b = 0; b < numBranches; b++) {
-                const mid = Math.floor((branchBoxWidth - 2) / 2);
-                botLine += `${colors.box}└${"─".repeat(mid)}┬${"─".repeat(branchBoxWidth - 3 - mid)}┘${colors.reset}`;
-                if (b < numBranches - 1) botLine += " ".repeat(branchSpacing);
-              }
-              lines.push(botLine);
+                // Box content
+                let contentLine = " ".repeat(startOffset);
+                for (let b = 0; b < numBranches; b++) {
+                  if (row < branchStagesList[b].length) {
+                    const { text } = branchStagesList[b][row];
+                    contentLine += `${colors.box}│${colors.reset}${padBox(text, branchBoxWidth - 2)}${colors.box}│${colors.reset}`;
+                  } else {
+                    const mid = Math.floor(branchBoxWidth / 2);
+                    contentLine += " ".repeat(mid) + `${colors.connector}│${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
+                  }
+                  if (b < numBranches - 1) contentLine += " ".repeat(branchSpacing);
+                }
+                lines.push(contentLine);
 
-              // Draw connectors from boxes to fan-in
-              let connector2Line = " ".repeat(startOffset);
-              for (let b = 0; b < numBranches; b++) {
-                const mid = Math.floor(branchBoxWidth / 2);
-                if (b === 0) {
-                  connector2Line += " ".repeat(mid) + `${colors.connector}│${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
-                } else {
-                  connector2Line += " ".repeat(branchSpacing + mid) + `${colors.connector}│${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
+                // Box bottom
+                let botLine = " ".repeat(startOffset);
+                for (let b = 0; b < numBranches; b++) {
+                  if (row < branchStagesList[b].length) {
+                    const mid = Math.floor((branchBoxWidth - 2) / 2);
+                    botLine += `${colors.box}└${"─".repeat(mid)}┬${"─".repeat(branchBoxWidth - 3 - mid)}┘${colors.reset}`;
+                  } else {
+                    const mid = Math.floor(branchBoxWidth / 2);
+                    botLine += " ".repeat(mid) + `${colors.connector}│${colors.reset}` + " ".repeat(branchBoxWidth - mid - 1);
+                  }
+                  if (b < numBranches - 1) botLine += " ".repeat(branchSpacing);
+                }
+                lines.push(botLine);
+
+                // Connector between rows (except after last row)
+                if (row < maxStages - 1) {
+                  lines.push(drawConnectors("│"));
+                  lines.push(drawConnectors("▼"));
                 }
               }
-              lines.push(connector2Line);
 
-              // Fan-in diamond
-              lines.push(`${" ".repeat(center - 2)}${colors.parallel}◆─┴─◆${colors.reset}`);
-              lines.push(`${centerPad}${colors.connector}│${colors.reset}`);
+              // Fan-in connector and diamond
+              lines.push(drawConnectors("│"));
+              lines.push(drawHorizontalJoin("◆", "┴", "◆", colors.parallel));
 
             } else {
               // Regular stage or spread pipe - show as box
