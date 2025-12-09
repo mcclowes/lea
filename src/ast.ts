@@ -75,7 +75,7 @@ export interface PipeExpr {
 }
 
 // Spread pipe expression - maps a function/pipeline over each element of a list
-// Syntax: [1, 2, 3] />> fn OR parallelResult />> fn
+// Syntax: [1, 2, 3] />>> fn OR parallelResult />>> fn
 export interface SpreadPipeExpr {
   kind: "SpreadPipeExpr";
   left: Expr;   // The list or parallel result to spread

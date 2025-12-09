@@ -20,7 +20,7 @@ let randomChar = (_) -> randomChoice(chars(CHARS)) :: Int :> String
 -- Generate a random individual (string of target length)
 -- Uses iterations with spread pipe for cleaner generation
 let randomIndividual = (_) -> :: Int :> String
-  iterations(length(TARGET)) />> randomChar /> join("")
+  iterations(length(TARGET)) />>> randomChar /> join("")
 
 -- Calculate fitness: count matching characters (higher is better)
 -- Uses zip and filter pipeline pattern
@@ -40,7 +40,7 @@ let fitter = (a, b) -> fitness(a) > fitness(b) ? a : b :: (String, String) :> St
 -- Uses iterations with spread pipe for candidate generation
 let tournamentSelect = (population, k) -> :: (List, Int) :> String
   let pickRandom = (_) -> randomChoice(population)
-  let candidates = iterations(k) />> pickRandom
+  let candidates = iterations(k) />>> pickRandom
   candidates /> reduce(head(candidates), fitter)
 
 -- Select parent using tournament selection
@@ -64,7 +64,7 @@ let maybeMutate = (c) -> random() < MUTATION_RATE ? randomChar(0) : c :: String 
 -- Mutate an individual: randomly change characters
 -- Uses pipeline pattern for character transformation
 let mutate = (individual) -> :: String :> String
-  chars(individual) />> maybeMutate /> join("")
+  chars(individual) />>> maybeMutate /> join("")
 
 -- Create single offspring from two parents
 -- Combines crossover and mutation in a pipeline
@@ -78,7 +78,7 @@ let breed = (parent1, parent2) -> :: (String, String) :> String
 -- Create initial random population
 -- Uses iterations with spread pipe for clean generation
 let createPopulation = () ->
-  iterations(POPULATION_SIZE) />> randomIndividual
+  iterations(POPULATION_SIZE) />>> randomIndividual
 
 -- Get the best individual in population
 let bestIndividual = (population) -> :: List :> String
@@ -95,7 +95,7 @@ let createChild = (population) -> :: List :> String
 let evolveGeneration = (population) -> :: List :> List
   let elite = bestIndividual(population)
   let breedOne = (_) -> createChild(population)
-  let children = iterations(POPULATION_SIZE - 1) />> breedOne
+  let children = iterations(POPULATION_SIZE - 1) />>> breedOne
   push(children, elite)
 
 </>

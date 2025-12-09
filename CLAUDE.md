@@ -158,16 +158,16 @@ value
 
 -- Spread pipe (map over elements)
 -- Applies function/pipeline to each element of a list
-[1, 2, 3] />> double              -- [2, 4, 6]
-[1, 2, 3] />> add(10)             -- [11, 12, 13]
-[1, 2, 3] />> print               -- prints 1, 2, 3 (returns [1, 2, 3])
+[1, 2, 3] />>>double              -- [2, 4, 6]
+[1, 2, 3] />>>add(10)             -- [11, 12, 13]
+[1, 2, 3] />>>print               -- prints 1, 2, 3 (returns [1, 2, 3])
 
 -- Spread pipe with parallel results
-5 \> addOne \> double />> print   -- prints each branch result individually
+5 \> addOne \> double />>>print   -- prints each branch result individually
 
 -- Spread pipe with pipelines
 let process = /> double /> addOne
-[1, 2, 3] />> process             -- [3, 5, 7]
+[1, 2, 3] />>>process             -- [3, 5, 7]
 
 -- Codeblocks (collapsible regions)
 <> -- Section name
@@ -255,7 +255,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 ```
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
 LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF
-PIPE (/>), SPREAD_PIPE (/>>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
+PIPE (/>), SPREAD_PIPE (/>>>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
 REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
@@ -297,7 +297,7 @@ NEWLINE, EOF
 3. Comparison (`<`, `>`, `<=`, `>=`)
 4. Term (`+`, `-`, `++`)
 5. Factor (`*`, `/`, `%`)
-6. Pipe (`/>`, `/>>`, `\>`, `</`)
+6. Pipe (`/>`, `/>>>`, `\>`, `</`)
 7. Unary (`-`)
 8. Call (function calls, indexing)
 9. Primary (literals, identifiers, grouping, functions)
@@ -398,12 +398,12 @@ value
 
 **Spread Pipe Operator:**
 ```
-list />> fn
+list />>>fn
 ```
 Maps a function or pipeline over each element of a list or parallel result.
 
-- `[1, 2, 3] />> double` returns `[2, 4, 6]` (maps double over each element)
-- `parallelResult />> print` applies print to each branch result individually
+- `[1, 2, 3] />>>double` returns `[2, 4, 6]` (maps double over each element)
+- `parallelResult />>>print` applies print to each branch result individually
 - If the left side is not a list or parallel result, throws a RuntimeError
 - Returns an array of results from applying the function to each element
 - Async-aware: if any result is a promise, returns a promise that resolves to all results

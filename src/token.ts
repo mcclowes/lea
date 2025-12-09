@@ -20,7 +20,7 @@ export enum TokenType {
 
   // Operators
   PIPE = "PIPE",           // />
-  SPREAD_PIPE = "SPREAD_PIPE", // />>
+  SPREAD_PIPE = "SPREAD_PIPE", // />>>
   PARALLEL_PIPE = "PARALLEL_PIPE", // \>
   ARROW = "ARROW",         // ->
   RETURN = "RETURN",       // <-

@@ -535,7 +535,7 @@ export class Interpreter implements InterpreterContext {
       // Left is a parallel result - map over each branch result
       elements = leftValue.values;
     } else {
-      throw new RuntimeError("Spread pipe />> requires a list or parallel result on the left side");
+      throw new RuntimeError("Spread pipe />>> requires a list or parallel result on the left side");
     }
 
     // Map the right side function/pipeline over each element
@@ -1299,7 +1299,7 @@ export class Interpreter implements InterpreterContext {
       // Left is a parallel result - map over each branch result
       elements = leftValue.values;
     } else {
-      throw new RuntimeError("Spread pipe />> requires a list or parallel result on the left side");
+      throw new RuntimeError("Spread pipe />>> requires a list or parallel result on the left side");
     }
 
     // Map the right side function/pipeline over each element (in parallel)
