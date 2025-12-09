@@ -54,6 +54,10 @@
       }
     ],
     "configurationDefaults": {
+      "[lea]": {
+        "editor.stickyScroll.enabled": true,
+        "editor.stickyScroll.defaultModel": "foldingProviderModel"
+      },
       "editor.tokenColorCustomizations": {
         "textMateRules": [
           {
