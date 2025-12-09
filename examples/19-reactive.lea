@@ -1,0 +1,51 @@
+-- Reactive Pipelines
+-- Automatically recompute when source data changes
+
+-- Define a mutable data source
+maybe users = [
+  { name: "Alice", score: 85 },
+  { name: "Bob", score: 92 },
+  { name: "Charlie", score: 78 }
+]
+
+-- Create a reactive pipeline that computes statistics
+let stats = users @> map((u) -> u.score) /> reduce(0, (a, b) -> a + b)
+
+"Initial sum of scores:" /> print
+stats.value /> print  -- 255
+
+-- Update the data - reactive automatically recomputes
+users = [
+  { name: "Alice", score: 85 },
+  { name: "Bob", score: 92 },
+  { name: "Charlie", score: 78 },
+  { name: "Diana", score: 95 }
+]
+
+"After adding Diana:" /> print
+stats.value /> print  -- 350
+
+-- Auto-unwrap in expressions (note: use parentheses due to pipe precedence)
+("Average score: " ++ (stats / 4)) /> print
+
+-- Multiple reactive pipelines from same source
+let passing = users @> filter((u) -> u.score >= 80) /> map((u) -> u.name)
+let failing = users @> filter((u) -> u.score < 80) /> map((u) -> u.name)
+
+"Passing students:" /> print
+passing.value /> print
+
+"Failing students:" /> print
+failing.value /> print
+
+-- Static sources (primitives) are optimized
+-- No reactive wrapper created, value computed immediately
+let x = 10
+let doubled = x @> (n) -> n * 2
+doubled /> print  -- 20 (direct value, not reactive)
+
+-- Arrays with let are still reactive (mutable by reference)
+let items = [1, 2, 3]
+let itemSum = items @> reduce(0, (a, b) -> a + b)
+print(itemSum)         -- <reactive[items]>
+itemSum.value /> print -- 6

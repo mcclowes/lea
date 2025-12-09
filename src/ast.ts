@@ -26,7 +26,8 @@ export type Expr =
   | PipelineLiteral
   | ReversePipeExpr
   | BidirectionalPipelineLiteral
-  | MatchExpr;
+  | MatchExpr
+  | ReactivePipeExpr;
 
 export interface NumberLiteral {
   kind: "NumberLiteral";
@@ -258,6 +259,17 @@ export interface MatchExpr {
   cases: MatchCase[];        // The match arms
 }
 
+// Reactive pipe expression - creates a reactive binding from a source
+// Syntax: source @> fn1 /> fn2 /> fn3
+// The source should be a mutable variable (maybe) or object/array
+// The pipeline stages are re-evaluated when the source changes (lazy evaluation)
+export interface ReactivePipeExpr {
+  kind: "ReactivePipeExpr";
+  source: Expr;              // The source expression (identifier to track)
+  sourceName: string;        // The name of the source variable for tracking
+  stages: AnyPipelineStage[];  // The pipeline stages to apply
+}
+
 export interface BlockBody {
   kind: "BlockBody";
   statements: Stmt[];
@@ -278,7 +290,7 @@ export interface TuplePattern {
 }
 
 // Statement types
-export type Stmt = LetStmt | AndStmt | ExprStmt | ContextDefStmt | ProvideStmt | DecoratorDefStmt | CodeblockStmt;
+export type Stmt = LetStmt | AndStmt | ExprStmt | ContextDefStmt | ProvideStmt | DecoratorDefStmt | CodeblockStmt | AssignStmt;
 
 export interface LetStmt {
   kind: "LetStmt";
@@ -323,6 +335,14 @@ export interface CodeblockStmt {
   kind: "CodeblockStmt";
   label: string | null;
   statements: Stmt[];
+}
+
+// Assignment statement for mutable variables
+// Syntax: name = value
+export interface AssignStmt {
+  kind: "AssignStmt";
+  name: string;
+  value: Expr;
 }
 
 // Program
@@ -510,6 +530,12 @@ export const codeblockStmt = (label: string | null, statements: Stmt[]): Codeblo
   statements,
 });
 
+export const assignStmt = (name: string, value: Expr): AssignStmt => ({
+  kind: "AssignStmt",
+  name,
+  value,
+});
+
 export const program = (statements: Stmt[]): Program => ({
   kind: "Program",
   statements,
@@ -537,4 +563,11 @@ export const matchExpr = (value: Expr, cases: MatchCase[]): MatchExpr => ({
   kind: "MatchExpr",
   value,
   cases,
+});
+
+export const reactivePipeExpr = (source: Expr, sourceName: string, stages: AnyPipelineStage[]): ReactivePipeExpr => ({
+  kind: "ReactivePipeExpr",
+  source,
+  sourceName,
+  stages,
 });

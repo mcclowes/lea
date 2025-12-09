@@ -11,6 +11,7 @@ import {
   provideStmt,
   decoratorDefStmt,
   codeblockStmt,
+  assignStmt,
 } from "../ast";
 import { ParserContext } from "./types";
 import { parseExpression } from "./expressions";
@@ -40,6 +41,19 @@ export function parseStatement(ctx: ParserContext): Stmt {
   if (ctx.check(TokenType.CODEBLOCK_OPEN)) {
     return parseCodeblockStatement(ctx);
   }
+
+  // Check for assignment statement: identifier = expression
+  // We need to look ahead to see if it's IDENTIFIER followed by EQ (not EQEQ)
+  if (ctx.check(TokenType.IDENTIFIER)) {
+    const savedPos = ctx.current;
+    ctx.advance(); // consume identifier
+    if (ctx.check(TokenType.EQ)) {
+      ctx.setCurrent(savedPos); // restore
+      return parseAssignStatement(ctx);
+    }
+    ctx.setCurrent(savedPos); // restore - not an assignment
+  }
+
   return exprStmt(parseExpression(ctx));
 }
 
@@ -101,6 +115,18 @@ export function parseLetStatement(ctx: ParserContext, mutable: boolean): LetStmt
   const value = parseExpression(ctx);
 
   return letStmt(name, mutable, value, pattern);
+}
+
+/**
+ * Parse an assignment statement: name = value
+ * Used for reassigning mutable (maybe) variables
+ */
+export function parseAssignStatement(ctx: ParserContext): Stmt {
+  const name = ctx.consume(TokenType.IDENTIFIER, "Expected variable name").lexeme;
+  ctx.consume(TokenType.EQ, "Expected '=' after variable name");
+  ctx.skipNewlines();
+  const value = parseExpression(ctx);
+  return assignStmt(name, value);
 }
 
 /**

@@ -81,6 +81,17 @@ export interface LeaReversibleFunction {
   reverse: LeaFunction;  // The reverse transformation
 }
 
+// A reactive value that re-evaluates when its source changes
+// Uses lazy evaluation - only recomputes on .value access when dirty
+export interface LeaReactiveValue {
+  kind: "reactive";
+  sourceName: string;           // Name of the source variable being tracked
+  stages: AnyPipelineStage[];   // Pipeline stages to apply
+  closure: Environment;         // Captured environment for evaluating stages
+  cachedValue: LeaValue | null; // Cached result from last evaluation
+  dirty: boolean;               // True if source has changed since last eval
+}
+
 export type LeaValue =
   | number
   | string
@@ -96,6 +107,7 @@ export type LeaValue =
   | LeaPipeline
   | LeaBidirectionalPipeline
   | LeaReversibleFunction
+  | LeaReactiveValue
   | null;
 
 export class RuntimeError extends Error {
@@ -116,9 +128,37 @@ export class ReturnValue extends Error {
 export class Environment {
   private values = new Map<string, { value: LeaValue; mutable: boolean }>();
   private parent: Environment | null;
+  // Track reactive values that depend on each source variable
+  private reactivesBySource = new Map<string, Set<LeaReactiveValue>>();
 
   constructor(parent: Environment | null = null) {
     this.parent = parent;
+  }
+
+  // Register a reactive value as depending on a source variable
+  registerReactive(sourceName: string, reactive: LeaReactiveValue): void {
+    if (!this.reactivesBySource.has(sourceName)) {
+      this.reactivesBySource.set(sourceName, new Set());
+    }
+    this.reactivesBySource.get(sourceName)!.add(reactive);
+    // Also register in parent if variable is defined there
+    if (this.parent && !this.values.has(sourceName)) {
+      this.parent.registerReactive(sourceName, reactive);
+    }
+  }
+
+  // Mark all reactive values depending on a source as dirty
+  private markReactivesDirty(name: string): void {
+    const reactives = this.reactivesBySource.get(name);
+    if (reactives) {
+      for (const reactive of reactives) {
+        reactive.dirty = true;
+      }
+    }
+    // Also check parent scopes
+    if (this.parent) {
+      this.parent.markReactivesDirty(name);
+    }
   }
 
   define(name: string, value: LeaValue, mutable: boolean): void {
@@ -223,6 +263,8 @@ export class Environment {
         throw new RuntimeError(`Cannot reassign immutable variable '${name}'`);
       }
       entry.value = value;
+      // Mark any reactive values depending on this source as dirty
+      this.markReactivesDirty(name);
       return;
     }
     if (this.parent) {

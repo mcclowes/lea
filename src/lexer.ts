@@ -59,7 +59,13 @@ export class Lexer {
         }
         break;
       case "#": this.addToken(TokenType.HASH); break;
-      case "@": this.addToken(TokenType.AT); break;
+      case "@":
+        if (this.match(">")) {
+          this.addToken(TokenType.REACTIVE_PIPE);
+        } else {
+          this.addToken(TokenType.AT);
+        }
+        break;
       case "?": this.addToken(TokenType.QUESTION); break;
       case "*": this.addToken(TokenType.STAR); break;
       case "%": this.addToken(TokenType.PERCENT); break;

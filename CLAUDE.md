@@ -21,6 +21,9 @@ let x = 10
 -- Mutable binding
 maybe counter = 0
 
+-- Reassign mutable binding
+counter = 10
+
 -- Pipes (value flows into first argument)
 16 /> sqrt
 5 /> add(3)          -- becomes add(5, 3)
@@ -252,6 +255,27 @@ pipeA.intersection(pipeB)          -- keep only common stages
 pipeA.union(pipeB)                 -- combine (deduplicated)
 pipeA.concat(pipeB)                -- concatenate (preserves duplicates)
 Pipeline.from([fn1, fn2])          -- create from function list
+
+-- Reactive pipelines (auto-recomputing on source changes)
+-- Use @> to create a reactive binding from a mutable source
+maybe source = [1, 2, 3]
+let reactive = source @> map(double) /> sum
+reactive.value         -- 12 (lazy: computed on first .value access)
+
+source = [1, 2, 3, 4]  -- mutation marks reactive as dirty
+reactive.value         -- 20 (recomputed because source changed)
+reactive.value         -- 20 (cached - not recomputed)
+
+-- Auto-unwrap in expressions (use parentheses due to pipe precedence)
+(reactive + 10) /> print  -- 30
+
+-- Static sources (primitives) optimize away the reactive
+let x = 5
+let r = x @> double    -- r is just 10, not a reactive wrapper
+
+-- Arrays/objects with let create reactives (mutable by reference)
+let arr = [1, 2, 3]
+let r2 = arr @> sum    -- r2 is a reactive
 ```
 
 ## Architecture
@@ -280,7 +304,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
 LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF
 PIPE (/>), SPREAD_PIPE (/>>>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
-REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), PIPE_CHAR (|)
+REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), REACTIVE_PIPE (@>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 DOUBLE_COLON (::), COLON_GT (:>)
@@ -305,10 +329,12 @@ NEWLINE, EOF
 - BidirectionalPipelineLiteral (stages: list of expressions, decorators)
 - MatchExpr (value: expr, cases: MatchCase[])
 - MatchCase (pattern: expr|null, guard: expr|null, body: expr)
+- ReactivePipeExpr (source: expr, sourceName: string, stages: list of pipeline stages)
 
 **Statements:**
 - LetStmt (name, mutable, value)
 - AndStmt (name, value) — extends existing function with overload or reverse
+- AssignStmt (name, value) — reassign a mutable (maybe) variable
 - ExprStmt (expression)
 - ContextDefStmt (name, defaultValue)
 - ProvideStmt (contextName, value)
@@ -505,6 +531,18 @@ Callback receives `(element, index)` as arguments, similar to map/filter/reduce.
   - `.union(other)` — combine all stages (deduplicated)
   - `.difference(other)` — stages in this but not in other (alias for without)
   - `.concat(other)` — concatenate pipelines (preserves duplicates)
+
+**Reactive Pipelines:**
+- Create with `@>`: `let r = source @> fn1 /> fn2`
+- Only the first pipe uses `@>`, rest are normal `/>`
+- Source must be an identifier (variable name to track)
+- Lazy evaluation: computes on `.value` access, not on creation
+- Dirty tracking: source mutation marks reactive as dirty
+- Caching: subsequent `.value` accesses return cached result if clean
+- Auto-unwrap: reactives unwrap automatically in binary operations
+- Static optimization: primitive sources compute immediately (no reactive wrapper)
+- Properties:
+  - `.value` — get current computed value (recomputes if dirty)
 
 ## Usage
 
