@@ -158,9 +158,14 @@ value
 
 -- Spread pipe (map over elements)
 -- Applies function/pipeline to each element of a list
+-- Callback receives (element, index) like map/filter/reduce
 [1, 2, 3] />>>double              -- [2, 4, 6]
 [1, 2, 3] />>>add(10)             -- [11, 12, 13]
-[1, 2, 3] />>>print               -- prints 1, 2, 3 (returns [1, 2, 3])
+[1, 2, 3] />>>print               -- prints "1 0", "2 1", "3 2" (element and index)
+
+-- Spread pipe with index access
+["a", "b", "c"] />>>(x, i) -> `{i}: {x}`  -- ["0: a", "1: b", "2: c"]
+[10, 20, 30] />>>(x, i) -> x + i          -- [10, 21, 32]
 
 -- Spread pipe with parallel results
 5 \> addOne \> double />>>print   -- prints each branch result individually
@@ -249,6 +254,8 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `src/index.ts` — File runner entry point
 - `src/visualizer.ts` — AST to Mermaid flowchart generator
 - `src/visualize.ts` — CLI entry point for visualization
+- `src/formatter.ts` — Prettier-like code formatter
+- `src/format.ts` — CLI entry point for formatting
 
 ## Token Types
 
@@ -401,8 +408,11 @@ value
 list />>>fn
 ```
 Maps a function or pipeline over each element of a list or parallel result.
+Callback receives `(element, index)` as arguments, similar to map/filter/reduce.
 
 - `[1, 2, 3] />>>double` returns `[2, 4, 6]` (maps double over each element)
+- `[1, 2, 3] />>>(x, i) -> x + i` returns `[1, 3, 5]` (element + index)
+- `["a", "b"] />>>(x, i) -> \`{i}: {x}\`` returns `["0: a", "1: b"]`
 - `parallelResult />>>print` applies print to each branch result individually
 - If the left side is not a list or parallel result, throws a RuntimeError
 - Returns an array of results from applying the function to each element
@@ -487,6 +497,47 @@ npm run visualize -- file.lea           # Output Mermaid markdown
 npm run visualize -- file.lea --html    # Output HTML with diagram
 npm run visualize -- file.lea -o out.html  # Write to file
 npm run visualize -- file.lea --tb      # Top-to-bottom layout
+npm run format -- file.lea              # Print formatted code to stdout
+npm run format -- file.lea -w           # Format file in place
+npm run format -- dir/ -w               # Format all .lea files in directory
+npm run format -- file.lea --check      # Check if file is formatted
+```
+
+## Formatting
+
+The formatter provides Prettier-like code formatting for Lea source files.
+
+### CLI Options
+
+```bash
+-w, --write           Format file(s) in place
+--check               Check if file(s) are formatted (exit with error if not)
+--indent <n>          Number of spaces for indentation (default: 2)
+--print-width <n>     Maximum line width (default: 80)
+--no-trailing-commas  Don't use trailing commas in multi-line lists/records
+-h, --help            Show help message
+```
+
+### Formatting Rules
+
+- **Indentation**: 2 spaces (configurable)
+- **Line width**: 80 characters (configurable)
+- **Trailing commas**: Added in multi-line lists and records
+- **Pipe chains**: Broken into multiple lines when exceeding print width
+- **Parentheses**: Automatically added where needed for operator precedence
+- **Records/Lists**: Multi-line when exceeding print width
+
+### Example
+
+```bash
+# Format a single file
+npm run format -- examples/01-basics.lea -w
+
+# Check formatting in CI
+npm run format -- src/ --check
+
+# Format with custom settings
+npm run format -- file.lea --indent 4 --print-width 100
 ```
 
 ## Visualization

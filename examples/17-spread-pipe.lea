@@ -14,9 +14,21 @@ let add = (a, b) -> a + b
 -- Spread pipe with inline functions (use parens to control precedence)
 ([1, 2, 3] />>> (x) -> x * x) /> print  -- [1, 4, 9]
 
--- Side effects for each element
-"Processing each number:" /> print
-[10, 20, 30] />>> print  -- prints 10, 20, 30 individually
+-- Side effects for each element (callback receives element and index)
+"Processing each number with index:" /> print
+[10, 20, 30] />>> print  -- prints "10 0", "20 1", "30 2" (element and index)
+
+-- Index access in callbacks (similar to map/filter/reduce)
+let withIndex = (x, i) -> `{i}: {x}`
+["a", "b", "c"] />>> withIndex /> print  -- ["0: a", "1: b", "2: c"]
+
+-- Index with arithmetic
+let indexedCalc = (x, i) -> x + i * 10
+[1, 2, 3] />>> indexedCalc /> print  -- [1, 12, 23] (1+0*10, 2+1*10, 3+2*10)
+
+-- Index with call expressions (index appended after explicit args)
+let addThree = (a, b, i) -> a + b + i
+[5, 10, 15] />>> addThree(100) /> print  -- [105, 111, 117] (5+100+0, 10+100+1, 15+100+2)
 
 -- Spread pipe with pipelines
 let addOne = (x) -> x + 1

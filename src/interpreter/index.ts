@@ -538,10 +538,10 @@ export class Interpreter implements InterpreterContext {
       throw new RuntimeError("Spread pipe />>> requires a list or parallel result on the left side");
     }
 
-    // Map the right side function/pipeline over each element
+    // Map the right side function/pipeline over each element, passing index as second argument
     const results: LeaValue[] = [];
-    for (const element of elements) {
-      const result = this.evaluatePipeWithValue(element, right, env);
+    for (let i = 0; i < elements.length; i++) {
+      const result = this.evaluatePipeWithValue(elements[i], right, env, i);
       results.push(result);
     }
 
@@ -558,7 +558,7 @@ export class Interpreter implements InterpreterContext {
     return results;
   }
 
-  evaluatePipeWithValue(pipedValue: LeaValue, right: Expr, env: Environment): LeaValue {
+  evaluatePipeWithValue(pipedValue: LeaValue, right: Expr, env: Environment, spreadIndex?: number): LeaValue {
     // If piped value is a parallel result, spread it as multiple arguments
     if (isParallelResult(pipedValue)) {
       // If right is a function expression, call it with spread values
@@ -626,25 +626,28 @@ export class Interpreter implements InterpreterContext {
       }
       // If the identifier refers to a reversible function, call its forward
       if (isReversibleFunction(callee)) {
-        return this.callFunction(callee.forward, [pipedValue]);
+        const args = spreadIndex !== undefined ? [pipedValue, spreadIndex] : [pipedValue];
+        return this.callFunction(callee.forward, args);
       }
       // Otherwise treat as a function call
       return this.evaluateCall(
         { kind: "CallExpr", callee: right, args: [] },
         env,
-        pipedValue
+        pipedValue,
+        spreadIndex
       );
     }
 
     // If right is a call expression, check for placeholder
     if (right.kind === "CallExpr") {
-      return this.evaluateCall(right, env, pipedValue);
+      return this.evaluateCall(right, env, pipedValue, spreadIndex);
     }
 
-    // If right is a function expression, call it with piped value
+    // If right is a function expression, call it with piped value (and index if from spread pipe)
     if (right.kind === "FunctionExpr") {
       const fn = this.createFunction(right, env);
-      return this.callFunction(fn, [pipedValue]);
+      const args = spreadIndex !== undefined ? [pipedValue, spreadIndex] : [pipedValue];
+      return this.callFunction(fn, args);
     }
 
     // If right is a pipe expression, pipe the value through the left side, then continue
@@ -665,12 +668,14 @@ export class Interpreter implements InterpreterContext {
       if (isPipeline(callee)) {
         return this.applyPipeline(callee, [pipedValue]);
       }
-      // If it's a function, call it with piped value
+      // If it's a function, call it with piped value (and index if from spread pipe)
       if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
-        return this.callFunction(callee as LeaFunction, [pipedValue]);
+        const args = spreadIndex !== undefined ? [pipedValue, spreadIndex] : [pipedValue];
+        return this.callFunction(callee as LeaFunction, args);
       }
       if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "builtin") {
-        const result = (callee as LeaBuiltin).fn([pipedValue]);
+        const args = spreadIndex !== undefined ? [pipedValue, spreadIndex] : [pipedValue];
+        const result = (callee as LeaBuiltin).fn(args);
         if (result instanceof Promise) {
           return wrapPromise(result);
         }
@@ -867,7 +872,7 @@ export class Interpreter implements InterpreterContext {
     );
   }
 
-  evaluateCall(expr: CallExpr, env: Environment, pipedValue?: LeaValue): LeaValue {
+  evaluateCall(expr: CallExpr, env: Environment, pipedValue?: LeaValue, spreadIndex?: number): LeaValue {
     const callee = this.evaluateExpr(expr.callee, env);
 
     // Handle piped value
@@ -883,6 +888,10 @@ export class Interpreter implements InterpreterContext {
       } else {
         // Prepend piped value
         args = [pipedValue, ...expr.args.map((arg) => this.evaluateExpr(arg, env))];
+      }
+      // Append spread index if provided (for spread pipe with index access)
+      if (spreadIndex !== undefined) {
+        args.push(spreadIndex);
       }
     } else {
       args = expr.args.map((arg) => this.evaluateExpr(arg, env));

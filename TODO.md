@@ -66,9 +66,11 @@ Spread Operator - For records and lists
 let updated = { ...user, age: 31 }
 let combined = [...list1, ...list2]
 
-## Autoformatting - prettier style
+## ~~Autoformatting - prettier style~~ ✅ DONE
 
 Formatter - Auto-format Lea code (like Prettier)
+
+Implemented! See `src/formatter.ts` and `npm run format`.
 
 ## Array vs value handling - resolve ambiguity
 
@@ -219,6 +221,41 @@ value /?> isValid /> process
 ---
 
 Not sure what they'll do yet...
+### Scan Pipe `/~>` — Reduce that emits intermediates
+
+Like reduce but returns all intermediate accumulator values. Useful for running totals, state machines, animations.
+
+```lea
+[1, 2, 3, 4] /~> 0, (acc, x) -> acc + x
+-- yields [1, 3, 6, 10] (running totals)
+
+-- Compare to reduce which only returns final value:
+[1, 2, 3, 4] /> reduce(0, (acc, x) -> acc + x)
+-- yields 10
+
+-- Use cases:
+balances /~> 0, (acc, tx) -> acc + tx.amount   -- running balance history
+signals /~> initState, transition               -- state machine trace
+```
+
+### Until Pipe `/*>` — Iterate until condition
+
+Repeatedly applies a function until a predicate is satisfied. Returns the final value.
+
+```lea
+1 /*> (x) -> x * 2, (x) -> x > 100
+-- yields 128 (keeps doubling until > 100)
+
+guess /*> refine, converged         -- iterate until convergence
+seed /*> nextRandom, (x) -> x < 0.1 -- generate until threshold
+
+-- Newton's method example:
+1.0 /*> (x) -> x - (x*x - 2)/(2*x), (x) -> abs(x*x - 2) < 0.0001
+-- yields ~1.4142 (sqrt of 2)
+```
+
+### Other ideas (unexplored)
+
 |>
 +>
 *>
@@ -238,3 +275,4 @@ Not sure what they'll do yet...
 - [x] Collapsing codeblocks (implicit, e.g. functions, and explicit) in the IDE, syntax highlighting (brown)
 - [X] Multi-line ternary
 - [x] First-class citizen: Pipeline
+- [x] Autoformatting (Prettier-style formatter)
