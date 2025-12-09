@@ -154,7 +154,6 @@ let runGA = () ->
   "=== Genetic Algorithm ===" /> print
   `Target: "{TARGET}"` /> print
   `Population: {POPULATION_SIZE}, Mutation Rate: {MUTATION_RATE}` /> print
-  "" /> print
 
   let initialState = {
     population: createPopulation(),
@@ -164,7 +163,7 @@ let runGA = () ->
   }
 
   let result = runLoop(step(initialState))
-  "" /> print
+
   `Final result: "{result}"` /> print
   result
 

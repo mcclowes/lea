@@ -2,7 +2,7 @@
 
 ## Active Tasks
 
-- [ ] Expand or remove the /docs dir
+- [x] Expand or remove the /docs dir
 - [x] Bump syntax highlighting package & publish (v0.2.1)
 - [x] Codeblocks - sticky positioning in IDE (like markdown headers)
 - [x] Review syntax highlighting against all of the more recent language additions
@@ -27,6 +27,66 @@ let clamp = (x) -> x :: Int where x > 0 && x < 100 :> Int
 ### Canvas Visualization
 
 Visual/graphical pipeline visualization (beyond ASCII `.visualize()`).
+
+### Structured Concurrency (`concurrent` blocks)
+
+Run all awaits in parallel with a clean syntax:
+
+```lea
+let userData = concurrent
+  let user = await fetchUser(id)
+  let posts = await fetchPosts(id)
+  let friends = await fetchFriends(id)
+in
+  { user: user, posts: posts, friends: friends }
+```
+
+### Channels (CSP-Style)
+
+For complex coordination patterns:
+
+```lea
+let ch = channel()
+
+let producer = () ->
+  range(1, 10) /> each((x) -> ch /> send(x))
+  ch /> close
+#async
+
+let consumer = () ->
+  ch /> receive /> each((x) -> x /> print)
+#async
+
+[producer, consumer] /> parallel
+```
+
+### `#spawn` Decorator
+
+Fire-and-forget execution:
+
+```lea
+let logEvent = (event) ->
+  sendToAnalytics(event)
+#spawn
+
+-- Returns immediately, doesn't block
+logEvent({ type: "click" })
+```
+
+### `#parallel` Decorator
+
+Automatic parallelization of map operations within a function:
+
+```lea
+let processItems = (items) ->
+  items /> map((x) -> expensiveTransform(x))
+#parallel
+
+-- With concurrency limit
+let processItems = (items) ->
+  items /> map((x) -> expensiveTransform(x))
+#parallel(4)
+```
 
 ---
 

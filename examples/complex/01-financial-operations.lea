@@ -1,12 +1,8 @@
--- ============================================================
 -- Example 01: Comprehensive Financial Analytics Pipeline
--- ============================================================
 -- This example showcases virtually every Lea language feature
 -- in a real-world financial transaction processing scenario.
 
--- ============================================================
--- SECTION: Configuration & Contexts (Dependency Injection)
--- ============================================================
+{-- Configuration & Contexts (Dependency Injection) --}
 
 context Logger = { log: (msg) -> print("[INFO] " ++ msg), error: (msg) -> print("[ERROR] " ++ msg), warn: (msg) -> print("[WARN] " ++ msg) }
 
@@ -14,9 +10,9 @@ context AppConfig = { currency: "USD", taxRate: 0.08, highValueThreshold: 500, f
 
 context Analytics = { trackEvent: (event) -> print("[ANALYTICS] " ++ event) }
 
--- ============================================================
--- SECTION: Type-Safe Utility Functions with Overloading
--- ============================================================
+{/--}
+
+{-- Type-Safe Utility Functions with Overloading --}
 
 -- Overloaded format function for different types
 let format = (value) -> "Value: " ++ value :: String :> String
@@ -27,9 +23,9 @@ and format = (n, decimals) -> "$" ++ round(n * 100) / 100 :: (Int, Int) :> Strin
 let combine = (a, b) -> a + b :: (Int, Int) :> Int
 and combine = (a, b) -> a ++ " " ++ b :: (String, String) :> String
 
--- ============================================================
--- SECTION: Reversible Functions (Bidirectional Transforms)
--- ============================================================
+{/--}
+
+{-- Reversible Functions (Bidirectional Transforms) --}
 
 -- Currency conversion: USD <-> EUR (rate: 0.85)
 let usdToEur = (usd) -> usd * 0.85
@@ -47,9 +43,9 @@ and scale = (x) <- x * 1000
 let logTransform = (x) -> x /> sqrt
 and logTransform = (x) <- x * x
 
--- ============================================================
--- SECTION: Pattern Matching Functions
--- ============================================================
+{/--}
+
+{-- Pattern Matching Functions --}
 
 -- Categorize transaction by amount using pattern matching
 let categorizeAmount = (amount) -> match amount
@@ -86,9 +82,9 @@ let priorityScore = (category) -> match category
   | "micro" -> 10
   | 0
 
--- ============================================================
--- SECTION: Decorated Functions
--- ============================================================
+{/--}
+
+{-- Decorated Functions --}
 
 -- Memoized expensive computation
 let computeStats = (data) ->
@@ -119,9 +115,9 @@ let calculateTax = (amount) ->
   amount * AppConfig.taxRate
   #trace
 
--- ============================================================
--- SECTION: First-Class Pipelines
--- ============================================================
+{/--}
+
+{-- First-Class Pipelines --}
 
 -- Helper function to enrich a transaction (using spread to preserve original fields)
 -- Note: parentheses required around record literal to disambiguate from block body
@@ -146,9 +142,9 @@ let square = (x) -> x * x
 
 let numericPipeline = /> double /> addOne /> square
 
--- ============================================================
--- SECTION: Bidirectional Pipelines
--- ============================================================
+{/--}
+
+{-- Bidirectional Pipelines --}
 
 -- Full currency conversion pipeline (USD -> EUR -> scaled)
 let currencyPipeline = </> usdToEur </> scale
@@ -156,9 +152,9 @@ let currencyPipeline = </> usdToEur </> scale
 -- Data normalization pipeline (reversible)
 let normalizePipeline = </> toPercentage </> logTransform
 
--- ============================================================
--- SECTION: Sample Data
--- ============================================================
+{/--}
+
+{-- Sample Data --}
 
 let transactions = [
   { id: 1, amount: 150, category: "food" },
@@ -173,9 +169,9 @@ let transactions = [
   { id: 10, amount: 1100, category: "travel" }
 ]
 
--- ============================================================
--- SECTION: Main Processing Pipeline
--- ============================================================
+{/--}
+
+{-- Main Processing Pipeline --}
 
 "╔══════════════════════════════════════════════════════════╗" /> print
 "║   Lea Financial Analytics Pipeline - Comprehensive Demo  ║" /> print
@@ -187,9 +183,9 @@ provide Logger { log: (msg) -> print("[PROD] " ++ msg), error: (msg) -> print("[
 
 provide Analytics { trackEvent: (event) -> print("[METRICS] Event: " ++ event) }
 
--- ============================================================
--- Section 1: Basic Pipeline Processing
--- ============================================================
+{/--}
+
+{-- Section 1: Basic Pipeline Processing --}
 
 "═══ Section 1: Basic Pipeline Processing ═══" /> print
 
@@ -205,9 +201,9 @@ enrichedTransactions /> head /> print
 "Stages: " /> print
 analysisPipeline.stages /> print
 
--- ============================================================
--- Section 2: Parallel Processing (Fan-out/Fan-in)
--- ============================================================
+{/--}
+
+{-- Section 2: Parallel Processing (Fan-out/Fan-in) --}
 
 "" /> print
 "═══ Section 2: Parallel Processing ═══" /> print
@@ -247,9 +243,9 @@ let categoryAnalysis = transactions
 "Category breakdown:" /> print
 categoryAnalysis /> print
 
--- ============================================================
--- Section 3: Spread Pipe with Index Access
--- ============================================================
+{/--}
+
+{-- Section 3: Spread Pipe with Index Access --}
 
 "" /> print
 "═══ Section 3: Spread Pipe Operations ═══" /> print
@@ -280,9 +276,9 @@ let parallelSpread = 100
 "Parallel results spread:" /> print
 await parallelSpread /> print
 
--- ============================================================
--- Section 4: Reversible Transformations
--- ============================================================
+{/--}
+
+{-- Section 4: Reversible Transformations --}
 
 "" /> print
 "═══ Section 4: Reversible Transformations ═══" /> print
@@ -308,9 +304,9 @@ let transformed = originalValue /> currencyPipeline
 let reversed = transformed </ currencyPipeline
 `{transformed} reversed through pipeline = {reversed}` /> print
 
--- ============================================================
--- Section 5: Pattern Matching in Action
--- ============================================================
+{/--}
+
+{-- Section 5: Pattern Matching in Action --}
 
 "" /> print
 "═══ Section 5: Pattern Matching ═══" /> print
@@ -350,9 +346,9 @@ let prioritizedCategories = ["enterprise", "premium", "micro", "small"]
 "Priority scores:" /> print
 prioritizedCategories /> print
 
--- ============================================================
--- Section 6: Pipeline Algebra
--- ============================================================
+{/--}
+
+{-- Section 6: Pipeline Algebra --}
 
 "" /> print
 "═══ Section 6: Pipeline Algebra ═══" /> print
@@ -418,9 +414,9 @@ let fromList = Pipeline.from([double, addOne, square])
 "Identity pipeline on 42: " ++ (42 /> Pipeline.identity) /> print
 "Empty pipeline isEmpty: " ++ Pipeline.empty.isEmpty() /> print
 
--- ============================================================
--- Section 7: Function Overloading Demo
--- ============================================================
+{/--}
+
+{-- Section 7: Function Overloading Demo --}
 
 "" /> print
 "═══ Section 7: Function Overloading ═══" /> print
@@ -438,9 +434,9 @@ format("test") /> print
 format(1500) /> print
 format(1234, 2) /> print
 
--- ============================================================
--- Section 8: Context System with Dependency Injection
--- ============================================================
+{/--}
+
+{-- Section 8: Context System with Dependency Injection --}
 
 "" /> print
 "═══ Section 8: Context System ═══" /> print
@@ -463,9 +459,9 @@ let processed = processWithContext(sampleTx)
 "Processed with context:" /> print
 processed /> print
 
--- ============================================================
--- Section 9: Tuples and Early Return
--- ============================================================
+{/--}
+
+{-- Section 9: Tuples and Early Return --}
 
 "" /> print
 "═══ Section 9: Tuples and Early Return ═══" /> print
@@ -495,9 +491,9 @@ validateAndProcess(500) /> print
 validateAndProcess(-10) /> print
 validateAndProcess(500000) /> print
 
--- ============================================================
--- Section 10: Spread Operators and Destructuring
--- ============================================================
+{/--}
+
+{-- Section 10: Spread Operators and Destructuring --}
 
 "" /> print
 "═══ Section 10: Spread Operators and Destructuring ═══" /> print
@@ -591,9 +587,9 @@ let allTransactions = [...historicalTransactions, ...recentTransactions]
 "All verified transactions over $100:" /> print
 allTransactions /> print
 
--- ============================================================
--- Section 11: Advanced List Operations with Index
--- ============================================================
+{/--}
+
+{-- Section 11: Advanced List Operations with Index --}
 
 "" /> print
 "═══ Section 11: Advanced List Operations ═══" /> print
@@ -632,9 +628,9 @@ let complexResult = transactions
 "Top 5 transactions over $100:" /> print
 complexResult /> print
 
--- ============================================================
--- Section 12: Decorated Pipeline Demo
--- ============================================================
+{/--}
+
+{-- Section 12: Decorated Pipeline Demo --}
 
 "" /> print
 "═══ Section 12: Decorated Pipelines ═══" /> print
@@ -657,9 +653,9 @@ let memoPipe = /> double /> addOne #memo
 10 /> memoPipe /> print
 10 /> memoPipe /> print
 
--- ============================================================
--- Section 13: String Operations and Templates
--- ============================================================
+{/--}
+
+{-- Section 13: String Operations and Templates --}
 
 "" /> print
 "═══ Section 13: String Operations ═══" /> print
@@ -688,9 +684,9 @@ let joined = join(parts, " | ")
 let padded = padStart("42", 6, "0")
 `Padded: {padded}` /> print
 
--- ============================================================
--- Section 14: Complete Analytics Summary
--- ============================================================
+{/--}
+
+{-- Section 14: Complete Analytics Summary --}
 
 "" /> print
 "═══ Section 14: Final Analytics Summary ═══" /> print
@@ -724,9 +720,9 @@ summary /> print
 "║  (See summary above)                     ║" /> print
 "╚══════════════════════════════════════════╝" /> print
 
--- ============================================================
--- Section 15: Pipeline Visualization
--- ============================================================
+{/--}
+
+{-- Section 15: Pipeline Visualization --}
 
 "" /> print
 "═══ Section 15: Pipeline Visualization ═══" /> print
@@ -737,9 +733,9 @@ analysisPipeline.visualize()
 "Numeric pipeline structure:" /> print
 numericPipeline.visualize()
 
--- ============================================================
--- Completion
--- ============================================================
+{/--}
+
+{-- Completion --}
 
 "" /> print
 "╔══════════════════════════════════════════════════════════╗" /> print
@@ -767,3 +763,5 @@ numericPipeline.visualize()
 "║  - Template strings                                      ║" /> print
 "║  - Index access in callbacks                             ║" /> print
 "╚══════════════════════════════════════════════════════════╝" /> print
+
+{/--}

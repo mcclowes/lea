@@ -1,3 +1,5 @@
+{ -- Pipeline tests -- }
+
 let foo = 
   /> map((x) -> x + 1)
   \> filter((x) -> x < 20)
@@ -17,6 +19,9 @@ foo.visualize()
 [1,2, 3, 4, 5] /> foo /> print
 [1,2, 3, 4, 5] /> foo /> print
 
+{/--}
+
+{ -- function tests -- }
 let bar = (x) -> :: [Int] :> [Int]
   /> map((x) -> x + 1)
   \> filter((x) -> x < 20)
@@ -32,3 +37,5 @@ and bar = (x) -> :: Int :> Int
 
 bar([1,2, 3, 4, 5]) /> print
 bar(1) /> print
+
+{/--}

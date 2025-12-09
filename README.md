@@ -133,14 +133,12 @@ let fetchData = () -> delay(100) #async
 await fetchData() /> print
 ```
 
-## Builtins
+## Documentation
 
-| Category | Functions |
-|----------|-----------|
-| Math | `sqrt`, `abs`, `floor`, `ceil`, `round`, `min`, `max` |
-| Lists | `length`, `head`, `tail`, `push`, `concat`, `map`, `filter`, `reduce`, `range` |
-| IO | `print` |
-| Async | `delay(ms)` |
+- **[Syntax Guide](docs/SYNTAX.md)** — Complete language syntax reference
+- **[Built-in Functions](docs/BUILTINS.md)** — All built-in functions and decorators
+- **[Pipelines](docs/PIPELINES.md)** — First-class pipelines, composition, and algebra
+- **[Concurrency](docs/CONCURRENCY.md)** — Async/await, parallel pipes, and concurrent execution
 
 ## Architecture
 
