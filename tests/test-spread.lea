@@ -1,0 +1,45 @@
+-- Test: Spread operator
+
+-- List spread
+let a = [1, 2, 3]
+let b = [4, 5, 6]
+let combined = [...a, ...b]
+combined /> print  -- [1, 2, 3, 4, 5, 6]
+
+-- List spread with regular elements
+let c = [...a, 10, ...b, 20]
+c /> print  -- [1, 2, 3, 10, 4, 5, 6, 20]
+
+-- Empty spread
+let empty = []
+let withEmpty = [...empty, 1, 2, 3]
+withEmpty /> print  -- [1, 2, 3]
+
+-- Record spread
+let base = { name: "Alice", age: 30 }
+let extended = { ...base, city: "NYC" }
+extended.name /> print  -- Alice
+extended.age /> print   -- 30
+extended.city /> print  -- NYC
+
+-- Record spread with override
+let updated = { ...base, age: 31 }
+updated.name /> print  -- Alice
+updated.age /> print   -- 31
+
+-- Multiple record spreads
+let extras = { active: true }
+let full = { ...base, ...extras, role: "admin" }
+full.name /> print    -- Alice
+full.active /> print  -- true
+full.role /> print    -- admin
+
+-- Spread order matters (later values override earlier)
+let first = { x: 1, y: 2 }
+let second = { y: 20, z: 30 }
+let merged = { ...first, ...second }
+merged.x /> print  -- 1
+merged.y /> print  -- 20 (overridden by second)
+merged.z /> print  -- 30
+
+print("Spread tests passed!")

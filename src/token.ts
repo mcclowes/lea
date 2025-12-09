@@ -56,6 +56,7 @@ export enum TokenType {
   COMMA = "COMMA",         // ,
   COLON = "COLON",         // :
   DOT = "DOT",             // .
+  SPREAD = "SPREAD",       // ...
   UNDERSCORE = "UNDERSCORE", // _
   HASH = "HASH",           // #
   AT = "AT",               // @

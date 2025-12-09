@@ -58,8 +58,8 @@ export interface InterpreterContext {
 
   // Type helpers
   getLeaType(val: LeaValue): string;
-  matchesType(val: LeaValue, expectedType: string | { tuple: string[]; optional?: boolean }): boolean;
-  formatType(t: string | { tuple: string[]; optional?: boolean }): string;
+  matchesType(val: LeaValue, expectedType: string | { tuple: string[]; optional?: boolean } | { list: string; optional?: boolean }): boolean;
+  formatType(t: string | { tuple: string[]; optional?: boolean } | { list: string; optional?: boolean }): string;
 
   // Pipeline helpers
   describeAnyStage(stage: { expr?: Expr; isParallel?: boolean; branches?: Expr[] }): string;

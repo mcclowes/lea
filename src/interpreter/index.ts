@@ -23,6 +23,8 @@ import {
   AnyPipelineStage,
   ParallelPipelineStage,
   MatchCase,
+  RecordPattern,
+  TuplePattern,
 } from "../ast";
 
 // Re-export types for consumers
@@ -49,6 +51,7 @@ import {
   LeaBuiltin,
   LeaPromise,
   LeaRecord,
+  LeaTuple,
   LeaPipeline,
   LeaBidirectionalPipeline,
   RuntimeError,
@@ -143,6 +146,45 @@ export class Interpreter implements InterpreterContext {
       case "LetStmt": {
         const value = this.evaluateExpr(stmt.value, env);
 
+        // Handle destructuring patterns
+        if (stmt.pattern) {
+          if (stmt.pattern.kind === "RecordPattern") {
+            // Record destructuring: let { name, age } = record
+            if (!value || typeof value !== "object" || !("kind" in value) || value.kind !== "record") {
+              throw new RuntimeError("Cannot destructure non-record value with record pattern");
+            }
+            const record = value as LeaRecord;
+            for (const field of stmt.pattern.fields) {
+              if (!record.fields.has(field)) {
+                throw new RuntimeError(`Record does not have field '${field}'`);
+              }
+              env.define(field, record.fields.get(field)!, stmt.mutable);
+            }
+          } else if (stmt.pattern.kind === "TuplePattern") {
+            // Tuple destructuring: let (x, y) = tuple
+            if (value && typeof value === "object" && "kind" in value && value.kind === "tuple") {
+              const tuple = value as LeaTuple;
+              if (tuple.elements.length < stmt.pattern.names.length) {
+                throw new RuntimeError(`Tuple has ${tuple.elements.length} elements but pattern expects ${stmt.pattern.names.length}`);
+              }
+              for (let i = 0; i < stmt.pattern.names.length; i++) {
+                env.define(stmt.pattern.names[i], tuple.elements[i], stmt.mutable);
+              }
+            } else if (Array.isArray(value)) {
+              // Also support destructuring lists
+              if (value.length < stmt.pattern.names.length) {
+                throw new RuntimeError(`List has ${value.length} elements but pattern expects ${stmt.pattern.names.length}`);
+              }
+              for (let i = 0; i < stmt.pattern.names.length; i++) {
+                env.define(stmt.pattern.names[i], value[i], stmt.mutable);
+              }
+            } else {
+              throw new RuntimeError("Cannot destructure non-tuple/non-list value with tuple pattern");
+            }
+          }
+          return value;
+        }
+
         // Check if this is a function
         const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
         const fn = isFunction ? (value as LeaFunction) : null;
@@ -236,8 +278,23 @@ export class Interpreter implements InterpreterContext {
         }
         throw new RuntimeError("Placeholder '_' used outside of pipe context");
 
-      case "ListExpr":
-        return expr.elements.map((el) => this.evaluateExpr(el, env));
+      case "ListExpr": {
+        const result: LeaValue[] = [];
+        for (const el of expr.elements) {
+          if (el.spread) {
+            // Spread element: expand the value into the list
+            const spreadValue = this.evaluateExpr(el.value, env);
+            if (!Array.isArray(spreadValue)) {
+              throw new RuntimeError("Cannot spread non-list value in list literal");
+            }
+            result.push(...spreadValue);
+          } else {
+            // Regular element
+            result.push(this.evaluateExpr(el.value, env));
+          }
+        }
+        return result;
+      }
 
       case "IndexExpr": {
         const obj = this.evaluateExpr(expr.object, env);
@@ -294,7 +351,20 @@ export class Interpreter implements InterpreterContext {
       case "RecordExpr": {
         const fields = new Map<string, LeaValue>();
         for (const field of expr.fields) {
-          fields.set(field.key, this.evaluateExpr(field.value, env));
+          if (field.spread) {
+            // Spread field: merge the record's fields
+            const spreadValue = this.evaluateExpr(field.value, env);
+            if (!spreadValue || typeof spreadValue !== "object" || !("kind" in spreadValue) || spreadValue.kind !== "record") {
+              throw new RuntimeError("Cannot spread non-record value in record literal");
+            }
+            const spreadRecord = spreadValue as LeaRecord;
+            for (const [key, value] of spreadRecord.fields) {
+              fields.set(key, value);
+            }
+          } else {
+            // Regular field
+            fields.set(field.key, this.evaluateExpr(field.value, env));
+          }
         }
         return { kind: "record", fields } as LeaRecord;
       }
@@ -994,6 +1064,45 @@ export class Interpreter implements InterpreterContext {
       case "LetStmt": {
         const value = await this.evaluateExprAsync(stmt.value, env);
 
+        // Handle destructuring patterns
+        if (stmt.pattern) {
+          if (stmt.pattern.kind === "RecordPattern") {
+            // Record destructuring: let { name, age } = record
+            if (!value || typeof value !== "object" || !("kind" in value) || value.kind !== "record") {
+              throw new RuntimeError("Cannot destructure non-record value with record pattern");
+            }
+            const record = value as LeaRecord;
+            for (const field of stmt.pattern.fields) {
+              if (!record.fields.has(field)) {
+                throw new RuntimeError(`Record does not have field '${field}'`);
+              }
+              env.define(field, record.fields.get(field)!, stmt.mutable);
+            }
+          } else if (stmt.pattern.kind === "TuplePattern") {
+            // Tuple destructuring: let (x, y) = tuple
+            if (value && typeof value === "object" && "kind" in value && value.kind === "tuple") {
+              const tuple = value as LeaTuple;
+              if (tuple.elements.length < stmt.pattern.names.length) {
+                throw new RuntimeError(`Tuple has ${tuple.elements.length} elements but pattern expects ${stmt.pattern.names.length}`);
+              }
+              for (let i = 0; i < stmt.pattern.names.length; i++) {
+                env.define(stmt.pattern.names[i], tuple.elements[i], stmt.mutable);
+              }
+            } else if (Array.isArray(value)) {
+              // Also support destructuring lists
+              if (value.length < stmt.pattern.names.length) {
+                throw new RuntimeError(`List has ${value.length} elements but pattern expects ${stmt.pattern.names.length}`);
+              }
+              for (let i = 0; i < stmt.pattern.names.length; i++) {
+                env.define(stmt.pattern.names[i], value[i], stmt.mutable);
+              }
+            } else {
+              throw new RuntimeError("Cannot destructure non-tuple/non-list value with tuple pattern");
+            }
+          }
+          return value;
+        }
+
         // Check if this is a function
         const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
         const fn = isFunction ? (value as LeaFunction) : null;
@@ -1091,11 +1200,21 @@ export class Interpreter implements InterpreterContext {
         throw new RuntimeError("Placeholder '_' used outside of pipe context");
 
       case "ListExpr": {
-        const elements: LeaValue[] = [];
+        const result: LeaValue[] = [];
         for (const el of expr.elements) {
-          elements.push(await this.evaluateExprAsync(el, env));
+          if (el.spread) {
+            // Spread element: expand the value into the list
+            const spreadValue = await this.evaluateExprAsync(el.value, env);
+            if (!Array.isArray(spreadValue)) {
+              throw new RuntimeError("Cannot spread non-list value in list literal");
+            }
+            result.push(...spreadValue);
+          } else {
+            // Regular element
+            result.push(await this.evaluateExprAsync(el.value, env));
+          }
         }
-        return elements;
+        return result;
       }
 
       case "IndexExpr": {
@@ -1155,7 +1274,20 @@ export class Interpreter implements InterpreterContext {
       case "RecordExpr": {
         const fields = new Map<string, LeaValue>();
         for (const field of expr.fields) {
-          fields.set(field.key, await this.evaluateExprAsync(field.value, env));
+          if (field.spread) {
+            // Spread field: merge the record's fields
+            const spreadValue = await this.evaluateExprAsync(field.value, env);
+            if (!spreadValue || typeof spreadValue !== "object" || !("kind" in spreadValue) || spreadValue.kind !== "record") {
+              throw new RuntimeError("Cannot spread non-record value in record literal");
+            }
+            const spreadRecord = spreadValue as LeaRecord;
+            for (const [key, value] of spreadRecord.fields) {
+              fields.set(key, value);
+            }
+          } else {
+            // Regular field
+            fields.set(field.key, await this.evaluateExprAsync(field.value, env));
+          }
         }
         return { kind: "record", fields } as LeaRecord;
       }
@@ -1630,11 +1762,11 @@ export class Interpreter implements InterpreterContext {
     return getLeaType(val);
   }
 
-  matchesType(val: LeaValue, expectedType: string | { tuple: string[]; optional?: boolean }): boolean {
+  matchesType(val: LeaValue, expectedType: string | { tuple: string[]; optional?: boolean } | { list: string; optional?: boolean }): boolean {
     return matchesType(val, expectedType);
   }
 
-  formatType(t: string | { tuple: string[]; optional?: boolean }): string {
+  formatType(t: string | { tuple: string[]; optional?: boolean } | { list: string; optional?: boolean }): string {
     return formatType(t);
   }
 

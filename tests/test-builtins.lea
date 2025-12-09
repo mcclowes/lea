@@ -40,6 +40,10 @@ iterations(3) /> map((i) -> i * 10) /> print  -- [0, 10, 20]
 -- reduce accumulates
 [1, 2, 3, 4] /> reduce(0, (acc, x) -> acc + x) /> print  -- 10
 
+-- partition splits by predicate
+[1, 2, 3, 4, 5] /> partition((x) -> x > 2) /> print  -- [[3, 4, 5], [1, 2]]
+[1, 2, 3, 4, 5, 6] /> partition((x) -> x % 2 == 0) /> print  -- [[2, 4, 6], [1, 3, 5]]
+
 -- String length
 "hello" /> length /> print  -- 5
 
