@@ -1,0 +1,283 @@
+-- Complex Data Fetch and Validation Example
+-- Demonstrates fetching data from APIs, validating responses,
+-- and processing data through typed pipelines
+
+-- ===== Type Definitions and Validators =====
+
+{-- Validation Helpers --}
+
+-- Validate that a value is a non-empty string
+let isNonEmptyString = (value) -> :: String :> Bool
+  length(value) > 0
+  #validate
+
+-- Validate that a number is within a range
+let inRange = (value, min, max) -> :: (Int, Int, Int) :> Bool
+  value >= min ? (value <= max) : false
+  #validate
+
+-- Validate that a list has minimum length
+let hasMinLength = (list, minLen) -> :: (List, Int) :> Bool
+  length(list) >= minLen
+  #validate
+
+-- Logical AND helper (since Lea doesn't have &&)
+let both = (a, b) -> a ? b : false
+
+-- Logical AND for three values
+let allThree = (a, b, c) -> a ? (b ? c : false) : false
+
+{/--}
+
+{-- Response Status Handling --}
+
+-- Classify HTTP status codes using pattern matching
+let classifyStatus = (status) -> match status
+  | if inRange(input, 200, 299) -> "success"
+  | if inRange(input, 400, 499) -> "client_error"
+  | if input >= 500 -> "server_error"
+  | "unknown"
+
+-- Check if response is OK
+let isResponseOk = (response) -> response.ok == true
+
+-- Extract error message from response
+let getErrorMessage = (response) -> match response.status
+  | 400 -> "Bad Request: Invalid parameters"
+  | 401 -> "Unauthorized: Authentication required"
+  | 403 -> "Forbidden: Access denied"
+  | 404 -> "Not Found: Resource does not exist"
+  | 429 -> "Rate Limited: Too many requests"
+  | 500 -> "Internal Server Error"
+  | 502 -> "Bad Gateway"
+  | 503 -> "Service Unavailable"
+  | "Unknown error: " ++ response.status
+
+{/--}
+
+{-- Data Validators --}
+
+-- Check if email contains @
+let hasAtSign = (email) -> includes(email, "@")
+
+-- Validate user object structure (check required fields have valid values)
+let validateUser = (user) ->
+  let hasValidId = user.id > 0
+  let hasValidName = length(user.name) > 0
+  let hasValidEmail = hasAtSign(user.email)
+  allThree(hasValidId, hasValidName, hasValidEmail)
+
+-- Validate a list of users
+let validateUserList = (users) ->
+  let isValidList = length(users) > 0
+  let invalidCount = users /> map(validateUser) /> filter((x) -> x == false) /> length
+  isValidList ? invalidCount == 0 : false
+
+-- Validate API response structure (check required fields exist)
+-- In practice, we check for valid status codes and body presence
+let validateApiResponse = (response) ->
+  let hasValidStatus = response.status >= 100
+  let hasBody = response.body != false
+  both(hasValidStatus, hasBody)
+
+{/--}
+
+{-- Data Transformation Pipeline --}
+
+-- Transform raw user data to normalized format
+let normalizeUser = (user) ->
+  let result = { id: user.id, name: trim(user.name), email: trim(user.email), active: user.active == true }
+  result
+
+-- Extract only essential fields
+let extractEssentials = (user) ->
+  let result = { id: user.id, name: user.name }
+  result
+
+-- Add computed fields
+let enrichUser = (user) ->
+  let displayName = user.name ++ " <" ++ user.email ++ ">"
+  { ...user, displayName: displayName, validated: true }
+
+-- Full user processing pipeline with profiling
+let processUser = /> normalizeUser /> enrichUser #profile
+
+-- Pipeline for list processing (use lambda to apply pipeline)
+let processUsers = /> map((u) -> u /> processUser) /> filter((u) -> u.active)
+
+{/--}
+
+{-- Mock API Responses for Testing --}
+
+-- Since we can't make real HTTP requests in tests, simulate responses
+let mockSuccessResponse = () ->
+  let users = [
+    { id: 1, name: "Alice Smith", email: "alice@example.com", active: true },
+    { id: 2, name: "Bob Jones", email: "bob@example.com", active: true },
+    { id: 3, name: "Charlie Brown", email: "charlie@example.com", active: false },
+  ]
+  let body = { users: users, total: 3, page: 1 }
+  let headers = { contentType: "application/json" }
+  let result = { status: 200, ok: true, statusText: "OK", body: body, headers: headers }
+  result
+
+let mockErrorResponse = () ->
+  let body = { error: "Users not found" }
+  let result = { status: 404, ok: false, statusText: "Not Found", body: body, headers: {} }
+  result
+
+let mockInvalidDataResponse = () ->
+  let users = [{ id: 1, name: "", email: "invalid-email", active: true }]
+  let body = { users: users, total: 1, page: 1 }
+  let result = { status: 200, ok: true, statusText: "OK", body: body, headers: {} }
+  result
+
+{/--}
+
+{-- Fetch and Validate Flow --}
+
+-- Main fetch function with validation
+let fetchAndValidate = (response) ->
+  -- Step 1: Validate response structure
+  let isValidStructure = validateApiResponse(response)
+  isValidStructure == false ? return { success: false, error: "Invalid response structure" } : 0
+
+  -- Step 2: Check HTTP status
+  let statusClass = classifyStatus(response.status)
+  statusClass != "success" ? return { success: false, error: getErrorMessage(response) } : 0
+
+  -- Step 3: Extract and validate data
+  let users = response.body.users
+  length(users) == 0 ? return { success: false, error: "No users in response" } : 0
+
+  -- Step 4: Validate each user
+  let validUsers = users /> filter(validateUser)
+  let invalidCount = length(users) - length(validUsers)
+
+  -- Step 5: Process valid users
+  let processedUsers = validUsers /> processUsers
+
+  -- Return result with metadata
+  let metadata = { total: length(users), valid: length(validUsers), invalid: invalidCount, active: length(processedUsers) }
+  { success: true, data: processedUsers, metadata: metadata }
+
+{/--}
+
+{-- Pipeline-Based Approach --}
+
+-- Alternative: Define validation as a pipeline
+let validateResponse = (response) -> match response.ok
+  | true -> { valid: true, data: response.body }
+  | { valid: false, error: getErrorMessage(response) }
+
+let extractUsers = (result) -> match result.valid
+  | true -> { ...result, data: result.data.users }
+  | result
+
+let filterValidUsers = (result) -> match result.valid
+  | true -> { ...result, data: result.data /> filter(validateUser) }
+  | result
+
+let transformUsers = (result) -> match result.valid
+  | true -> { ...result, data: result.data /> map((u) -> u /> processUser) }
+  | result
+
+-- Composable validation pipeline with debugging
+let validationPipeline = /> validateResponse /> extractUsers /> filterValidUsers /> transformUsers #debug
+
+{/--}
+
+{-- Demo Execution --}
+
+"===== Data Fetch and Validation Demo =====" /> print
+
+-- Test 1: Successful response
+"--- Test 1: Valid Response ---" /> print
+let successResult = mockSuccessResponse() /> fetchAndValidate
+"Success:" /> print
+successResult.success /> print
+"Active users:" /> print
+successResult.metadata.active /> print
+
+-- Test 2: Error response
+"--- Test 2: Error Response ---" /> print
+let errorResult = mockErrorResponse() /> fetchAndValidate
+"Success:" /> print
+errorResult.success /> print
+"Error:" /> print
+errorResult.error /> print
+
+-- Test 3: Invalid data response
+"--- Test 3: Invalid Data ---" /> print
+let invalidResult = mockInvalidDataResponse() /> fetchAndValidate
+"Success:" /> print
+invalidResult.success /> print
+"Valid users:" /> print
+invalidResult.metadata.valid /> print
+
+-- Test 4: Pipeline approach
+"--- Test 4: Pipeline Validation ---" /> print
+let pipelineResult = mockSuccessResponse() /> validationPipeline
+"Valid:" /> print
+pipelineResult.valid /> print
+
+{/--}
+
+{-- Type-Safe Fetch Wrapper (for real HTTP) --}
+
+-- Type-annotated fetch wrapper with validation
+let safeFetch = (url) -> :: String :> Function
+  let response = await fetch(url)
+  fetchAndValidate(response)
+  #validate
+  #async
+
+-- Fetch with retry logic
+let fetchWithRetry = (url, maxRetries) -> :: (String, Int) :> Function
+  let attempt = (remaining) ->
+    remaining <= 0 ? return { success: false, error: "Max retries exceeded" } : 0
+    let response = await fetch(url)
+    response.ok ? fetchAndValidate(response) : await delay(1000, attempt(remaining - 1))
+  attempt(maxRetries)
+  #async
+
+-- Batch fetch multiple URLs
+let batchFetch = (urls) -> :: List :> Function
+  let results = await parallel(urls, (url, _) -> await fetch(url) /> fetchAndValidate)
+  let successCount = results /> filter((r) -> r.success) /> length
+  let failureCount = results /> filter((r) -> r.success == false) /> length
+  { results: results, successCount: successCount, failureCount: failureCount }
+  #async
+
+{/--}
+
+{-- Advanced: Composable Validators --}
+
+-- Create a validator combinator
+let allOf = (validators) -> (value) ->
+  validators /> map((v) -> v(value)) /> filter((r) -> r == false) /> isEmpty
+
+-- Create an anyOf combinator
+let anyOf = (validators) -> (value) ->
+  validators /> map((v) -> v(value)) /> filter((r) -> r == true) /> isEmpty == false
+
+-- Example validators
+let isPositive = (n) -> n > 0
+let isEven = (n) -> n % 2 == 0
+let isSmall = (n) -> n < 100
+
+-- Combine validators
+let isValidNumber = allOf([isPositive, isSmall])
+
+-- Test combinators
+"--- Validator Combinators ---" /> print
+"50 is valid:" /> print
+isValidNumber(50) /> print
+"-5 is valid:" /> print
+isValidNumber(-5) /> print
+"150 is valid:" /> print
+isValidNumber(150) /> print
+
+{/--}
+
+"===== Demo Complete =====" /> print
