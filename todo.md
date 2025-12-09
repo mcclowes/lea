@@ -3,9 +3,13 @@
 ## Design Decisions
 
 - **Export syntax**: `#export` decorator on let bindings
-- **Import syntax**: `let x = use "./path.lea"` or `let { a, b } = use "./path.lea"`
+- **Import syntax**: `let { a, b } = use "./path"` (destructuring required)
+- **No namespace imports**: No `let math = use "./math"` for now (can add later)
 - **Resolution**: Relative paths only, resolved from the importing file's location
+- **Implicit extension**: `use "./math"` resolves to `./math.lea`
 - **Named exports only**: No default exports
+- **Re-exports allowed**: `let { foo } = use "./a" #export`
+- **No `as` syntax**: Rename by rebinding manually
 - **Pipelines**: Export/import like any value (closures preserved)
 - **Decorators**: Can decorate imported values
 
@@ -13,17 +17,16 @@
 
 ### Phase 1: Core Infrastructure
 - [ ] Add `USE` token to lexer (`use` keyword)
-- [ ] Add `EXPORT` token for `#export` decorator recognition
 - [ ] Add `UseExpr` AST node
 - [ ] Update parser to handle `use` expressions
-- [ ] Add `#export` decorator support
+- [ ] Add `#export` decorator support in interpreter
 
 ### Phase 2: Module Loader
 - [ ] Create `src/interpreter/modules.ts` for module loading logic
 - [ ] Implement path resolution (relative to importing file)
 - [ ] Add module cache (avoid re-evaluating same file)
 - [ ] Circular dependency detection
-- [ ] Create `LeaModule` value type for module namespaces
+- [ ] Create `LeaModule` value type for module exports
 
 ### Phase 3: Environment Integration
 - [ ] Module-scoped environments
@@ -64,22 +67,25 @@ let private = (x) -> x  -- not exported
 let processNumbers = /> double /> add(10) #export
 
 -- Importing (in main.lea)
-let math = use "./math.lea"
-math.double(5)  -- 10
-
--- Destructured import
-let { double, add } = use "./math.lea"
+let { double, add } = use "./math"
 double(5)  -- 10
 
+-- Re-export
+let { double } = use "./math" #export
+
 -- Decorate imported function
-let { double } = use "./math.lea"
+let { double } = use "./math"
 let loggedDouble = double #log
 5 /> loggedDouble
+
+-- Rename by rebinding
+let { double } = use "./math"
+let dbl = double
 ```
 
-## Open Questions
+## Future Considerations
 
-1. Should `use` be an expression or statement? (Expression allows `let x = use ...`)
-2. Re-exports: `let { foo } = use "./a.lea" #export` - allow this?
-3. Should we support `use "./file.lea" as math` syntax sugar?
-4. How to handle async module loading if needed in future?
+- Namespace imports: `let math = use "./math"` then `math.double(5)`
+- Package resolution: `use "std:list"` or similar
+- Async module loading
+- URL imports
