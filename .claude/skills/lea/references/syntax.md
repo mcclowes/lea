@@ -105,16 +105,16 @@ await fetchData() /> print
 
 ```lea
 -- Maps a function over each element of a list
-[1, 2, 3] />> double        -- [2, 4, 6]
-[1, 2, 3] />> add(10)       -- [11, 12, 13]
-[1, 2, 3] />> print         -- prints 1, 2, 3 (returns [1, 2, 3])
+[1, 2, 3] />>>double        -- [2, 4, 6]
+[1, 2, 3] />>>add(10)       -- [11, 12, 13]
+[1, 2, 3] />>>print         -- prints 1, 2, 3 (returns [1, 2, 3])
 
 -- Works with parallel results
-5 \> addOne \> double />> print  -- prints each result individually
+5 \> addOne \> double />>>print  -- prints each result individually
 
 -- Works with pipelines
 let process = /> double /> addOne
-[1, 2, 3] />> process       -- [3, 5, 7]
+[1, 2, 3] />>>process       -- [3, 5, 7]
 ```
 
 ## Lists
@@ -319,7 +319,7 @@ let transform = </> double </> addTen
 ```
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
 LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF
-PIPE (/>), SPREAD_PIPE (/>>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
+PIPE (/>), SPREAD_PIPE (/>>>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
 REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
@@ -337,7 +337,7 @@ NEWLINE, EOF
 3. Comparison (`<`, `>`, `<=`, `>=`)
 4. Term (`+`, `-`, `++`)
 5. Factor (`*`, `/`, `%`)
-6. Pipe (`/>`, `/>>`, `\>`, `</`)
+6. Pipe (`/>`, `/>>>`, `\>`, `</`)
 7. Unary (`-`)
 8. Call (function calls, indexing)
 9. Primary (literals, identifiers, grouping, functions)

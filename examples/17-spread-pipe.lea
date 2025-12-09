@@ -1,36 +1,36 @@
--- Example 17: Spread Pipe Operator (/>>)
+-- Example 17: Spread Pipe Operator (/>>>)
 -- The spread pipe maps a function/pipeline over each element of a list
 
 -- Basic usage: map a function over a list
 let double = (x) -> x * 2
 let numbers = [1, 2, 3, 4, 5]
 
-numbers />> double /> print    -- [2, 4, 6, 8, 10]
+numbers />>> double /> print    -- [2, 4, 6, 8, 10]
 
 -- Spread pipe with call expressions
 let add = (a, b) -> a + b
-[1, 2, 3] />> add(10) /> print  -- [11, 12, 13]
+[1, 2, 3] />>> add(10) /> print  -- [11, 12, 13]
 
 -- Spread pipe with inline functions (use parens to control precedence)
-([1, 2, 3] />> (x) -> x * x) /> print  -- [1, 4, 9]
+([1, 2, 3] />>> (x) -> x * x) /> print  -- [1, 4, 9]
 
 -- Side effects for each element
 "Processing each number:" /> print
-[10, 20, 30] />> print  -- prints 10, 20, 30 individually
+[10, 20, 30] />>> print  -- prints 10, 20, 30 individually
 
 -- Spread pipe with pipelines
 let addOne = (x) -> x + 1
 let process = /> double /> addOne
-[1, 2, 3] />> process /> print  -- [3, 5, 7]
+[1, 2, 3] />>> process /> print  -- [3, 5, 7]
 
 -- Chaining spread pipe with regular pipe
-[1, 2, 3] />> double /> map(addOne) /> print  -- [3, 5, 7]
+[1, 2, 3] />>> double /> map(addOne) /> print  -- [3, 5, 7]
 
 -- Spread pipe with parallel results
 let result = 10
   \> (x) -> x + 1
   \> (x) -> x * 2
-  />> double
+  />>> double
 
 await result /> print  -- [22, 40] (11*2 and 20*2)
 
@@ -42,6 +42,6 @@ let users = [
 ]
 
 let greet = (user) -> "Hello, " ++ user.name ++ "!"
-users />> greet /> print  -- ["Hello, Alice!", "Hello, Bob!", "Hello, Charlie!"]
+users />>> greet /> print  -- ["Hello, Alice!", "Hello, Bob!", "Hello, Charlie!"]
 
 "Done!" /> print

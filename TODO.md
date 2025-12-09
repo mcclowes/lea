@@ -81,13 +81,13 @@ let foo =
 10 /> foo -- prints [11, 20]
 ```
 
-### New token - />>
+### New token - />>>
 
 ```lea
 let foo =
   \> (x) -> x + 1
   \> (x) -> x * 2
-  />> print
+  />>>print
 
 10 /> foo -- prints 11 and then 20
 ```
@@ -119,7 +119,7 @@ let foo =
   \> (x) -> x * 2
   /> print
 
-[10, 10, 10] />> foo -- prints [11, 20] three times
+[10, 10, 10] />>>foo -- prints [11, 20] three times
 ```
 
 ```lea
@@ -128,14 +128,14 @@ let foo =
   /> min(4, 5, 6)
   /> print
 
-[1, 2, 3] />> foo -- would print 1, then 2, then 3, after comparing [1,4,5,6], [2,4,5,6], etc.
+[1, 2, 3] />>>foo -- would print 1, then 2, then 3, after comparing [1,4,5,6], [2,4,5,6], etc.
 ```
 
 Equivalent
 ```lea
 let foo =
-  />> double
-  />> min(4, 5, 6)
+  />>>double
+  />>>min(4, 5, 6)
   /> print
 
 [1, 2, 3] /> foo
@@ -144,11 +144,11 @@ let foo =
 Equivalent
 ```lea
 let foo =
-  />> double
-  />> min(..._, 4, 5, 6) -- spread placeholder (this syntax is horrible though)
+  />>>double
+  />>>min(..._, 4, 5, 6) -- spread placeholder (this syntax is horrible though)
   /> print
 
-[1, 2, 3] />> foo -- would print 1
+[1, 2, 3] />>>foo -- would print 1
 ```
 
 ## Other pipe variants
