@@ -261,6 +261,50 @@ seed /*> nextRandom, (x) -> x < 0.1 -- generate until threshold
 *>
 >>>
 
+## Windows
+
+E.g. for a gaussian blur
+
+### Window Pipe Operator /[n]>
+
+where n is the width of the window (not the radius)
+First value is our input, second value is index, third is window.
+
+```lea
+-- Window of size 3 (center + 1 on each side)
+[1, 2, 3, 4, 5] /[3]> (x, i, window) -> avg(window)
+-- window at position 2 would be [1, 2, 3]
+
+-- Gaussian blur with weights
+let width = 5
+pixels /[width]> (x, i, w) -> gaussianWeight(w)
+```
+
+### Weighting
+
+Weighted access: For a more sophisticated Gaussian blur, users will need positional info within window.
+
+/[5]> (x, i, window) -> weightedAvg(window, gaussianKernel)
+
+### Boundaries
+
+By default, 
+Padding with value undefined? or null? [[undefined,1,2], [1,2,3], ...]
+
+Optionally,
+Padding with value: [[0,1,2], [1,2,3], ...]
+
+Option 3: Window Builtin (Composable)
+-- Creates list of overlapping windows
+[1, 2, 3, 4, 5] /> window(3) /> map((w) -> avg(w))
+-- window(3) produces: [[1,2], [1,2,3], [2,3,4], [3,4,5], [4,5]]
+
+-- Or centered with padding:
+[1, 2, 3, 4, 5] /> windowCentered(3, 0) />> avg
+-- produces windows: [[0,1,2], [1,2,3], [2,3,4], [3,4,5], [4,5,0]]
+
+
+
 ---
 
 ## Done
