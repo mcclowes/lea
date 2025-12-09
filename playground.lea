@@ -1,4 +1,4 @@
-let foo =
+let foo = 
   /> map((x) -> x + 1)
   \> filter((x) -> x < 20)
     /> map((x) -> x * 7)
@@ -16,3 +16,19 @@ foo.visualize()
 [1,2, 3, 4, 5] /> foo /> print
 [1,2, 3, 4, 5] /> foo /> print
 [1,2, 3, 4, 5] /> foo /> print
+
+let bar = (x) -> :: [Int] :> [Int]
+  /> map((x) -> x + 1)
+  \> filter((x) -> x < 20)
+    /> map((x) -> x * 7)
+  \> reverse
+    /> map((x) -> x * 2)
+    /> filter((x) -> x > 10)
+  /> concat
+  #memo
+  #profile
+and bar = (x) -> :: Int :> Int
+  /> (x) -> x + 1
+
+bar([1,2, 3, 4, 5]) /> print
+bar(1) /> print
