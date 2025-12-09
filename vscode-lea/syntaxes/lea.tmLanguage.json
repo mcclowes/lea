@@ -46,9 +46,9 @@
     "type-annotations": {
       "patterns": [
         {
-          "comment": "Trailing type annotation :: (Type, Type) :> ReturnType or :: Type :> (Type, Type) - styled subtly like comments",
+          "comment": "Trailing type annotation :: (Type, Type) :> ReturnType or :: Type :> (Type, Type) or :: [Type] :> [Type] - styled subtly like comments",
           "name": "comment.block.type-annotation.lea",
-          "match": "::\\s*(?:\\?)?(?:\\([^)]*\\)|[A-Z][a-zA-Z0-9]*)(?:\\s*:>\\s*(?:\\?)?(?:\\([^)]*\\)|[A-Z][a-zA-Z0-9]*))?"
+          "match": "::\\s*(?:\\?)?(?:\\([^)]*\\)|\\[[^\\]]*\\]|[A-Z][a-zA-Z0-9]*)(?:\\s*:>\\s*(?:\\?)?(?:\\([^)]*\\)|\\[[^\\]]*\\]|[A-Z][a-zA-Z0-9]*))?"
         }
       ]
     },
@@ -174,7 +174,7 @@
         {
           "comment": "Spread pipe operator - maps function over list elements",
           "name": "keyword.operator.spread-pipe.lea",
-          "match": "/>>"
+          "match": "/>>>"
         },
         {
           "name": "keyword.operator.pipe.lea",
@@ -226,6 +226,11 @@
           "comment": "Pattern match case separator",
           "name": "keyword.operator.match-case.lea",
           "match": "\\|"
+        },
+        {
+          "comment": "Spread operator for lists and records",
+          "name": "keyword.operator.spread.lea",
+          "match": "\\.\\.\\."
         }
       ]
     },
@@ -233,7 +238,7 @@
       "patterns": [
         {
           "name": "support.function.builtin.lea",
-          "match": "\\b(print|sqrt|abs|floor|ceil|round|min|max|length|head|tail|push|concat|reverse|zip|isEmpty|fst|snd|take|at|toString|map|filter|reduce|range|iterations|delay|parallel|race|then|split|lines|charAt|join|padEnd|padStart|trim|trimEnd|indexOf|includes|repeat|slice|chars|listSet|setAdd|setHas|breakPieces|random|randomInt|randomFloat|randomChoice|shuffle)\\b"
+          "match": "\\b(print|sqrt|abs|floor|ceil|round|min|max|length|head|tail|push|concat|reverse|zip|isEmpty|fst|snd|take|at|toString|map|filter|reduce|partition|range|iterations|delay|parallel|race|then|split|lines|charAt|join|padEnd|padStart|trim|trimEnd|indexOf|includes|repeat|slice|chars|listSet|setAdd|setHas|breakPieces|random|randomInt|randomFloat|randomChoice|shuffle)\\b"
         }
       ]
     },

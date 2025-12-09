@@ -24,6 +24,8 @@ import {
   ParallelPipelineStage,
   MatchCase,
   ReactivePipeExpr,
+  RecordPattern,
+  TuplePattern,
 } from "../ast";
 
 // Re-export types for consumers
@@ -51,6 +53,7 @@ import {
   LeaBuiltin,
   LeaPromise,
   LeaRecord,
+  LeaTuple,
   LeaPipeline,
   LeaBidirectionalPipeline,
   LeaReactiveValue,
@@ -146,6 +149,45 @@ export class Interpreter implements InterpreterContext {
     switch (stmt.kind) {
       case "LetStmt": {
         const value = this.evaluateExpr(stmt.value, env);
+
+        // Handle destructuring patterns
+        if (stmt.pattern) {
+          if (stmt.pattern.kind === "RecordPattern") {
+            // Record destructuring: let { name, age } = record
+            if (!value || typeof value !== "object" || !("kind" in value) || value.kind !== "record") {
+              throw new RuntimeError("Cannot destructure non-record value with record pattern");
+            }
+            const record = value as LeaRecord;
+            for (const field of stmt.pattern.fields) {
+              if (!record.fields.has(field)) {
+                throw new RuntimeError(`Record does not have field '${field}'`);
+              }
+              env.define(field, record.fields.get(field)!, stmt.mutable);
+            }
+          } else if (stmt.pattern.kind === "TuplePattern") {
+            // Tuple destructuring: let (x, y) = tuple
+            if (value && typeof value === "object" && "kind" in value && value.kind === "tuple") {
+              const tuple = value as LeaTuple;
+              if (tuple.elements.length < stmt.pattern.names.length) {
+                throw new RuntimeError(`Tuple has ${tuple.elements.length} elements but pattern expects ${stmt.pattern.names.length}`);
+              }
+              for (let i = 0; i < stmt.pattern.names.length; i++) {
+                env.define(stmt.pattern.names[i], tuple.elements[i], stmt.mutable);
+              }
+            } else if (Array.isArray(value)) {
+              // Also support destructuring lists
+              if (value.length < stmt.pattern.names.length) {
+                throw new RuntimeError(`List has ${value.length} elements but pattern expects ${stmt.pattern.names.length}`);
+              }
+              for (let i = 0; i < stmt.pattern.names.length; i++) {
+                env.define(stmt.pattern.names[i], value[i], stmt.mutable);
+              }
+            } else {
+              throw new RuntimeError("Cannot destructure non-tuple/non-list value with tuple pattern");
+            }
+          }
+          return value;
+        }
 
         // Check if this is a function
         const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
@@ -274,8 +316,23 @@ export class Interpreter implements InterpreterContext {
         }
         throw new RuntimeError("Placeholder '_' used outside of pipe context");
 
-      case "ListExpr":
-        return expr.elements.map((el) => this.evaluateExpr(el, env));
+      case "ListExpr": {
+        const result: LeaValue[] = [];
+        for (const el of expr.elements) {
+          if (el.spread) {
+            // Spread element: expand the value into the list
+            const spreadValue = this.evaluateExpr(el.value, env);
+            if (!Array.isArray(spreadValue)) {
+              throw new RuntimeError("Cannot spread non-list value in list literal");
+            }
+            result.push(...spreadValue);
+          } else {
+            // Regular element
+            result.push(this.evaluateExpr(el.value, env));
+          }
+        }
+        return result;
+      }
 
       case "IndexExpr": {
         const obj = this.evaluateExpr(expr.object, env);
@@ -332,7 +389,20 @@ export class Interpreter implements InterpreterContext {
       case "RecordExpr": {
         const fields = new Map<string, LeaValue>();
         for (const field of expr.fields) {
-          fields.set(field.key, this.evaluateExpr(field.value, env));
+          if (field.spread) {
+            // Spread field: merge the record's fields
+            const spreadValue = this.evaluateExpr(field.value, env);
+            if (!spreadValue || typeof spreadValue !== "object" || !("kind" in spreadValue) || spreadValue.kind !== "record") {
+              throw new RuntimeError("Cannot spread non-record value in record literal");
+            }
+            const spreadRecord = spreadValue as LeaRecord;
+            for (const [key, value] of spreadRecord.fields) {
+              fields.set(key, value);
+            }
+          } else {
+            // Regular field
+            fields.set(field.key, this.evaluateExpr(field.value, env));
+          }
         }
         return { kind: "record", fields } as LeaRecord;
       }
@@ -640,13 +710,13 @@ export class Interpreter implements InterpreterContext {
       // Left is a parallel result - map over each branch result
       elements = leftValue.values;
     } else {
-      throw new RuntimeError("Spread pipe />> requires a list or parallel result on the left side");
+      throw new RuntimeError("Spread pipe />>> requires a list or parallel result on the left side");
     }
 
-    // Map the right side function/pipeline over each element
+    // Map the right side function/pipeline over each element, passing index as second argument
     const results: LeaValue[] = [];
-    for (const element of elements) {
-      const result = this.evaluatePipeWithValue(element, right, env);
+    for (let i = 0; i < elements.length; i++) {
+      const result = this.evaluatePipeWithValue(elements[i], right, env, i);
       results.push(result);
     }
 
@@ -663,7 +733,7 @@ export class Interpreter implements InterpreterContext {
     return results;
   }
 
-  evaluatePipeWithValue(pipedValue: LeaValue, right: Expr, env: Environment): LeaValue {
+  evaluatePipeWithValue(pipedValue: LeaValue, right: Expr, env: Environment, spreadIndex?: number): LeaValue {
     // If piped value is a parallel result, spread it as multiple arguments
     if (isParallelResult(pipedValue)) {
       // If right is a function expression, call it with spread values
@@ -731,25 +801,28 @@ export class Interpreter implements InterpreterContext {
       }
       // If the identifier refers to a reversible function, call its forward
       if (isReversibleFunction(callee)) {
-        return this.callFunction(callee.forward, [pipedValue]);
+        const args = spreadIndex !== undefined ? [pipedValue, spreadIndex] : [pipedValue];
+        return this.callFunction(callee.forward, args);
       }
       // Otherwise treat as a function call
       return this.evaluateCall(
         { kind: "CallExpr", callee: right, args: [] },
         env,
-        pipedValue
+        pipedValue,
+        spreadIndex
       );
     }
 
     // If right is a call expression, check for placeholder
     if (right.kind === "CallExpr") {
-      return this.evaluateCall(right, env, pipedValue);
+      return this.evaluateCall(right, env, pipedValue, spreadIndex);
     }
 
-    // If right is a function expression, call it with piped value
+    // If right is a function expression, call it with piped value (and index if from spread pipe)
     if (right.kind === "FunctionExpr") {
       const fn = this.createFunction(right, env);
-      return this.callFunction(fn, [pipedValue]);
+      const args = spreadIndex !== undefined ? [pipedValue, spreadIndex] : [pipedValue];
+      return this.callFunction(fn, args);
     }
 
     // If right is a pipe expression, pipe the value through the left side, then continue
@@ -770,12 +843,14 @@ export class Interpreter implements InterpreterContext {
       if (isPipeline(callee)) {
         return this.applyPipeline(callee, [pipedValue]);
       }
-      // If it's a function, call it with piped value
+      // If it's a function, call it with piped value (and index if from spread pipe)
       if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
-        return this.callFunction(callee as LeaFunction, [pipedValue]);
+        const args = spreadIndex !== undefined ? [pipedValue, spreadIndex] : [pipedValue];
+        return this.callFunction(callee as LeaFunction, args);
       }
       if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "builtin") {
-        const result = (callee as LeaBuiltin).fn([pipedValue]);
+        const args = spreadIndex !== undefined ? [pipedValue, spreadIndex] : [pipedValue];
+        const result = (callee as LeaBuiltin).fn(args);
         if (result instanceof Promise) {
           return wrapPromise(result);
         }
@@ -972,7 +1047,7 @@ export class Interpreter implements InterpreterContext {
     );
   }
 
-  evaluateCall(expr: CallExpr, env: Environment, pipedValue?: LeaValue): LeaValue {
+  evaluateCall(expr: CallExpr, env: Environment, pipedValue?: LeaValue, spreadIndex?: number): LeaValue {
     const callee = this.evaluateExpr(expr.callee, env);
 
     // Handle piped value
@@ -988,6 +1063,10 @@ export class Interpreter implements InterpreterContext {
       } else {
         // Prepend piped value
         args = [pipedValue, ...expr.args.map((arg) => this.evaluateExpr(arg, env))];
+      }
+      // Append spread index if provided (for spread pipe with index access)
+      if (spreadIndex !== undefined) {
+        args.push(spreadIndex);
       }
     } else {
       args = expr.args.map((arg) => this.evaluateExpr(arg, env));
@@ -1127,6 +1206,45 @@ export class Interpreter implements InterpreterContext {
       case "LetStmt": {
         const value = await this.evaluateExprAsync(stmt.value, env);
 
+        // Handle destructuring patterns
+        if (stmt.pattern) {
+          if (stmt.pattern.kind === "RecordPattern") {
+            // Record destructuring: let { name, age } = record
+            if (!value || typeof value !== "object" || !("kind" in value) || value.kind !== "record") {
+              throw new RuntimeError("Cannot destructure non-record value with record pattern");
+            }
+            const record = value as LeaRecord;
+            for (const field of stmt.pattern.fields) {
+              if (!record.fields.has(field)) {
+                throw new RuntimeError(`Record does not have field '${field}'`);
+              }
+              env.define(field, record.fields.get(field)!, stmt.mutable);
+            }
+          } else if (stmt.pattern.kind === "TuplePattern") {
+            // Tuple destructuring: let (x, y) = tuple
+            if (value && typeof value === "object" && "kind" in value && value.kind === "tuple") {
+              const tuple = value as LeaTuple;
+              if (tuple.elements.length < stmt.pattern.names.length) {
+                throw new RuntimeError(`Tuple has ${tuple.elements.length} elements but pattern expects ${stmt.pattern.names.length}`);
+              }
+              for (let i = 0; i < stmt.pattern.names.length; i++) {
+                env.define(stmt.pattern.names[i], tuple.elements[i], stmt.mutable);
+              }
+            } else if (Array.isArray(value)) {
+              // Also support destructuring lists
+              if (value.length < stmt.pattern.names.length) {
+                throw new RuntimeError(`List has ${value.length} elements but pattern expects ${stmt.pattern.names.length}`);
+              }
+              for (let i = 0; i < stmt.pattern.names.length; i++) {
+                env.define(stmt.pattern.names[i], value[i], stmt.mutable);
+              }
+            } else {
+              throw new RuntimeError("Cannot destructure non-tuple/non-list value with tuple pattern");
+            }
+          }
+          return value;
+        }
+
         // Check if this is a function
         const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
         const fn = isFunction ? (value as LeaFunction) : null;
@@ -1258,11 +1376,21 @@ export class Interpreter implements InterpreterContext {
         throw new RuntimeError("Placeholder '_' used outside of pipe context");
 
       case "ListExpr": {
-        const elements: LeaValue[] = [];
+        const result: LeaValue[] = [];
         for (const el of expr.elements) {
-          elements.push(await this.evaluateExprAsync(el, env));
+          if (el.spread) {
+            // Spread element: expand the value into the list
+            const spreadValue = await this.evaluateExprAsync(el.value, env);
+            if (!Array.isArray(spreadValue)) {
+              throw new RuntimeError("Cannot spread non-list value in list literal");
+            }
+            result.push(...spreadValue);
+          } else {
+            // Regular element
+            result.push(await this.evaluateExprAsync(el.value, env));
+          }
         }
-        return elements;
+        return result;
       }
 
       case "IndexExpr": {
@@ -1322,7 +1450,20 @@ export class Interpreter implements InterpreterContext {
       case "RecordExpr": {
         const fields = new Map<string, LeaValue>();
         for (const field of expr.fields) {
-          fields.set(field.key, await this.evaluateExprAsync(field.value, env));
+          if (field.spread) {
+            // Spread field: merge the record's fields
+            const spreadValue = await this.evaluateExprAsync(field.value, env);
+            if (!spreadValue || typeof spreadValue !== "object" || !("kind" in spreadValue) || spreadValue.kind !== "record") {
+              throw new RuntimeError("Cannot spread non-record value in record literal");
+            }
+            const spreadRecord = spreadValue as LeaRecord;
+            for (const [key, value] of spreadRecord.fields) {
+              fields.set(key, value);
+            }
+          } else {
+            // Regular field
+            fields.set(field.key, await this.evaluateExprAsync(field.value, env));
+          }
         }
         return { kind: "record", fields } as LeaRecord;
       }
@@ -1422,7 +1563,7 @@ export class Interpreter implements InterpreterContext {
       // Left is a parallel result - map over each branch result
       elements = leftValue.values;
     } else {
-      throw new RuntimeError("Spread pipe />> requires a list or parallel result on the left side");
+      throw new RuntimeError("Spread pipe />>> requires a list or parallel result on the left side");
     }
 
     // Map the right side function/pipeline over each element (in parallel)
@@ -1809,11 +1950,11 @@ export class Interpreter implements InterpreterContext {
     return getLeaType(val);
   }
 
-  matchesType(val: LeaValue, expectedType: string | { tuple: string[]; optional?: boolean }): boolean {
+  matchesType(val: LeaValue, expectedType: string | { tuple: string[]; optional?: boolean } | { list: string; optional?: boolean }): boolean {
     return matchesType(val, expectedType);
   }
 
-  formatType(t: string | { tuple: string[]; optional?: boolean }): string {
+  formatType(t: string | { tuple: string[]; optional?: boolean } | { list: string; optional?: boolean }): string {
     return formatType(t);
   }
 

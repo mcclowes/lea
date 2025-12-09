@@ -1,34 +1,55 @@
--- Test spread pipe />> operator
+-- Test spread pipe />>> operator
 
 -- Basic test: map a function over a list
 let double = (x) -> x * 2
-let result1 = [1, 2, 3] />> double
+let result1 = [1, 2, 3] />>> double
 result1 /> print  -- Should print [2, 4, 6]
 
 -- Test with print (side effects for each element)
-[10, 20, 30] />> print  -- Should print 10, 20, 30 individually and return [10, 20, 30]
+-- Note: print receives (element, index), so prints both
+[10, 20, 30] />>> print  -- Prints "10 0", "20 1", "30 2" (element and index)
 
 -- Test chaining spread pipe with regular pipe
 let addOne = (x) -> x + 1
-let result2 = [1, 2, 3] />> double /> length
+let result2 = [1, 2, 3] />>> double /> length
 result2 /> print  -- Should print 3 (length of result array)
 
 -- Test spread pipe with parallel results
 let result3 = 5
   \> (x) -> x + 1
   \> (x) -> x * 2
-  />> double
+  />>> double
 
 await result3 /> print  -- Should print [12, 20] (6*2 and 10*2)
 
 -- Test spread pipe with call expressions
 let add = (a, b) -> a + b
-let result4 = [1, 2, 3] />> add(10)
+let result4 = [1, 2, 3] />>> add(10)
 result4 /> print  -- Should print [11, 12, 13]
 
 -- Test spread pipe with pipeline
 let process = /> double /> addOne
-let result5 = [1, 2, 3] />> process
+let result5 = [1, 2, 3] />>> process
 result5 /> print  -- Should print [3, 5, 7]
+
+-- Test spread pipe with index access (callback receives index as second argument)
+let withIndex = (x, i) -> `{i}: {x}`
+let result6 = ["a", "b", "c"] />>> withIndex
+result6 /> print  -- Should print ["0: a", "1: b", "2: c"]
+
+-- Test spread pipe index with arithmetic
+let indexedDouble = (x, i) -> x * 2 + i
+let result7 = [10, 20, 30] />>> indexedDouble
+result7 /> print  -- Should print [20, 41, 62] (10*2+0, 20*2+1, 30*2+2)
+
+-- Test spread pipe index with filter-like callback
+let onlyEvenIndex = (x, i) -> i % 2 == 0 ? x : 0
+let result8 = [100, 200, 300, 400] />>> onlyEvenIndex
+result8 /> print  -- Should print [100, 0, 300, 0]
+
+-- Test spread pipe index with call expression (index appended after explicit args)
+let addWithIndex = (a, b, i) -> a + b + i
+let result9 = [1, 2, 3] />>> addWithIndex(10)
+result9 /> print  -- Should print [11, 13, 15] (1+10+0, 2+10+1, 3+10+2)
 
 "All spread pipe tests passed!" /> print

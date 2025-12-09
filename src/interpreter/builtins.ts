@@ -167,20 +167,35 @@ export const builtins: Record<string, BuiltinFn> = {
   map: (args) => {
     const list = asList(args[0]);
     const fn = asFunction(args[1]);
-    return list.map((item) => fn([item]));
+    return list.map((item, index) => fn([item, index]));
   },
 
   filter: (args) => {
     const list = asList(args[0]);
     const fn = asFunction(args[1]);
-    return list.filter((item) => isTruthy(fn([item])));
+    return list.filter((item, index) => isTruthy(fn([item, index])));
   },
 
   reduce: (args) => {
     const list = asList(args[0]);
     const initial = args[1];
     const fn = asFunction(args[2]);
-    return list.reduce((acc, item) => fn([acc, item]), initial);
+    return list.reduce((acc, item, index) => fn([acc, item, index]), initial);
+  },
+
+  partition: (args) => {
+    const list = asList(args[0]);
+    const fn = asFunction(args[1]);
+    const truthy: LeaValue[] = [];
+    const falsy: LeaValue[] = [];
+    for (const item of list) {
+      if (isTruthy(fn([item]))) {
+        truthy.push(item);
+      } else {
+        falsy.push(item);
+      }
+    }
+    return [truthy, falsy];
   },
 
   toString: (args: LeaValue[]) => {
@@ -597,8 +612,9 @@ export const builtins: Record<string, BuiltinFn> = {
 
     for (let i = 0; i < list.length; i++) {
       const item = list[i];
+      const index = i;
       const p = (async () => {
-        const result = fn([item]);
+        const result = fn([item, index]);
         // If result is a promise, await it
         const unwrapped = await unwrapPromise(result);
         results[i] = unwrapped;

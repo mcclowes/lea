@@ -1,0 +1,101 @@
+-- Formatter Test File
+-- This file tests that the formatter produces correct, runnable code
+
+-- Basic bindings
+let x = 10
+let y = 20
+let name = "Formatter"
+
+-- Mutable bindings
+maybe counter = 0
+
+-- Simple pipes
+10 /> print
+x /> print
+
+-- Pipe chains
+5 /> sqrt /> print
+[1, 2, 3] /> length /> print
+
+-- String concatenation with pipes (needs parentheses)
+("Result: " ++ x) /> print
+
+-- Lists
+let nums = [1, 2, 3, 4, 5]
+nums /> print
+
+-- Records
+let person = { name: "Alice", age: 30 }
+person /> print
+person.name /> print
+
+-- Functions
+let double = (x) -> x * 2
+let add = (a, b) -> a + b
+double(5) /> print
+add(3, 4) /> print
+
+-- Multi-line function body
+let process = (x) ->
+  let doubled = x * 2
+  let incremented = doubled + 1
+  incremented
+process(10) /> print
+
+-- Function with type annotations
+let typed = (x) -> x * 2 :: Int :> Int
+typed(5) /> print
+
+-- Ternary expressions
+let max = (a, b) -> a > b ? a : b
+max(5, 10) /> print
+
+-- Match expressions
+let describe = (x) -> match x
+  | 0 -> "zero"
+  | 1 -> "one"
+  | "many"
+describe(0) /> print
+describe(5) /> print
+
+-- List operations with callbacks
+[1, 2, 3] /> map((x) -> x * 2) /> print
+[1, 2, 3, 4, 5] /> filter((x) -> x > 2) /> print
+[1, 2, 3] /> reduce(0, (acc, x) -> acc + x) /> print
+
+-- Template strings
+let greeting = `Hello {name}!`
+greeting /> print
+
+-- Tuples
+let point = (10, 20)
+point /> print
+
+-- Parallel pipes
+let result = 5
+  \> (x) -> x + 1
+  \> (x) -> x * 2
+  /> (a, b) -> a + b
+result /> print
+
+-- Early return
+let clamp = (x) ->
+  x > 100 ? <- 100 : 0
+  x < 0 ? <- 0 : 0
+  x
+clamp(150) /> print
+clamp(-5) /> print
+clamp(50) /> print
+
+-- Placeholder syntax
+10 /> add(5, _) /> print
+
+-- Pipelines as first-class values
+let pipe = /> double /> add(1)
+5 /> pipe /> print
+
+-- Decorators
+let logged = (x) -> x * 2 #memo
+logged(5) /> print
+
+"Formatter test complete!" /> print

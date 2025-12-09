@@ -33,6 +33,20 @@ numbers /> filter((x) -> x > 2) /> print
 -- Reduce: fold into single value
 numbers /> reduce(0, (acc, x) -> acc + x) /> print
 
+-- Partition: split into two lists by predicate
+numbers /> partition((x) -> x > 2) /> print  -- [[3, 4, 5], [1, 2]]
+
+-- Index access: callbacks receive index as optional second argument
+"Index access:" /> print
+["a", "b", "c"] /> map((x, i) -> `{i}: {x}`) /> print
+-- ["0: a", "1: b", "2: c"]
+
+[10, 20, 30, 40, 50] /> filter((_, i) -> i < 3) /> print
+-- [10, 20, 30] (first 3 elements)
+
+["x", "y", "z"] /> reduce("", (acc, x, i) -> acc ++ `{i}:{x} `) /> print
+-- "0:x 1:y 2:z "
+
 -- Chaining operations
 let result = numbers
   /> filter((x) -> x > 1)

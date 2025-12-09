@@ -1,0 +1,769 @@
+-- ============================================================
+-- Example 19: Comprehensive Financial Analytics Pipeline
+-- ============================================================
+-- This example showcases virtually every Lea language feature
+-- in a real-world financial transaction processing scenario.
+
+-- ============================================================
+-- SECTION: Configuration & Contexts (Dependency Injection)
+-- ============================================================
+
+context Logger = { log: (msg) -> print("[INFO] " ++ msg), error: (msg) -> print("[ERROR] " ++ msg), warn: (msg) -> print("[WARN] " ++ msg) }
+
+context AppConfig = { currency: "USD", taxRate: 0.08, highValueThreshold: 500, fraudThreshold: 10000 }
+
+context Analytics = { trackEvent: (event) -> print("[ANALYTICS] " ++ event) }
+
+-- ============================================================
+-- SECTION: Type-Safe Utility Functions with Overloading
+-- ============================================================
+
+-- Overloaded format function for different types
+let format = (value) -> "Value: " ++ value :: String :> String
+and format = (n) -> "$" ++ n :: Int :> String
+and format = (n, decimals) -> "$" ++ round(n * 100) / 100 :: (Int, Int) :> String
+
+-- Overloaded combine for numbers and strings
+let combine = (a, b) -> a + b :: (Int, Int) :> Int
+and combine = (a, b) -> a ++ " " ++ b :: (String, String) :> String
+
+-- ============================================================
+-- SECTION: Reversible Functions (Bidirectional Transforms)
+-- ============================================================
+
+-- Currency conversion: USD <-> EUR (rate: 0.85)
+let usdToEur = (usd) -> usd * 0.85
+and usdToEur = (eur) <- eur / 0.85
+
+-- Percentage encoding/decoding
+let toPercentage = (decimal) -> decimal * 100
+and toPercentage = (pct) <- pct / 100
+
+-- Value scaling for visualization
+let scale = (x) -> x / 1000
+and scale = (x) <- x * 1000
+
+-- Logarithmic transform for data normalization
+let logTransform = (x) -> x /> sqrt
+and logTransform = (x) <- x * x
+
+-- ============================================================
+-- SECTION: Pattern Matching Functions
+-- ============================================================
+
+-- Categorize transaction by amount using pattern matching
+let categorizeAmount = (amount) -> match amount
+  | if _ < 0 -> "refund"
+  | if _ == 0 -> "void"
+  | if _ < 50 -> "micro"
+  | if _ < 200 -> "small"
+  | if _ < 500 -> "medium"
+  | if _ < 1000 -> "large"
+  | if _ < 5000 -> "premium"
+  | "enterprise"
+
+-- Risk assessment with guards (returns record)
+let assessRisk = (amount) -> match amount
+  | if _ < 0 -> { level: "low", reason: "refund" }
+  | if _ > 10000 -> { level: "critical", reason: "high_value" }
+  | if _ > 5000 -> { level: "high", reason: "large_transaction" }
+  | if _ > 1000 -> { level: "medium", reason: "moderate_value" }
+  | { level: "low", reason: "normal" }
+
+-- Transaction status determination
+let determineStatus = (transaction) -> match transaction.amount
+  | if _ < 0 -> "reversed"
+  | if _ == 0 -> "cancelled"
+  | "completed"
+
+-- Priority scoring using pattern matching
+let priorityScore = (category) -> match category
+  | "enterprise" -> 100
+  | "premium" -> 80
+  | "large" -> 60
+  | "medium" -> 40
+  | "small" -> 20
+  | "micro" -> 10
+  | 0
+
+-- ============================================================
+-- SECTION: Decorated Functions
+-- ============================================================
+
+-- Memoized expensive computation
+let computeStats = (data) ->
+  @Logger
+  Logger.log("Computing statistics...")
+  let sum = data /> reduce(0, (acc, x) -> acc + x)
+  let count = data /> length
+  let avg = sum / count
+  { sum: sum, count: count, average: avg }
+  #memo #time
+
+-- Logged and validated amount processor
+let processAmount = (amount) -> :: Int :> Int
+  amount < 0 ? <- amount * -1 : 0
+  amount
+  #validate #log
+
+-- Retry-enabled external call simulation
+let fetchExchangeRate = (currency) ->
+  @Logger
+  Logger.log("Fetching rate for " ++ currency)
+  currency == "EUR" ? 0.85 : 1.0
+  #retry(3) #time
+
+-- Traced computation for debugging
+let calculateTax = (amount) ->
+  @AppConfig
+  amount * AppConfig.taxRate
+  #trace
+
+-- ============================================================
+-- SECTION: First-Class Pipelines
+-- ============================================================
+
+-- Helper function to enrich a transaction (using spread to preserve original fields)
+-- Note: parentheses required around record literal to disambiguate from block body
+let enrichTransaction = (t) ->
+  ({ ...t, size: categorizeAmount(t.amount), risk: assessRisk(t.amount), status: determineStatus(t) })
+
+-- Core transformation pipelines
+let validatePipeline = /> filter((t) -> t.amount != 0)
+let enrichPipeline = /> map(enrichTransaction)
+
+-- Aggregation pipelines
+let sumPipeline = /> map((t) -> t.amount) /> reduce(0, (acc, x) -> acc + x)
+let countPipeline = /> length
+
+-- Analysis pipeline with decorators
+let analysisPipeline = /> validatePipeline /> enrichPipeline #log #profile
+
+-- Reusable numeric transforms
+let double = (x) -> x * 2
+let addOne = (x) -> x + 1
+let square = (x) -> x * x
+
+let numericPipeline = /> double /> addOne /> square
+
+-- ============================================================
+-- SECTION: Bidirectional Pipelines
+-- ============================================================
+
+-- Full currency conversion pipeline (USD -> EUR -> scaled)
+let currencyPipeline = </> usdToEur </> scale
+
+-- Data normalization pipeline (reversible)
+let normalizePipeline = </> toPercentage </> logTransform
+
+-- ============================================================
+-- SECTION: Sample Data
+-- ============================================================
+
+let transactions = [
+  { id: 1, amount: 150, category: "food" },
+  { id: 2, amount: 2500, category: "electronics" },
+  { id: 3, amount: 45, category: "food" },
+  { id: 4, amount: 8500, category: "services" },
+  { id: 5, amount: 320, category: "clothing" },
+  { id: 6, amount: -75, category: "food" },
+  { id: 7, amount: 0, category: "cancelled" },
+  { id: 8, amount: 12000, category: "luxury" },
+  { id: 9, amount: 89, category: "entertainment" },
+  { id: 10, amount: 1100, category: "travel" }
+]
+
+-- ============================================================
+-- SECTION: Main Processing Pipeline
+-- ============================================================
+
+"╔══════════════════════════════════════════════════════════╗" /> print
+"║   Lea Financial Analytics Pipeline - Comprehensive Demo  ║" /> print
+"╚══════════════════════════════════════════════════════════╝" /> print
+"" /> print
+
+-- Override context for production logging
+provide Logger { log: (msg) -> print("[PROD] " ++ msg), error: (msg) -> print("[PROD-ERROR] " ++ msg), warn: (msg) -> print("[PROD-WARN] " ++ msg) }
+
+provide Analytics { trackEvent: (event) -> print("[METRICS] Event: " ++ event) }
+
+-- ============================================================
+-- Section 1: Basic Pipeline Processing
+-- ============================================================
+
+"═══ Section 1: Basic Pipeline Processing ═══" /> print
+
+-- Process transactions through enrichment pipeline
+let enrichedTransactions = transactions /> analysisPipeline
+
+"Enriched transaction sample:" /> print
+enrichedTransactions /> head /> print
+
+-- Pipeline properties inspection
+"" /> print
+"Analysis pipeline has " ++ analysisPipeline.length ++ " stages" /> print
+"Stages: " /> print
+analysisPipeline.stages /> print
+
+-- ============================================================
+-- Section 2: Parallel Processing (Fan-out/Fan-in)
+-- ============================================================
+
+"" /> print
+"═══ Section 2: Parallel Processing ═══" /> print
+
+-- Helper to build metrics record (deriving computed fields from base metrics)
+let buildMetrics = (revenue, refunds, count) ->
+  let base = { totalRevenue: revenue, totalRefunds: refunds, transactionCount: count }
+  ({ ...base, netRevenue: revenue + refunds, averageTransaction: revenue / count })
+
+-- Helper functions for aggregation (using function calls for parallel pipe compatibility)
+let sumAmounts = (list) -> list /> map((t) -> t.amount) /> reduce(0, (acc, x) -> acc + x)
+let filterPositive = (list) -> filter(list, (t) -> t.amount > 0)
+let filterNegative = (list) -> filter(list, (t) -> t.amount < 0)
+let filterByCategory = (list, cat) -> filter(list, (t) -> t.category == cat)
+
+-- Calculate multiple metrics in parallel (function calls inside branches)
+let metrics = transactions
+  \> (data) -> sumAmounts(filterPositive(data))
+  \> (data) -> sumAmounts(filterNegative(data))
+  \> (data) -> length(filterPositive(data))
+  /> buildMetrics
+
+"Parallel computed metrics:" /> print
+metrics /> print
+
+-- Helper for category analysis record
+let buildCategoryAnalysis = (food, electronics, services) ->
+  { food: food, electronics: electronics, services: services }
+
+-- Nested parallel with transformations
+let categoryAnalysis = transactions
+  \> (data) -> sumAmounts(filterByCategory(data, "food"))
+  \> (data) -> sumAmounts(filterByCategory(data, "electronics"))
+  \> (data) -> sumAmounts(filterByCategory(data, "services"))
+  /> buildCategoryAnalysis
+
+"Category breakdown:" /> print
+categoryAnalysis /> print
+
+-- ============================================================
+-- Section 3: Spread Pipe with Index Access
+-- ============================================================
+
+"" /> print
+"═══ Section 3: Spread Pipe Operations ═══" /> print
+
+-- Helper to build indexed transaction record (spreading original transaction)
+let buildIndexedTx = (t, i) ->
+  ({ index: i, ...t, priority: i < 3 ? "high" : "normal" })
+
+-- Apply transformation to each transaction with index
+let indexedTransactions = transactions />>> buildIndexedTx
+
+"First 3 indexed transactions:" /> print
+indexedTransactions /> take(_, 3) /> print
+
+-- Spread pipe with pipeline
+let processingPipeline = /> (t) -> t.amount /> double /> addOne
+let processedAmounts = transactions />>> (t) -> t.amount /> double
+
+"Doubled amounts via spread pipe:" /> print
+processedAmounts /> print
+
+-- Spread with parallel results
+let parallelSpread = 100
+  \> double
+  \> addOne
+  />>> (x) -> x * 10
+
+"Parallel results spread:" /> print
+await parallelSpread /> print
+
+-- ============================================================
+-- Section 4: Reversible Transformations
+-- ============================================================
+
+"" /> print
+"═══ Section 4: Reversible Transformations ═══" /> print
+
+-- Forward: USD to EUR
+let usdAmount = 1000
+let eurAmount = usdAmount /> usdToEur
+`{usdAmount} USD = {eurAmount} EUR (forward)` /> print
+
+-- Reverse: EUR back to USD
+let backToUsd = eurAmount </ usdToEur
+`{eurAmount} EUR = {backToUsd} USD (reverse)` /> print
+
+-- Roundtrip verification
+let roundtrip = usdAmount /> usdToEur </ usdToEur
+`Roundtrip: {usdAmount} -> EUR -> USD = {roundtrip}` /> print
+
+-- Bidirectional pipeline usage
+let originalValue = 5000
+let transformed = originalValue /> currencyPipeline
+`{originalValue} USD through currency pipeline = {transformed}` /> print
+
+let reversed = transformed </ currencyPipeline
+`{transformed} reversed through pipeline = {reversed}` /> print
+
+-- ============================================================
+-- Section 5: Pattern Matching in Action
+-- ============================================================
+
+"" /> print
+"═══ Section 5: Pattern Matching ═══" /> print
+
+-- Helper to build category info (using destructuring and spread)
+let buildCategoryInfo = (t) ->
+  let { id, amount } = t
+  { id: id, amount: amount, size: categorizeAmount(amount) }
+
+-- Categorize all transactions
+let categories = transactions /> map(buildCategoryInfo)
+
+"Transaction size categories:" /> print
+categories /> print
+
+-- Helper for risk info (spreading base transaction fields)
+let buildRiskInfo = (t) ->
+  let { id, amount } = t
+  { id: id, amount: amount, risk: assessRisk(amount) }
+
+-- Risk assessment for high-value transactions
+let highValueTx = transactions
+  /> filter((t) -> t.amount > 1000)
+  /> map(buildRiskInfo)
+
+"High-value transaction risks:" /> print
+highValueTx /> print
+
+-- Helper for priority info
+let buildPriorityInfo = (cat) ->
+  { category: cat, score: priorityScore(cat) }
+
+-- Priority scoring pipeline
+let prioritizedCategories = ["enterprise", "premium", "micro", "small"]
+  /> map(buildPriorityInfo)
+
+"Priority scores:" /> print
+prioritizedCategories /> print
+
+-- ============================================================
+-- Section 6: Pipeline Algebra
+-- ============================================================
+
+"" /> print
+"═══ Section 6: Pipeline Algebra ═══" /> print
+
+-- Create pipelines for composition
+let pipeA = /> double /> addOne
+let pipeB = /> square
+
+-- Pipeline composition
+let composed = /> pipeA /> pipeB
+"Composed pipeline length: " ++ composed.length /> print
+"Composed stages: " /> print
+composed.stages /> print
+
+-- Test composed pipeline
+let composedResult = 5 /> composed
+`5 through composed pipeline = {composedResult}` /> print
+
+-- Pipeline algebra operations
+let pipeX = /> double /> addOne /> square
+let pipeY = /> addOne /> logTransform
+
+"Pipeline X stages: " /> print
+pipeX.stages /> print
+
+"Pipeline Y stages: " /> print
+pipeY.stages /> print
+
+-- Intersection (common stages)
+let intersection = pipeX.intersection(pipeY)
+"Intersection stages: " /> print
+intersection.stages /> print
+
+-- Without operation
+let withoutAddOne = pipeX.without(pipeY)
+"X without Y stages: " /> print
+withoutAddOne.stages /> print
+
+-- Reverse pipeline order
+let reversedPipe = pipeA.reverse()
+"Reversed pipeA stages: " /> print
+reversedPipe.stages /> print
+
+-- Slice pipeline
+let sliced = pipeX.slice(0, 2)
+"Sliced (0-2) stages: " /> print
+sliced.stages /> print
+
+-- First and last stage access
+"First stage of pipeX applied to 5: " ++ (5 /> pipeX.first) /> print
+"Last stage of pipeX applied to 5: " ++ (5 /> pipeX.last) /> print
+
+-- Prepend and append
+let extended = pipeA.prepend(square).append(logTransform)
+"Extended pipeline stages: " /> print
+extended.stages /> print
+
+-- Pipeline.from
+let fromList = Pipeline.from([double, addOne, square])
+`Pipeline.from result on 3: {3 /> fromList}` /> print
+
+-- Identity and empty
+"Identity pipeline on 42: " ++ (42 /> Pipeline.identity) /> print
+"Empty pipeline isEmpty: " ++ Pipeline.empty.isEmpty() /> print
+
+-- ============================================================
+-- Section 7: Function Overloading Demo
+-- ============================================================
+
+"" /> print
+"═══ Section 7: Function Overloading ═══" /> print
+
+-- Numeric combine
+let numResult = combine(100, 200)
+`combine(100, 200) = {numResult}` /> print
+
+-- String combine
+let strResult = combine("Hello", "World")
+`combine("Hello", "World") = {strResult}` /> print
+
+-- Different format overloads
+format("test") /> print
+format(1500) /> print
+format(1234, 2) /> print
+
+-- ============================================================
+-- Section 8: Context System with Dependency Injection
+-- ============================================================
+
+"" /> print
+"═══ Section 8: Context System ═══" /> print
+
+-- Function using injected contexts (with destructuring)
+let processWithContext = (transaction) ->
+  @Logger
+  @AppConfig
+  @Analytics
+  let { id, amount } = transaction
+  Logger.log(`Processing transaction {id}`)
+  let taxAmount = amount * AppConfig.taxRate
+  let total = amount + taxAmount
+  Analytics.trackEvent(`Transaction {id} processed`)
+  ({ ...transaction, subtotal: amount, tax: taxAmount, total: total, currency: AppConfig.currency })
+
+-- Process a sample transaction
+let sampleTx = { id: 999, amount: 500, category: "test" }
+let processed = processWithContext(sampleTx)
+"Processed with context:" /> print
+processed /> print
+
+-- ============================================================
+-- Section 9: Tuples and Early Return
+-- ============================================================
+
+"" /> print
+"═══ Section 9: Tuples and Early Return ═══" /> print
+
+-- Create tuples
+let coordinates = (100, 200)
+let pair = (1, "hello")
+let triple = (10, 20, 30)
+
+"Tuples:" /> print
+coordinates /> print
+pair /> print
+triple /> print
+
+-- Tuple access
+let point = (50, 75)
+`First: {fst(point)}, Second: {snd(point)}` /> print
+
+-- Early return with validation
+let validateAndProcess = (amount) ->
+  amount <= 0 ? <- { error: "Invalid amount", value: 0 } : 0
+  amount > 100000 ? <- { error: "Amount too large", value: amount } : 0
+  { success: true, processed: amount * 1.1 }
+
+"Validation results:" /> print
+validateAndProcess(500) /> print
+validateAndProcess(-10) /> print
+validateAndProcess(500000) /> print
+
+-- ============================================================
+-- Section 10: Spread Operators and Destructuring
+-- ============================================================
+
+"" /> print
+"═══ Section 10: Spread Operators and Destructuring ═══" /> print
+
+-- List spreading: combining lists
+let q1Sales = [150, 200, 175]
+let q2Sales = [225, 180, 195]
+let q3Sales = [210, 240, 185]
+let q4Sales = [300, 275, 320]
+
+let allSales = [...q1Sales, ...q2Sales, ...q3Sales, ...q4Sales]
+"Combined quarterly sales:" /> print
+allSales /> print
+
+-- List spreading with new elements
+let baseTaxRates = [0.05, 0.08, 0.10]
+let extendedRates = [0.03, ...baseTaxRates, 0.12, 0.15]
+"Extended tax rates:" /> print
+extendedRates /> print
+
+-- Record spreading: merging configurations
+let defaultConfig = {
+  currency: "USD",
+  locale: "en-US",
+  taxRate: 0.08
+}
+let userConfig = {
+  currency: "EUR",
+  theme: "dark"
+}
+let mergedConfig = { ...defaultConfig, ...userConfig }
+"Merged configuration (user overrides defaults):" /> print
+mergedConfig /> print
+
+-- Record spreading: transaction enrichment
+let baseTransaction = { id: 100, amount: 500, category: "services" }
+let enrichedTx = {
+  ...baseTransaction,
+  timestamp: "2024-01-15",
+  processed: true,
+  tax: baseTransaction.amount * 0.08
+}
+"Enriched transaction via spread:" /> print
+enrichedTx /> print
+
+-- Tuple destructuring
+let coords = (100, 250)
+let (x, y) = coords
+`Destructured coordinates: x={x}, y={y}` /> print
+
+-- List destructuring
+let topThree = [8500, 2500, 1100]
+let (first, second, third) = topThree
+`Top transactions: 1st=${first}, 2nd=${second}, 3rd=${third}` /> print
+
+-- Record destructuring in processing
+let invoice = {
+  invoiceId: "INV-001",
+  clientName: "Acme Corp",
+  amount: 2500,
+  paid: false
+}
+let { invoiceId, amount, paid } = invoice
+`Invoice {invoiceId}: ${amount} - Paid: {paid}` /> print
+
+-- Nested destructuring with spread
+let accountData = {
+  accountId: "ACC-123",
+  balance: 15000,
+  metadata: { createdAt: "2024-01-01", tier: "premium" }
+}
+let { accountId, balance } = accountData
+let updatedAccount = { ...accountData, balance: balance + 500, lastModified: "2024-03-15" }
+"Updated account with new balance:" /> print
+updatedAccount /> print
+
+-- Combining spread with pipelines
+let recentTransactions = [
+  { id: 201, amount: 75 },
+  { id: 202, amount: 150 }
+]
+let historicalTransactions = [
+  { id: 101, amount: 500 },
+  { id: 102, amount: 320 }
+]
+
+let allTransactions = [...historicalTransactions, ...recentTransactions]
+  /> map((t) -> ({ ...t, verified: true }))
+  /> filter((t) -> t.amount > 100)
+
+"All verified transactions over $100:" /> print
+allTransactions /> print
+
+-- ============================================================
+-- Section 11: Advanced List Operations with Index
+-- ============================================================
+
+"" /> print
+"═══ Section 11: Advanced List Operations ═══" /> print
+
+-- Map with index
+let indexed = ["apple", "banana", "cherry"]
+  /> map((item, i) -> `{i}: {item}`)
+
+"Indexed items:" /> print
+indexed /> print
+
+-- Filter with index (keep first 2 even-indexed)
+let evenIndexed = ["a", "b", "c", "d", "e", "f"]
+  /> filter((_, i) -> i % 2 == 0)
+  /> take(_, 2)
+
+"Even-indexed items (first 2):" /> print
+evenIndexed /> print
+
+-- Reduce with index
+let weightedSum = [10, 20, 30, 40]
+  /> reduce(0, (acc, val, i) -> acc + val * (i + 1))
+
+`Weighted sum (val * position): {weightedSum}` /> print
+
+-- Helper for ranked transaction (spread with computed fields)
+let buildRankedTx = (t, i) ->
+  ({ rank: i + 1, ...t, doubled: t.amount * 2 })
+
+-- Complex list pipeline
+let complexResult = transactions
+  /> filter((t, i) -> i < 5)
+  /> map(buildRankedTx)
+  /> filter((t) -> t.amount > 100)
+
+"Top 5 transactions over $100:" /> print
+complexResult /> print
+
+-- ============================================================
+-- Section 12: Decorated Pipeline Demo
+-- ============================================================
+
+"" /> print
+"═══ Section 12: Decorated Pipelines ═══" /> print
+
+-- Debug pipeline shows step-by-step
+let debugPipe = /> double /> addOne /> square #debug
+"Debug pipeline on 3:" /> print
+3 /> debugPipe /> print
+
+-- Profiled pipeline shows timing
+"" /> print
+let profilePipe = /> double /> addOne /> square #profile
+"Profile pipeline on 5:" /> print
+5 /> profilePipe /> print
+
+-- Memoized pipeline caches results
+"" /> print
+let memoPipe = /> double /> addOne #memo
+"Memoized pipeline (called twice with same input):" /> print
+10 /> memoPipe /> print
+10 /> memoPipe /> print
+
+-- ============================================================
+-- Section 13: String Operations and Templates
+-- ============================================================
+
+"" /> print
+"═══ Section 13: String Operations ═══" /> print
+
+-- Template strings with interpolation
+let name = "Financial Analytics"
+let version = 2
+let status = "active"
+
+`System: {name} v{version} ({status})` /> print
+
+-- String concatenation with coercion
+let totalStr = "Total: $" ++ 24704 ++ " across " ++ 8 ++ " transactions"
+totalStr /> print
+
+-- String operations
+let testStr = "hello,world,test"
+let parts = split(testStr, ",")
+"Split result:" /> print
+parts /> print
+
+let joined = join(parts, " | ")
+`Joined: {joined}` /> print
+
+-- Padding and trimming
+let padded = padStart("42", 6, "0")
+`Padded: {padded}` /> print
+
+-- ============================================================
+-- Section 14: Complete Analytics Summary
+-- ============================================================
+
+"" /> print
+"═══ Section 14: Final Analytics Summary ═══" /> print
+
+-- Helper to build summary (base record with spread-computed fields)
+let buildSummary = (revenue, count, highValue, critical) ->
+  let base = { totalRevenue: revenue, transactionCount: count, highValueCount: highValue, criticalRiskCount: critical }
+  ({ ...base, averageValue: revenue / count, highValuePercentage: (highValue * 100) / count })
+
+-- Additional helpers for summary
+let filterHighValue = (list) -> filter(list, (t) -> t.amount > 1000)
+let countCriticalRisk = (list) ->
+  let risks = map(list, (t) -> assessRisk(t.amount))
+  let critical = filter(risks, (r) -> r.level == "critical")
+  length(critical)
+
+-- Build comprehensive summary using all features
+let summary = transactions
+  \> (data) -> sumAmounts(filterPositive(data))
+  \> (data) -> length(filterPositive(data))
+  \> (data) -> length(filterHighValue(data))
+  \> (data) -> countCriticalRisk(data)
+  /> buildSummary
+
+"Summary computed:" /> print
+summary /> print
+
+"╔══════════════════════════════════════════╗" /> print
+"║         ANALYTICS SUMMARY                ║" /> print
+"╠══════════════════════════════════════════╣" /> print
+"║  (See summary above)                     ║" /> print
+"╚══════════════════════════════════════════╝" /> print
+
+-- ============================================================
+-- Section 15: Pipeline Visualization
+-- ============================================================
+
+"" /> print
+"═══ Section 15: Pipeline Visualization ═══" /> print
+
+"Analysis pipeline structure:" /> print
+analysisPipeline.visualize()
+
+"Numeric pipeline structure:" /> print
+numericPipeline.visualize()
+
+-- ============================================================
+-- Completion
+-- ============================================================
+
+"" /> print
+"╔══════════════════════════════════════════════════════════╗" /> print
+"║          Comprehensive Demo Complete!                    ║" /> print
+"║                                                          ║" /> print
+"║  Features demonstrated:                                  ║" /> print
+"║  - Pipes (/>)                                            ║" /> print
+"║  - Parallel pipes (\\>)                                   ║" /> print
+"║  - Spread pipes (/>>>)                                   ║" /> print
+"║  - Reverse pipes (</)                                    ║" /> print
+"║  - First-class pipelines                                 ║" /> print
+"║  - Bidirectional pipelines (</>)                         ║" /> print
+"║  - Pipeline algebra                                      ║" /> print
+"║  - Pattern matching (match)                              ║" /> print
+"║  - Function overloading (and)                            ║" /> print
+"║  - Reversible functions                                  ║" /> print
+"║  - Context system (@)                                    ║" /> print
+"║  - Decorators (#log, #memo, #time, etc.)                 ║" /> print
+"║  - Type annotations (::)                                 ║" /> print
+"║  - Early return (<-)                                     ║" /> print
+"║  - Tuples                                                ║" /> print
+"║  - Records                                               ║" /> print
+"║  - Spread operators (...)                                ║" /> print
+"║  - Destructuring                                         ║" /> print
+"║  - Template strings                                      ║" /> print
+"║  - Index access in callbacks                             ║" /> print
+"╚══════════════════════════════════════════════════════════╝" /> print

@@ -118,7 +118,7 @@ export function parseFactor(ctx: ParserContext): Expr {
 }
 
 /**
- * Parse pipe term: /> />> \> </ @>
+ * Parse pipe term: /> />>> \> </ @>
  * Pipe operators bind tighter than arithmetic, so `a /> b + c` means `(a /> b) + c`
  */
 export function parsePipeTerm(ctx: ParserContext): Expr {
@@ -209,8 +209,8 @@ export function parsePipeTerm(ctx: ParserContext): Expr {
       continue;
     }
 
-    // Check for spread pipe />>
-    // Syntax: list />> fn (maps fn over each element of list)
+    // Check for spread pipe />>>
+    // Syntax: list />>> fn (maps fn over each element of list)
     if (ctx.match(TokenType.SPREAD_PIPE)) {
       ctx.skipNewlines();
       const right = parseUnary(ctx);

@@ -37,4 +37,19 @@ typed(10) /> print  -- 11
 let documented = (x) -> x ++ x :: String :> String
 documented("hello") /> print  -- hello hello - types are just docs without validate
 
+-- List types: [Int], [String], etc.
+let sumList = (nums) -> reduce(nums, 0, (acc, x) -> acc + x) :: [Int] :> Int #validate
+sumList([1, 2, 3, 4, 5]) /> print  -- 15
+
+let joinStrings = (strs) -> reduce(strs, "", (acc, s) -> acc ++ s) :: [String] :> String #validate
+joinStrings(["hello", " ", "world"]) /> print  -- hello world
+
+-- List type as return type
+let getRange = (n) -> range(n) :: Int :> [Int] #validate
+getRange(5) /> print  -- [0, 1, 2, 3, 4]
+
+-- List of lists
+let flatten = (lists) -> reduce(lists, [], (acc, list) -> concat(acc, list)) :: [[Int]] :> [Int]
+flatten([[1, 2], [3, 4]]) /> print  -- [1, 2, 3, 4] - note: nested list types work as documentation
+
 print("All type annotation tests passed!")

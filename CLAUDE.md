@@ -46,6 +46,8 @@ let safe = (x) -> x * 2 :: Int :> Int #validate
 -- Supported types: Int, String, Bool, List, Function, Tuple, Pipeline
 -- Optional types with ?: ?Int allows null
 -- Tuple types: (Int, String) :> (Int, String)
+-- List types: [Int], [String], [[Int]] for nested lists
+let sumList = (nums) -> reduce(nums, 0, (acc, x) -> acc + x) :: [Int] :> Int
 -- Underscore for ignored params
 let ignoreSecond = (x, _) -> x
 
@@ -97,6 +99,21 @@ let items = [
   3,
 ]
 
+-- Destructuring (records and tuples/lists)
+let user = { name: "Alice", age: 30 }
+let { name, age } = user           -- extracts name and age
+let point = (10, 20)
+let (x, y) = point                 -- extracts x=10, y=20
+let (first, second) = [1, 2, 3]    -- also works with lists
+
+-- Spread operator (for records and lists)
+let a = [1, 2, 3]
+let b = [4, 5, 6]
+let combined = [...a, ...b]        -- [1, 2, 3, 4, 5, 6]
+let base = { x: 1, y: 2 }
+let extended = { ...base, z: 3 }   -- { x: 1, y: 2, z: 3 }
+let updated = { ...base, y: 20 }   -- { x: 1, y: 20 } (override)
+
 -- Context system (dependency injection)
 context Logger = { log: (msg) -> print("[DEFAULT] " ++ msg) }
 provide Logger { log: (msg) -> print("[PROD] " ++ msg) }
@@ -112,6 +129,11 @@ await fetchData() /> print
 [1, 2, 3] /> map((x) -> x * 2)
 [1, 2, 3] /> filter((x) -> x > 1)
 [1, 2, 3] /> reduce(0, (acc, x) -> acc + x)
+
+-- Array index access (callbacks receive index as optional second argument)
+["a", "b", "c"] /> map((x, i) -> `{i}: {x}`)       -- ["0: a", "1: b", "2: c"]
+[10, 20, 30, 40] /> filter((_, i) -> i < 2)        -- [10, 20] (first 2 elements)
+["a", "b"] /> reduce("", (acc, x, i) -> acc ++ `{i}:{x} `)  -- "0:a 1:b "
 
 -- String concatenation (with automatic type coercion)
 "Hello" ++ " World"
@@ -156,16 +178,21 @@ value
 
 -- Spread pipe (map over elements)
 -- Applies function/pipeline to each element of a list
-[1, 2, 3] />> double              -- [2, 4, 6]
-[1, 2, 3] />> add(10)             -- [11, 12, 13]
-[1, 2, 3] />> print               -- prints 1, 2, 3 (returns [1, 2, 3])
+-- Callback receives (element, index) like map/filter/reduce
+[1, 2, 3] />>>double              -- [2, 4, 6]
+[1, 2, 3] />>>add(10)             -- [11, 12, 13]
+[1, 2, 3] />>>print               -- prints "1 0", "2 1", "3 2" (element and index)
+
+-- Spread pipe with index access
+["a", "b", "c"] />>>(x, i) -> `{i}: {x}`  -- ["0: a", "1: b", "2: c"]
+[10, 20, 30] />>>(x, i) -> x + i          -- [10, 21, 32]
 
 -- Spread pipe with parallel results
-5 \> addOne \> double />> print   -- prints each branch result individually
+5 \> addOne \> double />>>print   -- prints each branch result individually
 
 -- Spread pipe with pipelines
 let process = /> double /> addOne
-[1, 2, 3] />> process             -- [3, 5, 7]
+[1, 2, 3] />>>process             -- [3, 5, 7]
 
 -- Codeblocks (collapsible regions)
 <> -- Section name
@@ -268,19 +295,21 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `src/index.ts` — File runner entry point
 - `src/visualizer.ts` — AST to Mermaid flowchart generator
 - `src/visualize.ts` — CLI entry point for visualization
+- `src/formatter.ts` — Prettier-like code formatter
+- `src/format.ts` — CLI entry point for formatting
 
 ## Token Types
 
 ```
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
 LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF
-PIPE (/>), SPREAD_PIPE (/>>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
+PIPE (/>), SPREAD_PIPE (/>>>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
 REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), REACTIVE_PIPE (@>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 DOUBLE_COLON (::), COLON_GT (:>)
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
-COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
+COMMA, COLON, DOT (.), SPREAD (...), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
 CODEBLOCK_OPEN (<>), CODEBLOCK_CLOSE (</>)
 NEWLINE, EOF
 ```
@@ -318,7 +347,7 @@ NEWLINE, EOF
 3. Comparison (`<`, `>`, `<=`, `>=`)
 4. Term (`+`, `-`, `++`)
 5. Factor (`*`, `/`, `%`)
-6. Pipe (`/>`, `/>>`, `\>`, `</`)
+6. Pipe (`/>`, `/>>>`, `\>`, `</`)
 7. Unary (`-`)
 8. Call (function calls, indexing)
 9. Primary (literals, identifiers, grouping, functions)
@@ -361,12 +390,16 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 - `print` (returns first arg for chaining)
 - `sqrt`, `abs`, `floor`, `ceil`, `round`, `min`, `max`
 - `length`, `head`, `tail`, `push`, `concat`, `reverse`, `zip`, `isEmpty`
-- `map`, `filter`, `reduce`, `range`, `iterations`
+- `map(list, fn)` — transform each element; callback receives `(element, index)`
+- `filter(list, fn)` — keep elements matching predicate; callback receives `(element, index)`
+- `reduce(list, initial, fn)` — fold into single value; callback receives `(acc, element, index)`
+- `partition`
+- `range`, `iterations`
 - `fst`, `snd` — first/second element of tuple or list
 - `take(list, n)`, `at(list, index)` — list access
 - `toString` — convert value to string
 - `delay(ms, value)` — returns promise that resolves after ms
-- `parallel(list, fn, opts?)` — concurrent map with optional `{ limit: n }`
+- `parallel(list, fn, opts?)` — concurrent map with optional `{ limit: n }`; callback receives `(element, index)`
 - `race(fns)` — returns first promise to resolve
 - `then(promise, fn)` — chain promise transformations
 
@@ -416,12 +449,15 @@ value
 
 **Spread Pipe Operator:**
 ```
-list />> fn
+list />>>fn
 ```
 Maps a function or pipeline over each element of a list or parallel result.
+Callback receives `(element, index)` as arguments, similar to map/filter/reduce.
 
-- `[1, 2, 3] />> double` returns `[2, 4, 6]` (maps double over each element)
-- `parallelResult />> print` applies print to each branch result individually
+- `[1, 2, 3] />>>double` returns `[2, 4, 6]` (maps double over each element)
+- `[1, 2, 3] />>>(x, i) -> x + i` returns `[1, 3, 5]` (element + index)
+- `["a", "b"] />>>(x, i) -> \`{i}: {x}\`` returns `["0: a", "1: b"]`
+- `parallelResult />>>print` applies print to each branch result individually
 - If the left side is not a list or parallel result, throws a RuntimeError
 - Returns an array of results from applying the function to each element
 - Async-aware: if any result is a promise, returns a promise that resolves to all results
@@ -517,6 +553,47 @@ npm run visualize -- file.lea           # Output Mermaid markdown
 npm run visualize -- file.lea --html    # Output HTML with diagram
 npm run visualize -- file.lea -o out.html  # Write to file
 npm run visualize -- file.lea --tb      # Top-to-bottom layout
+npm run format -- file.lea              # Print formatted code to stdout
+npm run format -- file.lea -w           # Format file in place
+npm run format -- dir/ -w               # Format all .lea files in directory
+npm run format -- file.lea --check      # Check if file is formatted
+```
+
+## Formatting
+
+The formatter provides Prettier-like code formatting for Lea source files.
+
+### CLI Options
+
+```bash
+-w, --write           Format file(s) in place
+--check               Check if file(s) are formatted (exit with error if not)
+--indent <n>          Number of spaces for indentation (default: 2)
+--print-width <n>     Maximum line width (default: 80)
+--no-trailing-commas  Don't use trailing commas in multi-line lists/records
+-h, --help            Show help message
+```
+
+### Formatting Rules
+
+- **Indentation**: 2 spaces (configurable)
+- **Line width**: 80 characters (configurable)
+- **Trailing commas**: Added in multi-line lists and records
+- **Pipe chains**: Broken into multiple lines when exceeding print width
+- **Parentheses**: Automatically added where needed for operator precedence
+- **Records/Lists**: Multi-line when exceeding print width
+
+### Example
+
+```bash
+# Format a single file
+npm run format -- examples/01-basics.lea -w
+
+# Check formatting in CI
+npm run format -- src/ --check
+
+# Format with custom settings
+npm run format -- file.lea --indent 4 --print-width 100
 ```
 
 ## Visualization

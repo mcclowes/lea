@@ -2,6 +2,8 @@ import { TokenType } from "../token";
 import {
   Expr,
   RecordField,
+  RecordFieldOrSpread,
+  ListElementOrSpread,
   PipelineStage,
   AnyPipelineStage,
   ParallelPipelineStage,
@@ -129,10 +131,10 @@ export function parseTemplateString(ctx: ParserContext): Expr {
 }
 
 /**
- * Parse a list literal: [1, 2, 3]
+ * Parse a list literal: [1, 2, 3] or [...list1, 4, ...list2]
  */
 export function parseList(ctx: ParserContext): Expr {
-  const elements: Expr[] = [];
+  const elements: ListElementOrSpread[] = [];
 
   ctx.skipNewlines();
   if (!ctx.check(TokenType.RBRACKET)) {
@@ -140,7 +142,14 @@ export function parseList(ctx: ParserContext): Expr {
       ctx.skipNewlines();
       // Check for trailing comma (empty element before ])
       if (ctx.check(TokenType.RBRACKET)) break;
-      elements.push(parseExpression(ctx));
+      // Check for spread operator
+      if (ctx.match(TokenType.SPREAD)) {
+        const value = parseExpression(ctx);
+        elements.push({ spread: true, value });
+      } else {
+        const value = parseExpression(ctx);
+        elements.push({ value });
+      }
       ctx.skipNewlines();
     } while (ctx.match(TokenType.COMMA));
   }
@@ -150,10 +159,10 @@ export function parseList(ctx: ParserContext): Expr {
 }
 
 /**
- * Parse a record literal: { name: "Max", age: 30 }
+ * Parse a record literal: { name: "Max", age: 30 } or { ...record, field: value }
  */
 export function parseRecord(ctx: ParserContext): Expr {
-  const fields: RecordField[] = [];
+  const fields: RecordFieldOrSpread[] = [];
 
   ctx.skipNewlines();
   if (!ctx.check(TokenType.RBRACE)) {
@@ -161,10 +170,16 @@ export function parseRecord(ctx: ParserContext): Expr {
       ctx.skipNewlines();
       // Check for trailing comma (empty field before })
       if (ctx.check(TokenType.RBRACE)) break;
-      const key = ctx.consume(TokenType.IDENTIFIER, "Expected field name").lexeme;
-      ctx.consume(TokenType.COLON, "Expected ':' after field name");
-      const value = parseExpression(ctx);
-      fields.push({ key, value });
+      // Check for spread operator
+      if (ctx.match(TokenType.SPREAD)) {
+        const value = parseExpression(ctx);
+        fields.push({ spread: true, value });
+      } else {
+        const key = ctx.consume(TokenType.IDENTIFIER, "Expected field name").lexeme;
+        ctx.consume(TokenType.COLON, "Expected ':' after field name");
+        const value = parseExpression(ctx);
+        fields.push({ key, value });
+      }
       ctx.skipNewlines();
     } while (ctx.match(TokenType.COMMA));
   }

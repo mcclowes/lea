@@ -51,7 +51,13 @@ export class Lexer {
           this.addToken(TokenType.COLON);
         }
         break;
-      case ".": this.addToken(TokenType.DOT); break;
+      case ".":
+        if (this.match(".") && this.match(".")) {
+          this.addToken(TokenType.SPREAD);
+        } else {
+          this.addToken(TokenType.DOT);
+        }
+        break;
       case "#": this.addToken(TokenType.HASH); break;
       case "@":
         if (this.match(">")) {
@@ -95,8 +101,8 @@ export class Lexer {
 
       case "/":
         if (this.match(">")) {
-          // Check for />> (spread pipe) vs /> (regular pipe)
-          if (this.match(">")) {
+          // Check for />>> (spread pipe) vs /> (regular pipe)
+          if (this.match(">") && this.match(">")) {
             this.addToken(TokenType.SPREAD_PIPE);
           } else {
             this.addToken(TokenType.PIPE);

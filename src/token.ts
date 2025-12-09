@@ -20,7 +20,7 @@ export enum TokenType {
 
   // Operators
   PIPE = "PIPE",           // />
-  SPREAD_PIPE = "SPREAD_PIPE", // />>
+  SPREAD_PIPE = "SPREAD_PIPE", // />>>
   PARALLEL_PIPE = "PARALLEL_PIPE", // \>
   ARROW = "ARROW",         // ->
   RETURN = "RETURN",       // <-
@@ -57,6 +57,7 @@ export enum TokenType {
   COMMA = "COMMA",         // ,
   COLON = "COLON",         // :
   DOT = "DOT",             // .
+  SPREAD = "SPREAD",       // ...
   UNDERSCORE = "UNDERSCORE", // _
   HASH = "HASH",           // #
   AT = "AT",               // @
