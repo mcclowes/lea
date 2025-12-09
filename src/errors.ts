@@ -1,0 +1,338 @@
+/**
+ * Error formatting and suggestions for Lea
+ *
+ * This module provides user-friendly error messages with:
+ * - Contextual suggestions
+ * - "Did you mean?" hints
+ * - Common mistake detection
+ * - Help references
+ */
+
+// Known keywords and builtins for "did you mean?" suggestions
+const KEYWORDS = [
+  "let", "maybe", "and", "true", "false", "await", "context", "provide",
+  "match", "if", "return", "input", "null",
+];
+
+const BUILTINS = [
+  "print", "sqrt", "abs", "floor", "ceil", "round", "min", "max",
+  "length", "head", "tail", "push", "concat", "reverse", "zip", "isEmpty",
+  "map", "filter", "reduce", "partition", "range", "iterations",
+  "fst", "snd", "take", "at", "toString",
+  "delay", "parallel", "race", "then",
+  "random", "randomInt", "randomFloat", "randomChoice", "shuffle",
+  "split", "lines", "charAt", "join", "padEnd", "padStart", "trim", "trimEnd",
+  "indexOf", "includes", "repeat", "slice", "chars",
+  "listSet", "setAdd", "setHas",
+  "readFile", "writeFile", "appendFile", "fileExists", "deleteFile", "readDir", "fetch",
+];
+
+const ALL_NAMES = [...KEYWORDS, ...BUILTINS];
+
+/**
+ * Calculate Levenshtein distance between two strings
+ */
+function levenshteinDistance(a: string, b: string): number {
+  const matrix: number[][] = [];
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+}
+
+/**
+ * Find similar names for "did you mean?" suggestions
+ */
+function findSimilar(name: string, candidates: string[], maxDistance = 2): string[] {
+  const similar: Array<{ name: string; distance: number }> = [];
+
+  for (const candidate of candidates) {
+    const distance = levenshteinDistance(name.toLowerCase(), candidate.toLowerCase());
+    if (distance <= maxDistance && distance > 0) {
+      similar.push({ name: candidate, distance });
+    }
+  }
+
+  return similar
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 3)
+    .map((s) => s.name);
+}
+
+/**
+ * Common error patterns and their suggestions
+ */
+interface ErrorPattern {
+  pattern: RegExp;
+  getSuggestion: (match: RegExpMatchArray) => string;
+}
+
+const ERROR_PATTERNS: ErrorPattern[] = [
+  // Undefined variable
+  {
+    pattern: /Undefined variable '(\w+)'/,
+    getSuggestion: (match) => {
+      const name = match[1];
+      const similar = findSimilar(name, ALL_NAMES);
+      if (similar.length > 0) {
+        return `Did you mean: ${similar.join(", ")}?`;
+      }
+      return "Make sure the variable is defined with 'let' or 'maybe' before using it.";
+    },
+  },
+
+  // Cannot reassign immutable
+  {
+    pattern: /Cannot reassign immutable variable '(\w+)'/,
+    getSuggestion: () =>
+      "Use 'maybe' instead of 'let' to create a mutable variable:\n  maybe x = 10\n  x = 20  -- OK",
+  },
+
+  // String concatenation with +
+  {
+    pattern: /Cannot use binary operator '\+' on types String and/,
+    getSuggestion: () =>
+      "Use '++' for string concatenation:\n  \"Hello\" ++ \" World\"  -- \"Hello World\"",
+  },
+
+  // Wrong argument count
+  {
+    pattern: /Expected (\d+) arguments? but got (\d+)/,
+    getSuggestion: (match) => {
+      const expected = parseInt(match[1]);
+      const got = parseInt(match[2]);
+      if (got < expected) {
+        return "Check that you're passing all required arguments.";
+      }
+      return "Check that you're not passing extra arguments.";
+    },
+  },
+
+  // Type mismatch
+  {
+    pattern: /Expected (Int|String|Bool|List|Function) but got (Int|String|Bool|List|Function)/,
+    getSuggestion: (match) => {
+      const expected = match[1];
+      const got = match[2];
+      if (expected === "Int" && got === "String") {
+        return "Try using #coerce(Int) decorator or toString() to convert types.";
+      }
+      if (expected === "String" && got === "Int") {
+        return "Numbers are auto-coerced in string context. Use '++' to concatenate.";
+      }
+      return `The function expects ${expected} but received ${got}.`;
+    },
+  },
+
+  // Right side of pipe must be function
+  {
+    pattern: /Right side of pipe must be a function or call/,
+    getSuggestion: () =>
+      "The right side of /> must be a function or function call:\n  5 /> sqrt       -- OK (function)\n  5 /> add(3)     -- OK (call)\n  5 /> 10         -- ERROR (not a function)",
+  },
+
+  // Cannot use and without function
+  {
+    pattern: /'and' can only be used with function definitions/,
+    getSuggestion: () =>
+      "'and' extends an existing function with an overload or reverse:\n  let add = (a, b) -> a + b :: (Int, Int) :> Int\n  and add = (a, b) -> a ++ b :: (String, String) :> String",
+  },
+
+  // Spread on non-list
+  {
+    pattern: /Cannot spread non-list value/,
+    getSuggestion: () =>
+      "The spread operator (...) only works on lists:\n  [...[1, 2], ...[3, 4]]  -- [1, 2, 3, 4]",
+  },
+
+  // Spread pipe on non-list
+  {
+    pattern: /Spread pipe \/>>> requires a list or parallel result/,
+    getSuggestion: () =>
+      "The spread pipe />>> maps over lists:\n  [1, 2, 3] />>>double  -- [2, 4, 6]\n  For single values, use regular pipe: x /> double",
+  },
+
+  // No matching pattern
+  {
+    pattern: /No matching case in match expression/,
+    getSuggestion: () =>
+      "Add a default case at the end of your match:\n  match x\n    | 0 -> \"zero\"\n    | \"default\"  -- catches everything else",
+  },
+
+  // Context not defined
+  {
+    pattern: /Context '(\w+)' is not defined/,
+    getSuggestion: (match) =>
+      `Define the context first:\n  context ${match[1]} = { ... }\n\nThen provide a value if needed:\n  provide ${match[1]} { ... }`,
+  },
+
+  // Cannot destructure
+  {
+    pattern: /Cannot destructure non-record value/,
+    getSuggestion: () =>
+      "Record destructuring requires a record:\n  let { name, age } = { name: \"Alice\", age: 30 }",
+  },
+
+  // Unterminated string
+  {
+    pattern: /Unterminated string/,
+    getSuggestion: () =>
+      "Make sure to close your string with a matching quote:\n  \"hello\"  -- OK\n  'hello'  -- OK",
+  },
+
+  // Unexpected character
+  {
+    pattern: /Unexpected character '(.+)'/,
+    getSuggestion: (match) => {
+      const char = match[1];
+      if (char === ";") {
+        return "Lea doesn't use semicolons. Just remove it!";
+      }
+      if (char === "$") {
+        return "Template strings use {} not ${}:\n  `Hello {name}`  -- not `Hello ${name}`";
+      }
+      return `The character '${char}' is not valid Lea syntax.`;
+    },
+  },
+
+  // Arrow function syntax
+  {
+    pattern: /Expected '->'/,
+    getSuggestion: () =>
+      "Function definitions use -> not =>:\n  let f = (x) -> x * 2",
+  },
+];
+
+/**
+ * Format an error message with helpful suggestions
+ */
+export function formatError(error: Error): string {
+  const message = error.message;
+  const lines: string[] = [`Error: ${message}`];
+
+  // Try to match error patterns
+  for (const { pattern, getSuggestion } of ERROR_PATTERNS) {
+    const match = message.match(pattern);
+    if (match) {
+      lines.push("");
+      lines.push("Suggestion:");
+      lines.push(getSuggestion(match).split("\n").map(l => "  " + l).join("\n"));
+      break;
+    }
+  }
+
+  // Add help reference for common topics
+  const helpTopic = getRelevantHelpTopic(message);
+  if (helpTopic) {
+    lines.push("");
+    lines.push(`For more info: .help ${helpTopic}`);
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Get relevant help topic for an error message
+ */
+function getRelevantHelpTopic(message: string): string | null {
+  if (message.includes("pipe") || message.includes("/>") || message.includes("\\>")) {
+    return "pipes";
+  }
+  if (message.includes("function") || message.includes("->") || message.includes("decorator")) {
+    return "functions";
+  }
+  if (message.includes("list") || message.includes("map") || message.includes("filter")) {
+    return "lists";
+  }
+  if (message.includes("type") || message.includes("Int") || message.includes("String")) {
+    return "types";
+  }
+  if (message.includes("async") || message.includes("await") || message.includes("promise")) {
+    return "async";
+  }
+  if (message.includes("match") || message.includes("pattern") || message.includes("guard")) {
+    return "patterns";
+  }
+  if (message.includes("context") || message.includes("provide")) {
+    return "contexts";
+  }
+  if (message.includes("pipeline") || message.includes("Pipeline")) {
+    return "pipelines";
+  }
+  return null;
+}
+
+/**
+ * Common pitfalls with explanations
+ */
+export const COMMON_PITFALLS = [
+  {
+    title: "String concatenation uses ++, not +",
+    wrong: `"Hello" + " World"`,
+    correct: `"Hello" ++ " World"`,
+    explanation: "The + operator is for arithmetic. Use ++ for string concatenation.",
+  },
+  {
+    title: "Pipe binds tighter than arithmetic",
+    wrong: `5 /> double + 1  -- parses as (5 /> double) + 1`,
+    correct: `5 /> double /> add(1)  -- or use parentheses`,
+    explanation: "Pipes have higher precedence than +/-. Use parentheses or chain pipes.",
+  },
+  {
+    title: "reduce takes initial value first",
+    wrong: `[1,2,3] /> reduce((acc, x) -> acc + x, 0)`,
+    correct: `[1,2,3] /> reduce(0, (acc, x) -> acc + x)`,
+    explanation: "Unlike JavaScript, Lea's reduce takes the initial value as the first argument.",
+  },
+  {
+    title: "let is immutable, maybe is mutable",
+    wrong: `let x = 10\nx = 20  -- Error!`,
+    correct: `maybe x = 10\nx = 20  -- OK`,
+    explanation: "Use 'maybe' for variables you need to reassign.",
+  },
+  {
+    title: "Template strings use {} not ${}",
+    wrong: `\`Hello \${name}\``,
+    correct: `\`Hello {name}\``,
+    explanation: "Lea template strings use single braces for interpolation.",
+  },
+  {
+    title: "Functions use -> not =>",
+    wrong: `let f = (x) => x * 2`,
+    correct: `let f = (x) -> x * 2`,
+    explanation: "Lea uses -> for arrow functions, not =>.",
+  },
+  {
+    title: "No semicolons needed",
+    wrong: `let x = 10;`,
+    correct: `let x = 10`,
+    explanation: "Lea doesn't use semicolons. Just remove them!",
+  },
+  {
+    title: "Comments use -- not //",
+    wrong: `// this is a comment`,
+    correct: `-- this is a comment`,
+    explanation: "Lea uses -- for comments, not //.",
+  },
+];
+
+export { findSimilar, ALL_NAMES };
