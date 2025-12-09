@@ -343,6 +343,13 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 - `race(fns)` — returns first promise to resolve
 - `then(promise, fn)` — chain promise transformations
 
+**Random Builtins:**
+- `random()` — random float in [0, 1)
+- `randomInt(max)` or `randomInt(min, max)` — random integer in [0, max) or [min, max)
+- `randomFloat(max)` or `randomFloat(min, max)` — random float in [0, max) or [min, max)
+- `randomChoice(list)` — random element from list
+- `shuffle(list)` — return shuffled copy of list (Fisher-Yates)
+
 **String Builtins:**
 - `split(str, delimiter)` — split string into list
 - `lines(str)` — split string by newlines

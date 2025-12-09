@@ -1,0 +1,45 @@
+-- Test random builtins
+
+-- random() returns a float between 0 and 1
+let r1 = random()
+let r2 = random()
+(r1 >= 0) ? "random >= 0: pass" /> print : "random >= 0: FAIL" /> print
+(r1 < 1) ? "random < 1: pass" /> print : "random < 1: FAIL" /> print
+(r1 != r2) ? "random produces different values: pass" /> print : "same value (unlikely): warning" /> print
+
+-- randomInt(max) returns integer in [0, max)
+let i1 = randomInt(10)
+let i2 = randomInt(10)
+(i1 >= 0) ? "randomInt >= 0: pass" /> print : "randomInt >= 0: FAIL" /> print
+(i1 < 10) ? "randomInt < max: pass" /> print : "randomInt < max: FAIL" /> print
+(floor(i1) == i1) ? "randomInt is integer: pass" /> print : "randomInt is integer: FAIL" /> print
+
+-- randomInt(min, max) returns integer in [min, max)
+let i3 = randomInt(5, 10)
+(i3 >= 5) ? "randomInt >= min: pass" /> print : "randomInt >= min: FAIL" /> print
+(i3 < 10) ? "randomInt < max: pass" /> print : "randomInt < max: FAIL" /> print
+
+-- randomFloat(max) returns float in [0, max)
+let f1 = randomFloat(100)
+(f1 >= 0) ? "randomFloat >= 0: pass" /> print : "randomFloat >= 0: FAIL" /> print
+(f1 < 100) ? "randomFloat < max: pass" /> print : "randomFloat < max: FAIL" /> print
+
+-- randomFloat(min, max) returns float in [min, max)
+let f2 = randomFloat(10, 20)
+(f2 >= 10) ? "randomFloat >= min: pass" /> print : "randomFloat >= min: FAIL" /> print
+(f2 < 20) ? "randomFloat < max: pass" /> print : "randomFloat < max: FAIL" /> print
+
+-- randomChoice(list) returns an element from the list
+let choices = ["a", "b", "c"]
+let choice = randomChoice(choices)
+includes(choices, choice) ? "randomChoice returns list element: pass" /> print : "randomChoice returns list element: FAIL" /> print
+
+-- shuffle(list) returns a shuffled copy
+let original = [1, 2, 3, 4, 5]
+let shuffled = shuffle(original)
+(length(shuffled) == length(original)) ? "shuffle preserves length: pass" /> print : "shuffle preserves length: FAIL" /> print
+-- Check all elements are present
+let hasAll = (original /> filter((x) -> includes(shuffled, x)) /> length) == length(original)
+hasAll ? "shuffle preserves elements: pass" /> print : "shuffle preserves elements: FAIL" /> print
+
+"Random tests complete!" /> print

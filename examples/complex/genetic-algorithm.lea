@@ -1,0 +1,131 @@
+-- Genetic Algorithm in Lea
+-- Evolves a population of strings to match a target phrase
+-- Demonstrates: mutation, crossover, selection, fitness functions
+
+-- Configuration (tuned for tree-walk interpreter performance)
+let TARGET = "LEA"
+let POPULATION_SIZE = 40
+let MUTATION_RATE = 0.05
+let GENERATIONS = 150
+
+-- Character set for generating random strings
+let CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "
+
+<> -- Helper Functions
+
+-- Generate a random character from our charset
+let randomChar = () -> randomChoice(chars(CHARS))
+
+-- Generate a random individual (string of target length)
+let randomIndividual = () ->
+  range(0, length(TARGET)) /> map((i) -> randomChar()) /> join("")
+
+-- Calculate fitness: count matching characters (higher is better)
+let fitness = (individual) ->
+  let pairs = zip([chars(individual), chars(TARGET)])
+  pairs /> filter((pair) -> at(pair, 0) == at(pair, 1)) /> length
+
+</>
+
+<> -- Selection
+
+-- Pick the fitter of two individuals
+let fitter = (a, b) -> fitness(a) > fitness(b) ? a : b
+
+-- Tournament selection: pick best from k random candidates
+let tournamentSelect = (population, k) ->
+  let candidates = range(0, k) /> map((i) -> randomChoice(population))
+  candidates /> reduce(head(candidates), fitter)
+
+-- Select parent using tournament selection
+let selectParent = (population) -> tournamentSelect(population, 3)
+
+</>
+
+<> -- Genetic Operators
+
+-- Single-point crossover: combine two parents
+let crossover = (parent1, parent2) ->
+  let point = randomInt(1, length(TARGET))
+  let p1Chars = chars(parent1)
+  let p2Chars = chars(parent2)
+  let child = concat(slice(p1Chars, 0, point), slice(p2Chars, point))
+  join(child, "")
+
+-- Mutate an individual: randomly change characters
+let mutate = (individual) ->
+  chars(individual) /> map((c) -> random() < MUTATION_RATE ? randomChar() : c) /> join("")
+
+-- Create single offspring from two parents
+let breed = (parent1, parent2) -> crossover(parent1, parent2) /> mutate
+
+</>
+
+<> -- Population Management
+
+-- Create initial random population
+let createPopulation = () ->
+  range(0, POPULATION_SIZE) /> map((i) -> randomIndividual())
+
+-- Get the best individual in population
+let bestIndividual = (population) -> population /> reduce(head(population), fitter)
+
+-- Create one child for the next generation
+let createChild = (population) ->
+  let p1 = selectParent(population)
+  let p2 = selectParent(population)
+  breed(p1, p2)
+
+-- Create next generation with elitism
+let evolveGeneration = (population) ->
+  let elite = bestIndividual(population)
+  let children = range(0, POPULATION_SIZE - 1) /> map((i) -> createChild(population))
+  push(children, elite)
+
+</>
+
+<> -- Main Evolution Loop
+
+-- Single evolution step (returns {population, best, done, generation})
+let step = (state) ->
+  let pop = state.population
+  let gen = state.generation
+  let best = bestIndividual(pop)
+  let bestFit = fitness(best)
+  let done = best == TARGET
+  let maxed = gen >= GENERATIONS
+  gen % 10 == 0 ? `Gen {gen}: "{best}" (fitness: {bestFit}/{length(TARGET)})` /> print : 0
+  done ? `Found target "{TARGET}" in generation {gen}!` /> print : 0
+  maxed ? `Max generations. Best: "{best}"` /> print : 0
+  {
+    population: done ? pop : (maxed ? pop : evolveGeneration(pop)),
+    generation: gen + 1,
+    best: best,
+    done: done ? true : maxed,
+  }
+
+-- Run evolution loop
+let runLoop = (state) ->
+  state.done ? state.best : runLoop(step(state))
+
+-- Main entry point
+let runGA = () ->
+  "=== Genetic Algorithm ===" /> print
+  `Target: "{TARGET}"` /> print
+  `Population: {POPULATION_SIZE}, Mutation Rate: {MUTATION_RATE}` /> print
+  "" /> print
+  let initialState = {
+    population: createPopulation(),
+    generation: 0,
+    best: "",
+    done: false,
+  }
+  let result = runLoop(step(initialState))
+  "" /> print
+  `Final result: "{result}"` /> print
+  result
+
+</>
+
+-- Run the algorithm
+runGA()
