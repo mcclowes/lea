@@ -1,7 +1,50 @@
 {
   "name": "lea-lang",
   "version": "1.0.0",
+  "description": "A pipe-oriented functional programming language, embeddable in TypeScript",
+  "author": "Max Clayton Clowes",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcclowes/lea.git"
+  },
+  "homepage": "https://github.com/mcclowes/lea#readme",
+  "bugs": {
+    "url": "https://github.com/mcclowes/lea/issues"
+  },
+  "keywords": [
+    "lea",
+    "functional",
+    "pipe",
+    "pipeline",
+    "dsl",
+    "language",
+    "interpreter"
+  ],
+  "main": "dist/api.js",
+  "types": "dist/api.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/api.js",
+      "require": "./dist/api.js",
+      "types": "./dist/api.d.ts"
+    }
+  },
+  "files": [
+    "dist/api.*",
+    "dist/ast.*",
+    "dist/errors.*",
+    "dist/lexer.*",
+    "dist/parser.*",
+    "dist/parser/",
+    "dist/interpreter.*",
+    "dist/interpreter/",
+    "dist/token.*",
+    "dist/README.md"
+  ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json && cp README.npm.md dist/README.md",
+    "prepublishOnly": "npm run build",
     "repl": "ts-node src/repl.ts",
     "lea": "ts-node src/index.ts",
     "lea:init": "ts-node src/init.ts",
@@ -12,13 +55,24 @@
     "test:unit": "jest",
     "test:integration": "for f in tests/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "vscode:package": "cd vscode-lea && vsce package",
+    "vscode:publish": "cd vscode-lea && vsce publish"
   },
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "testMatch": ["**/__tests__/**/*.test.ts"],
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+    "testMatch": [
+      "**/__tests__/**/*.test.ts"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ],
     "collectCoverageFrom": [
       "src/**/*.ts",
       "!src/index.ts",

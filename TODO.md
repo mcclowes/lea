@@ -2,7 +2,10 @@
 
 ## Active Tasks
 
-- [ ] Leveraging Lea functionality within TypeScript?
+- [X] Leveraging Lea functionality within TypeScript?
+  - Added `lea` tagged template literal for embedding Lea in TypeScript
+  - Supports JS value and function interpolation via `${...}`
+  - Added `createLea()` for context-based execution with bindings
 - [X] Ambiguity with ignored and templated params? - `let ignoreSecond = (x, _) -> x`
 - [X] Explicit Pipeline Types
 - [X] I think we should prefer/encourage />>> over map (less verbose) - remember this, and also update examples/documentation

@@ -139,6 +139,13 @@ export class Interpreter implements InterpreterContext {
     this.traceDepth = depth;
   }
 
+  /**
+   * Define a value in the global environment (for API interop)
+   */
+  defineGlobal(name: string, value: LeaValue): void {
+    this.globals.define(name, value, false);
+  }
+
   interpret(program: Program): LeaValue {
     let result: LeaValue = null;
     for (const stmt of program.statements) {

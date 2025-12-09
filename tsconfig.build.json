@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "src/index.ts",
+    "src/repl.ts",
+    "src/visualize.ts",
+    "src/visualizer.ts",
+    "src/format.ts",
+    "src/formatter.ts",
+    "src/init.ts",
+    "__tests__/**/*"
+  ]
+}

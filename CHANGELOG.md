@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **TypeScript API**: `lea` tagged template literal for embedding Lea in TypeScript with JS interop
+  - `lea\`${data} /> map((x) -> x * 2)\`` - interpolate JS values and functions
+  - `leaAsync` - async version for code with `await`
+  - `createLea({ bindings })` - create execution context with pre-defined bindings
 - Explicit pipeline type annotations (`:: [Int]` or `:: Type /> Type`)
 
 ### Fixed
