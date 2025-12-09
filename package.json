@@ -7,10 +7,32 @@
     "visualize": "ts-node src/visualize.ts",
     "format": "ts-node src/format.ts",
     "examples": "for f in examples/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done",
-    "test": "for f in tests/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done"
+    "test": "jest",
+    "test:unit": "jest",
+    "test:integration": "for f in tests/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": ["**/__tests__/**/*.test.ts"],
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/index.ts",
+      "!src/repl.ts",
+      "!src/visualize.ts",
+      "!src/format.ts"
+    ],
+    "coverageDirectory": "coverage",
+    "verbose": true
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.19.26",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.0"
   }
