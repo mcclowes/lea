@@ -18,7 +18,6 @@ maybe counter = 0       -- Mutable
 ```lea
 let double = (x) -> x * 2
 let add = (a, b) -> a + b
-let typed = (x: Int): Int -> x + 1
 
 -- With decorators (trailing, after body)
 let logged = (x) -> x * 2 #log #memo #time
@@ -41,11 +40,22 @@ let process2 = (x) -> {
 let double = (x) -> x * 2 :: Int :> Int
 let add = (a, b) -> a + b :: (Int, Int) :> Int
 
--- Function overloading (same name, different type signatures)
+-- Ignored parameters (use _ for params you don't need)
+let second = (_, x) -> x
+second(1, 42)     -- returns 42
+
+-- Function overloading (use 'and' to add overloads with different type signatures)
 let add = (a, b) -> a + b :: (Int, Int) :> Int
-let add = (a, b) -> a ++ b :: (String, String) :> String
+and add = (a, b) -> a ++ b :: (String, String) :> String
 add(1, 2)         -- calls Int version: 3
 add("a", "b")     -- calls String version: "ab"
+
+-- Overloading with reversible functions
+let convert = (x) -> x * 2 :: Int :> Int
+and convert = (x) <- x / 2 :: Int :> Int    -- reverse for Int
+and convert = (s) -> s ++ "!" :: String :> String
+5 /> convert      -- 10 (forward)
+10 </ convert     -- 5 (reverse)
 ```
 
 ## Records
@@ -98,7 +108,7 @@ await fetchData() /> print
 ```lea
 16 /> sqrt              -- sqrt(16) = 4
 5 /> add(3)             -- add(5, 3) - value becomes first arg
-5 /> add(3, _)          -- add(3, 5) - placeholder controls position
+5 /> add(3, input)      -- add(3, 5) - 'input' placeholder controls position
 ```
 
 ## Spread Pipe
@@ -225,16 +235,16 @@ let describe = (x) -> match x
   | 2 -> "two"
   | "other"                       -- default case (no pattern)
 
--- Guard patterns with _ as matched value
+-- Guard patterns with 'input' as matched value
 let classify = (x) -> match x
-  | if _ < 0 -> "negative"
-  | if _ == 0 -> "zero"
-  | if _ > 0 -> "positive"
+  | if input < 0 -> "negative"
+  | if input == 0 -> "zero"
+  | if input > 0 -> "positive"
   | "unknown"
 
--- Using _ in the result body
+-- Using 'input' in the result body
 let doubleIfPositive = (x) -> match x
-  | if _ > 0 -> _ * 2
+  | if input > 0 -> input * 2
   | 0
 
 -- Match in pipelines
@@ -242,9 +252,9 @@ let doubleIfPositive = (x) -> match x
 
 -- FizzBuzz example
 let fizzbuzz = (n) -> match n
-  | if _ % 15 == 0 -> "fizzbuzz"
-  | if _ % 3 == 0 -> "fizz"
-  | if _ % 5 == 0 -> "buzz"
+  | if input % 15 == 0 -> "fizzbuzz"
+  | if input % 3 == 0 -> "fizz"
+  | if input % 5 == 0 -> "buzz"
   | n
 ```
 
@@ -292,9 +302,9 @@ Pipeline.from([fn1, fn2])             -- create from function list
 ## Reversible Functions
 
 ```lea
--- Define forward with -> and reverse with <-
+-- Define forward with -> and use 'and' to add reverse with <-
 let double = (x) -> x * 2
-let double = (x) <- x / 2             -- adds reverse definition
+and double = (x) <- x / 2             -- adds reverse definition
 
 -- Apply forward or reverse
 5 /> double                           -- 10 (forward: 5 * 2)
@@ -323,14 +333,14 @@ let transform = </> double </> addTen
 
 ```
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
-LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF, RETURN
+LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, DECORATOR, MATCH, IF, RETURN, INPUT
 PIPE (/>), SPREAD_PIPE (/>>>), PARALLEL_PIPE (\>), ARROW (->), REVERSE_ARROW (<-)
-REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), PIPE_CHAR (|)
+REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), REACTIVE_PIPE (@>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 DOUBLE_COLON (::), COLON_GT (:>)
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
-COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
+COMMA, COLON, DOT (.), SPREAD (...), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
 CODEBLOCK_OPEN ({-- --}), CODEBLOCK_CLOSE ({/--})
 NEWLINE, EOF
 ```

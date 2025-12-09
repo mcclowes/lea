@@ -33,9 +33,11 @@ let bar = (x) -> :: [Int] :> [Int]
   /> concat
   #profile
   #log
+
 and bar = (x) -> :: Int :> Int
   x
   /> (x) -> x + 1
+
 and bar = (x) <- :: Int :> Int
   x
   /> (x) -> x - 1

@@ -21,7 +21,7 @@ result /> print
 
 ## Core Principles
 
-- **Pipes**: `value /> fn` passes value as first arg; use `_` placeholder to control position
+- **Pipes**: `value /> fn` passes value as first arg; use `input` placeholder to control position
 - **Functions**: `let double = (x) -> x * 2` (no fn keyword)
 - **Multi-statement bodies**: Indentation-based or brace-delimited `{ }`
 - **Decorators**: Trailing `#log #memo #time #retry(3)` etc. after function body
@@ -39,8 +39,8 @@ result /> print
 ## Running
 
 ```bash
-npm run repl    # Interactive REPL
-npm run run x.lea   # Run a file
+npm run repl            # Interactive REPL
+npm run lea file.lea    # Run a file
 ```
 
 ## Reference Files
