@@ -1,0 +1,53 @@
+-- Test array index access in map, filter, reduce
+
+-- map with index
+-- The callback receives (element, index)
+"map with index:" /> print
+["a", "b", "c"] /> map((item, i) -> `{i}: {item}`) /> print
+-- ["0: a", "1: b", "2: c"]
+
+-- Using index for calculations
+[10, 20, 30] /> map((x, i) -> x + i) /> print
+-- [10, 21, 32]
+
+-- filter with index
+-- The callback receives (element, index)
+"filter with index:" /> print
+["a", "b", "c", "d", "e"] /> filter((_, i) -> i % 2 == 0) /> print
+-- ["a", "c", "e"] (elements at even indices)
+
+-- Filter keeping only first 3 elements
+[5, 15, 25, 35, 45] /> filter((_, i) -> i < 3) /> print
+-- [5, 15, 25]
+
+-- reduce with index
+-- The callback receives (accumulator, element, index)
+"reduce with index:" /> print
+["a", "b", "c"] /> reduce("", (acc, item, i) -> acc ++ `{i}:{item} `) /> print
+-- "0:a 1:b 2:c "
+
+-- Weighted sum using index
+[1, 2, 3, 4] /> reduce(0, (acc, x, i) -> acc + x * i) /> print
+-- 0*1 + 1*2 + 2*3 + 3*4 = 0 + 2 + 6 + 12 = 20
+
+-- Index is optional - callbacks can ignore it
+"ignoring index (backward compatible):" /> print
+[1, 2, 3] /> map((x) -> x * 2) /> print
+-- [2, 4, 6]
+
+[1, 2, 3, 4, 5] /> filter((x) -> x > 2) /> print
+-- [3, 4, 5]
+
+[1, 2, 3, 4] /> reduce(0, (acc, x) -> acc + x) /> print
+-- 10
+
+-- Practical example: create indexed tuples
+"practical examples:" /> print
+let items = ["apple", "banana", "cherry"]
+items /> map((item, i) -> (i, item)) /> print
+-- Creates indexed tuples: [(0, "apple"), (1, "banana"), (2, "cherry")]
+
+-- Another practical example: enumerate with explicit index
+["a", "b", "c"] /> map((x, i) -> `item {i} = {x}`) /> print
+
+"Done!" /> print
