@@ -33,6 +33,9 @@ numbers /> filter((x) -> x > 2) /> print
 -- Reduce: fold into single value
 numbers /> reduce(0, (acc, x) -> acc + x) /> print
 
+-- Partition: split into two lists by predicate
+numbers /> partition((x) -> x > 2) /> print  -- [[3, 4, 5], [1, 2]]
+
 -- Index access: callbacks receive index as optional second argument
 "Index access:" /> print
 ["a", "b", "c"] /> map((x, i) -> `{i}: {x}`) /> print

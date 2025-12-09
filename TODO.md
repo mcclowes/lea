@@ -5,12 +5,12 @@
 - [ ] Canvas visualisation of our 'pipeline's
 - [x] Multi-line records and arrays in parser
 - [x] Implement #log_verbose to log input, output, and all variable assignment, or the values passed between pipeline stages
-- [ ] Partitions
+- [x] Partitions (partition builtin added)
 - [ ] Explicit types for pipelines
-- [ ] List types syntax - ❌ List , ✅ [Int]
-- [ ] Array vs value handling - resolve ambiguity
+- [x] List types syntax - ❌ List , ✅ [Int]
+- [x] Array vs value handling - resolve ambiguity (spread pipe />> added)
 - [x] Pattern matching
-- [ ] Record improvements
+- [x] Record improvements (destructuring + spread operator added)
 - [x] Split the interpreter up into smaller files
 
 ## Partitions

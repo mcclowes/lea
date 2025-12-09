@@ -2,6 +2,7 @@ import { TokenType } from "../token";
 import {
   Stmt,
   LetStmt,
+  DestructurePattern,
   AndStmt,
   letStmt,
   andStmt,
@@ -44,6 +45,10 @@ export function parseStatement(ctx: ParserContext): Stmt {
 
 /**
  * Parse a let/maybe statement
+ * Supports:
+ *   let name = value
+ *   let { field1, field2 } = record
+ *   let (x, y) = tuple
  */
 export function parseLetStatement(ctx: ParserContext, mutable: boolean): LetStmt {
   // Consume either 'let' or 'maybe' keyword
@@ -53,16 +58,49 @@ export function parseLetStatement(ctx: ParserContext, mutable: boolean): LetStmt
     ctx.advance();
   }
 
-  const name = ctx.consume(TokenType.IDENTIFIER, "Expected variable name").lexeme;
+  // Check for destructuring pattern
+  let pattern: DestructurePattern | undefined;
+  let name: string;
 
-  ctx.consume(TokenType.EQ, "Expected '=' after variable name");
+  if (ctx.check(TokenType.LBRACE)) {
+    // Record destructuring: let { field1, field2 } = value
+    ctx.advance(); // consume {
+    const fields: string[] = [];
+    if (!ctx.check(TokenType.RBRACE)) {
+      do {
+        const fieldName = ctx.consume(TokenType.IDENTIFIER, "Expected field name").lexeme;
+        fields.push(fieldName);
+      } while (ctx.match(TokenType.COMMA));
+    }
+    ctx.consume(TokenType.RBRACE, "Expected '}' after destructuring pattern");
+    pattern = { kind: "RecordPattern", fields };
+    name = "__destructure__"; // Placeholder name for destructured bindings
+  } else if (ctx.check(TokenType.LPAREN)) {
+    // Tuple destructuring: let (x, y) = value
+    ctx.advance(); // consume (
+    const names: string[] = [];
+    if (!ctx.check(TokenType.RPAREN)) {
+      do {
+        const varName = ctx.consume(TokenType.IDENTIFIER, "Expected variable name").lexeme;
+        names.push(varName);
+      } while (ctx.match(TokenType.COMMA));
+    }
+    ctx.consume(TokenType.RPAREN, "Expected ')' after destructuring pattern");
+    pattern = { kind: "TuplePattern", names };
+    name = "__destructure__"; // Placeholder name for destructured bindings
+  } else {
+    // Regular binding: let name = value
+    name = ctx.consume(TokenType.IDENTIFIER, "Expected variable name").lexeme;
+  }
+
+  ctx.consume(TokenType.EQ, "Expected '=' after variable name or pattern");
   // Skip newlines after = to allow pipeline literals on the next line:
   // let foo =
   //   /> map((x) -> x + 1)
   ctx.skipNewlines();
   const value = parseExpression(ctx);
 
-  return letStmt(name, mutable, value);
+  return letStmt(name, mutable, value, pattern);
 }
 
 /**

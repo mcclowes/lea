@@ -330,7 +330,7 @@ export function parseIndentedBody(ctx: ParserContext): { attachments: string[]; 
 /**
  * Parse a single type annotation
  */
-export function parseTypeAnnotation(ctx: ParserContext): string | { tuple: string[]; optional?: boolean } {
+export function parseTypeAnnotation(ctx: ParserContext): string | { tuple: string[]; optional?: boolean } | { list: string; optional?: boolean } {
   const optional = ctx.match(TokenType.QUESTION);
 
   if (ctx.match(TokenType.LPAREN)) {
@@ -343,6 +343,16 @@ export function parseTypeAnnotation(ctx: ParserContext): string | { tuple: strin
     }
     ctx.consume(TokenType.RPAREN, "Expected ')' after tuple types");
     return { tuple: types, optional };
+  }
+
+  if (ctx.match(TokenType.LBRACKET)) {
+    // List type: [Int], [String], [[Int]] (nested), etc.
+    // Recursively parse the inner type (could be simple type or another list)
+    const innerType = parseTypeAnnotation(ctx);
+    ctx.consume(TokenType.RBRACKET, "Expected ']' after list element type");
+    // For simple types, just use the string; for complex types, stringify
+    const elementType = typeof innerType === "string" ? innerType : JSON.stringify(innerType);
+    return { list: elementType, optional };
   }
 
   // Simple type
@@ -358,7 +368,7 @@ export function parseTypeSignature(ctx: ParserContext): TypeSignature | undefine
     return undefined;
   }
 
-  const paramTypes: (string | { tuple: string[]; optional?: boolean })[] = [];
+  const paramTypes: (string | { tuple: string[]; optional?: boolean } | { list: string; optional?: boolean })[] = [];
 
   // Parse parameter types - can be single type or (Type, Type, ...)
   if (ctx.match(TokenType.LPAREN)) {
@@ -370,12 +380,12 @@ export function parseTypeSignature(ctx: ParserContext): TypeSignature | undefine
     }
     ctx.consume(TokenType.RPAREN, "Expected ')' after parameter types");
   } else {
-    // Single parameter type (could be ?Type or (Tuple))
+    // Single parameter type (could be ?Type, (Tuple), or [List])
     paramTypes.push(parseTypeAnnotation(ctx));
   }
 
   // Parse optional return type with :>
-  let returnType: string | { tuple: string[] } | undefined;
+  let returnType: string | { tuple: string[] } | { list: string } | undefined;
   if (ctx.match(TokenType.COLON_GT)) {
     returnType = parseTypeAnnotation(ctx);
   }

@@ -18,7 +18,7 @@ import { getLeaType } from "./helpers";
  */
 export function matchesType(
   val: LeaValue,
-  expectedType: string | { tuple: string[]; optional?: boolean }
+  expectedType: string | { tuple: string[]; optional?: boolean } | { list: string; optional?: boolean }
 ): boolean {
   // Handle optional types - if optional and value is null, it's valid
   if (typeof expectedType === "object" && expectedType.optional && val === null) {
@@ -43,6 +43,16 @@ export function matchesType(
     return expectedType.tuple.every((t, i) => matchesType(tuple.elements[i], t));
   }
 
+  // Handle list types like { list: "Int" }
+  if (typeof expectedType === "object" && "list" in expectedType) {
+    if (!Array.isArray(val)) {
+      return false;
+    }
+    const elementType = expectedType.list;
+    // All elements must match the expected element type
+    return val.every((element) => matchesType(element, elementType));
+  }
+
   // Simple type comparison
   const actualType = getLeaType(val);
   return actualType === expectedType.toLowerCase();
@@ -51,8 +61,12 @@ export function matchesType(
 /**
  * Format a type annotation for error messages
  */
-export function formatType(t: string | { tuple: string[]; optional?: boolean }): string {
+export function formatType(t: string | { tuple: string[]; optional?: boolean } | { list: string; optional?: boolean }): string {
   if (typeof t === "string") return t;
+  if ("list" in t) {
+    const listStr = `[${t.list}]`;
+    return t.optional ? `?${listStr}` : listStr;
+  }
   const tupleStr = `(${t.tuple.join(", ")})`;
   return t.optional ? `?${tupleStr}` : tupleStr;
 }

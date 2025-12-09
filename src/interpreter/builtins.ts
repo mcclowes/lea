@@ -183,6 +183,21 @@ export const builtins: Record<string, BuiltinFn> = {
     return list.reduce((acc, item, index) => fn([acc, item, index]), initial);
   },
 
+  partition: (args) => {
+    const list = asList(args[0]);
+    const fn = asFunction(args[1]);
+    const truthy: LeaValue[] = [];
+    const falsy: LeaValue[] = [];
+    for (const item of list) {
+      if (isTruthy(fn([item]))) {
+        truthy.push(item);
+      } else {
+        falsy.push(item);
+      }
+    }
+    return [truthy, falsy];
+  },
+
   toString: (args: LeaValue[]) => {
     const val = args[0];
     if (typeof val === "number") return String(val);

@@ -43,6 +43,8 @@ let safe = (x) -> x * 2 :: Int :> Int #validate
 -- Supported types: Int, String, Bool, List, Function, Tuple, Pipeline
 -- Optional types with ?: ?Int allows null
 -- Tuple types: (Int, String) :> (Int, String)
+-- List types: [Int], [String], [[Int]] for nested lists
+let sumList = (nums) -> reduce(nums, 0, (acc, x) -> acc + x) :: [Int] :> Int
 -- Underscore for ignored params
 let ignoreSecond = (x, _) -> x
 
@@ -93,6 +95,21 @@ let items = [
   2,
   3,
 ]
+
+-- Destructuring (records and tuples/lists)
+let user = { name: "Alice", age: 30 }
+let { name, age } = user           -- extracts name and age
+let point = (10, 20)
+let (x, y) = point                 -- extracts x=10, y=20
+let (first, second) = [1, 2, 3]    -- also works with lists
+
+-- Spread operator (for records and lists)
+let a = [1, 2, 3]
+let b = [4, 5, 6]
+let combined = [...a, ...b]        -- [1, 2, 3, 4, 5, 6]
+let base = { x: 1, y: 2 }
+let extended = { ...base, z: 3 }   -- { x: 1, y: 2, z: 3 }
+let updated = { ...base, y: 20 }   -- { x: 1, y: 20 } (override)
 
 -- Context system (dependency injection)
 context Logger = { log: (msg) -> print("[DEFAULT] " ++ msg) }
@@ -268,7 +285,7 @@ PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 DOUBLE_COLON (::), COLON_GT (:>)
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
-COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
+COMMA, COLON, DOT (.), SPREAD (...), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
 CODEBLOCK_OPEN (<>), CODEBLOCK_CLOSE (</>)
 NEWLINE, EOF
 ```
@@ -350,6 +367,7 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 - `map(list, fn)` — transform each element; callback receives `(element, index)`
 - `filter(list, fn)` — keep elements matching predicate; callback receives `(element, index)`
 - `reduce(list, initial, fn)` — fold into single value; callback receives `(acc, element, index)`
+- `partition`
 - `range`, `iterations`
 - `fst`, `snd` — first/second element of tuple or list
 - `take(list, n)`, `at(list, index)` — list access

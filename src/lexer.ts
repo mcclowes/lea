@@ -51,7 +51,13 @@ export class Lexer {
           this.addToken(TokenType.COLON);
         }
         break;
-      case ".": this.addToken(TokenType.DOT); break;
+      case ".":
+        if (this.match(".") && this.match(".")) {
+          this.addToken(TokenType.SPREAD);
+        } else {
+          this.addToken(TokenType.DOT);
+        }
+        break;
       case "#": this.addToken(TokenType.HASH); break;
       case "@": this.addToken(TokenType.AT); break;
       case "?": this.addToken(TokenType.QUESTION); break;

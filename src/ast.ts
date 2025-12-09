@@ -105,13 +105,13 @@ export interface Decorator {
   args: (number | string | boolean)[];
 }
 
-// Type can be a simple type name or a tuple of types
-export type TypeAnnotation = string | { tuple: string[] };
+// Type can be a simple type name, a tuple of types, or a list type
+export type TypeAnnotation = string | { tuple: string[] } | { list: string };
 
 // New trailing type annotation :: (Type, Type) :> ReturnType
 export interface TypeSignature {
-  paramTypes: (string | { tuple: string[]; optional?: boolean })[];
-  returnType?: string | { tuple: string[] };
+  paramTypes: (string | { tuple: string[]; optional?: boolean } | { list: string; optional?: boolean })[];
+  returnType?: string | { tuple: string[] } | { list: string };
 }
 
 export interface FunctionExpr {
@@ -125,9 +125,21 @@ export interface FunctionExpr {
   isReverse?: boolean;  // True if this is a reverse function definition (x) <- expr
 }
 
+export interface ListElement {
+  value: Expr;
+  spread?: false;  // Regular element
+}
+
+export interface ListSpreadElement {
+  spread: true;    // Spread element: ...list
+  value: Expr;     // The expression to spread
+}
+
+export type ListElementOrSpread = ListElement | ListSpreadElement;
+
 export interface ListExpr {
   kind: "ListExpr";
-  elements: Expr[];
+  elements: ListElementOrSpread[];
 }
 
 export interface IndexExpr {
@@ -148,11 +160,19 @@ export interface AwaitExpr {
 export interface RecordField {
   key: string;
   value: Expr;
+  spread?: false;  // Regular field
 }
+
+export interface RecordSpreadField {
+  spread: true;    // Spread field: ...record
+  value: Expr;     // The expression to spread
+}
+
+export type RecordFieldOrSpread = RecordField | RecordSpreadField;
 
 export interface RecordExpr {
   kind: "RecordExpr";
-  fields: RecordField[];
+  fields: RecordFieldOrSpread[];
 }
 
 export interface MemberExpr {
@@ -244,6 +264,19 @@ export interface BlockBody {
   result: Expr;
 }
 
+// Destructuring patterns
+export type DestructurePattern = RecordPattern | TuplePattern;
+
+export interface RecordPattern {
+  kind: "RecordPattern";
+  fields: string[];  // Field names to extract: { name, age } -> ["name", "age"]
+}
+
+export interface TuplePattern {
+  kind: "TuplePattern";
+  names: string[];   // Variable names: (x, y) -> ["x", "y"]
+}
+
 // Statement types
 export type Stmt = LetStmt | AndStmt | ExprStmt | ContextDefStmt | ProvideStmt | DecoratorDefStmt | CodeblockStmt;
 
@@ -252,6 +285,7 @@ export interface LetStmt {
   name: string;
   mutable: boolean;
   value: Expr;
+  pattern?: DestructurePattern;  // Optional destructuring pattern
 }
 
 // And statement - extends an existing function definition (overload or reverse)
@@ -379,7 +413,7 @@ export const functionExpr = (
   isReverse,
 });
 
-export const listExpr = (elements: Expr[]): ListExpr => ({
+export const listExpr = (elements: ListElementOrSpread[]): ListExpr => ({
   kind: "ListExpr",
   elements,
 });
@@ -399,7 +433,7 @@ export const awaitExpr = (operand: Expr): AwaitExpr => ({
   operand,
 });
 
-export const recordExpr = (fields: RecordField[]): RecordExpr => ({
+export const recordExpr = (fields: RecordFieldOrSpread[]): RecordExpr => ({
   kind: "RecordExpr",
   fields,
 });
@@ -451,11 +485,12 @@ export const decoratorDefStmt = (name: string, transformer: Expr): DecoratorDefS
   transformer,
 });
 
-export const letStmt = (name: string, mutable: boolean, value: Expr): LetStmt => ({
+export const letStmt = (name: string, mutable: boolean, value: Expr, pattern?: DestructurePattern): LetStmt => ({
   kind: "LetStmt",
   name,
   mutable,
   value,
+  pattern,
 });
 
 export const andStmt = (name: string, value: Expr): AndStmt => ({
