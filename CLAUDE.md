@@ -254,6 +254,8 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `src/index.ts` — File runner entry point
 - `src/visualizer.ts` — AST to Mermaid flowchart generator
 - `src/visualize.ts` — CLI entry point for visualization
+- `src/formatter.ts` — Prettier-like code formatter
+- `src/format.ts` — CLI entry point for formatting
 
 ## Token Types
 
@@ -495,6 +497,47 @@ npm run visualize -- file.lea           # Output Mermaid markdown
 npm run visualize -- file.lea --html    # Output HTML with diagram
 npm run visualize -- file.lea -o out.html  # Write to file
 npm run visualize -- file.lea --tb      # Top-to-bottom layout
+npm run format -- file.lea              # Print formatted code to stdout
+npm run format -- file.lea -w           # Format file in place
+npm run format -- dir/ -w               # Format all .lea files in directory
+npm run format -- file.lea --check      # Check if file is formatted
+```
+
+## Formatting
+
+The formatter provides Prettier-like code formatting for Lea source files.
+
+### CLI Options
+
+```bash
+-w, --write           Format file(s) in place
+--check               Check if file(s) are formatted (exit with error if not)
+--indent <n>          Number of spaces for indentation (default: 2)
+--print-width <n>     Maximum line width (default: 80)
+--no-trailing-commas  Don't use trailing commas in multi-line lists/records
+-h, --help            Show help message
+```
+
+### Formatting Rules
+
+- **Indentation**: 2 spaces (configurable)
+- **Line width**: 80 characters (configurable)
+- **Trailing commas**: Added in multi-line lists and records
+- **Pipe chains**: Broken into multiple lines when exceeding print width
+- **Parentheses**: Automatically added where needed for operator precedence
+- **Records/Lists**: Multi-line when exceeding print width
+
+### Example
+
+```bash
+# Format a single file
+npm run format -- examples/01-basics.lea -w
+
+# Check formatting in CI
+npm run format -- src/ --check
+
+# Format with custom settings
+npm run format -- file.lea --indent 4 --print-width 100
 ```
 
 ## Visualization
