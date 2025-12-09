@@ -1,0 +1,135 @@
+-- Test type coercion decorators
+
+-- ========================================
+-- #coerce(Type) - strict type coercion
+-- ========================================
+
+-- Coerce string to Int
+let doubleCoerced = (x) -> x * 2 #coerce(Int)
+"42" /> doubleCoerced /> print
+-- Expected: 84
+
+-- Coerce boolean to Int
+let boolToNum = (x) -> x + 10 #coerce(Int)
+true /> boolToNum /> print
+-- Expected: 11 (true becomes 1)
+false /> boolToNum /> print
+-- Expected: 10 (false becomes 0)
+
+-- Coerce to String
+let toStringFn = (x) -> x ++ "!" #coerce(String)
+42 /> toStringFn /> print
+-- Expected: 42!
+[1, 2, 3] /> toStringFn /> print
+-- Expected: [1, 2, 3]!
+
+-- Coerce to Bool
+let toBoolFn = (x) -> x #coerce(Bool)
+"true" /> toBoolFn /> print
+-- Expected: true
+"false" /> toBoolFn /> print
+-- Expected: false
+"yes" /> toBoolFn /> print
+-- Expected: true
+"no" /> toBoolFn /> print
+-- Expected: false
+1 /> toBoolFn /> print
+-- Expected: true
+0 /> toBoolFn /> print
+-- Expected: false
+
+-- Coerce to List
+let toListFn = (x) -> x #coerce(List)
+"hello" /> toListFn /> print
+-- Expected: [h, e, l, l, o]
+42 /> toListFn /> print
+-- Expected: [42]
+(1, 2, 3) /> toListFn /> print
+-- Expected: [1, 2, 3] (tuple to list)
+
+-- ========================================
+-- #tease(Type) - best-effort coercion
+-- ========================================
+
+-- Extract numbers from strings
+let extractNum = (x) -> x #tease(Int)
+"42" /> extractNum /> print
+-- Expected: 42
+"42px" /> extractNum /> print
+-- Expected: 42
+"The price is 99 dollars" /> extractNum /> print
+-- Expected: 99
+"-15.5" /> extractNum /> print
+-- Expected: -15.5
+
+-- Tease boolean from various inputs
+let teaseBool = (x) -> x #tease(Bool)
+"yes" /> teaseBool /> print
+-- Expected: true
+"no" /> teaseBool /> print
+-- Expected: false
+"hello" /> teaseBool /> print
+-- Expected: true (non-empty string is truthy)
+"" /> teaseBool /> print
+-- Expected: false (empty string)
+[1, 2] /> teaseBool /> print
+-- Expected: true (non-empty list)
+[] /> teaseBool /> print
+-- Expected: false (empty list)
+
+-- Tease list length to Int
+let teaseLen = (x) -> x #tease(Int)
+[1, 2, 3, 4, 5] /> teaseLen /> print
+-- Expected: 5 (list coerces to length)
+
+-- ========================================
+-- #stringify - convert output to string
+-- ========================================
+
+let stringifyFn = (x) -> x #stringify
+42 /> stringifyFn /> print
+-- Expected: 42 (as string)
+[1, 2, 3] /> stringifyFn /> print
+-- Expected: [1, 2, 3] (as string)
+true /> stringifyFn /> print
+-- Expected: true (as string)
+(1, "hello") /> stringifyFn /> print
+-- Expected: (1, hello) (as string)
+
+-- ========================================
+-- #parse - auto-parse string input
+-- ========================================
+
+-- Parse numbers
+let parseDouble = (x) -> x * 2 #parse
+"21" /> parseDouble /> print
+-- Expected: 42
+"3.14" /> parseDouble /> print
+-- Expected: 6.28
+
+-- Parse JSON arrays
+let parseArr = (x) -> x #parse
+"[1, 2, 3]" /> parseArr /> print
+-- Expected: [1, 2, 3]
+
+-- Note: JSON objects with quotes would need proper escaping
+-- Skipping object parsing test for now
+
+-- Non-parseable strings pass through
+let parsePassthrough = (x) -> x #parse
+"hello world" /> parsePassthrough /> print
+-- Expected: hello world
+
+-- ========================================
+-- Combining decorators
+-- ========================================
+
+-- Parse then stringify
+let roundTrip = (x) -> x + 10 #parse #stringify
+"5" /> roundTrip /> print
+-- Expected: 15 (as string)
+
+-- Coerce then tease for complex transformations
+let complexTransform = (x) -> x #coerce(String) #tease(Int)
+42 /> complexTransform /> print
+-- Expected: 42 (number -> string "42" -> number 42)

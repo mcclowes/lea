@@ -19,9 +19,138 @@ import {
   wrapPromise,
   isParallelStage,
   isPipeline,
+  isLeaTuple,
 } from "./helpers";
 import { builtins } from "./builtins";
 import { InterpreterContext } from "./context";
+
+/**
+ * Coerce a value to a target type (strict coercion)
+ * Throws RuntimeError if coercion is not possible
+ */
+function coerceToType(val: LeaValue, targetType: string): LeaValue {
+  switch (targetType) {
+    case "int":
+    case "number": {
+      if (typeof val === "number") return val;
+      if (typeof val === "string") {
+        const num = Number(val);
+        if (!isNaN(num)) return num;
+        throw new RuntimeError(`[coerce] Cannot coerce string "${val}" to Int`);
+      }
+      if (typeof val === "boolean") return val ? 1 : 0;
+      throw new RuntimeError(`[coerce] Cannot coerce ${typeof val} to Int`);
+    }
+
+    case "string": {
+      return stringify(val);
+    }
+
+    case "bool":
+    case "boolean": {
+      if (typeof val === "boolean") return val;
+      if (typeof val === "number") return val !== 0;
+      if (typeof val === "string") {
+        const lower = val.toLowerCase();
+        if (lower === "true" || lower === "1" || lower === "yes") return true;
+        if (lower === "false" || lower === "0" || lower === "no" || lower === "") return false;
+        throw new RuntimeError(`[coerce] Cannot coerce string "${val}" to Bool`);
+      }
+      if (val === null) return false;
+      throw new RuntimeError(`[coerce] Cannot coerce ${typeof val} to Bool`);
+    }
+
+    case "list": {
+      if (Array.isArray(val)) return val;
+      if (isLeaTuple(val)) return val.elements;
+      if (typeof val === "string") return val.split("");
+      // Wrap single value in a list
+      return [val];
+    }
+
+    default:
+      throw new RuntimeError(`[coerce] Unknown target type: ${targetType}`);
+  }
+}
+
+/**
+ * Try to coerce a value to a target type (best effort, lenient)
+ * Returns original value if coercion fails
+ */
+function teaseToType(val: LeaValue, targetType: string): LeaValue {
+  switch (targetType) {
+    case "int":
+    case "number": {
+      if (typeof val === "number") return val;
+      if (typeof val === "boolean") return val ? 1 : 0;
+      if (typeof val === "string") {
+        // Try to extract numbers from the string
+        const trimmed = val.trim();
+
+        // Direct number conversion
+        const direct = Number(trimmed);
+        if (!isNaN(direct) && trimmed !== "") return direct;
+
+        // Try to extract leading number (e.g., "42px" -> 42)
+        const leadingMatch = trimmed.match(/^-?\d+\.?\d*/);
+        if (leadingMatch && leadingMatch[0]) {
+          const num = Number(leadingMatch[0]);
+          if (!isNaN(num)) return num;
+        }
+
+        // Try to extract any number from the string
+        const anyMatch = trimmed.match(/-?\d+\.?\d*/);
+        if (anyMatch && anyMatch[0]) {
+          const num = Number(anyMatch[0]);
+          if (!isNaN(num)) return num;
+        }
+
+        // If string looks like a boolean, convert to 0/1
+        const lower = trimmed.toLowerCase();
+        if (lower === "true" || lower === "yes") return 1;
+        if (lower === "false" || lower === "no") return 0;
+      }
+      if (Array.isArray(val)) return val.length;
+      if (isLeaTuple(val)) return val.elements.length;
+      if (val === null) return 0;
+      // Return 0 as fallback for numbers
+      return 0;
+    }
+
+    case "string": {
+      return stringify(val);
+    }
+
+    case "bool":
+    case "boolean": {
+      if (typeof val === "boolean") return val;
+      if (typeof val === "number") return val !== 0;
+      if (typeof val === "string") {
+        const lower = val.toLowerCase().trim();
+        if (lower === "true" || lower === "1" || lower === "yes") return true;
+        if (lower === "false" || lower === "0" || lower === "no" || lower === "") return false;
+        // Non-empty strings are truthy
+        return val.length > 0;
+      }
+      if (Array.isArray(val)) return val.length > 0;
+      if (isLeaTuple(val)) return val.elements.length > 0;
+      if (val === null) return false;
+      return true;
+    }
+
+    case "list": {
+      if (Array.isArray(val)) return val;
+      if (isLeaTuple(val)) return val.elements;
+      if (typeof val === "string") return val.split("");
+      // Wrap single value in a list
+      return [val];
+    }
+
+    default:
+      // Unknown type, return as-is
+      return val;
+  }
+}
 
 /**
  * Apply a decorator to a function (sync version)
@@ -223,6 +352,57 @@ export function applyFunctionDecorator(
         }
         // Otherwise wrap in resolved promise
         return wrapPromise(Promise.resolve(result));
+      };
+    }
+
+    case "coerce": {
+      // Coerce input arguments to specified type before calling the function
+      // Usage: #coerce(Int) or #coerce(String) or #coerce(Bool) or #coerce(List)
+      const targetType = (decorator.args[0] as string)?.toLowerCase() ?? "string";
+      return (args: LeaValue[]) => {
+        const coercedArgs = args.map(arg => coerceToType(arg, targetType));
+        return executor(coercedArgs);
+      };
+    }
+
+    case "parse": {
+      // Auto-parse string input as JSON or number
+      // Tries: number first, then JSON, then leaves as-is
+      return (args: LeaValue[]) => {
+        const parsedArgs = args.map(arg => {
+          if (typeof arg !== "string") return arg;
+
+          // Try parsing as number first
+          const num = Number(arg);
+          if (!isNaN(num) && arg.trim() !== "") return num;
+
+          // Try parsing as JSON
+          try {
+            return JSON.parse(arg);
+          } catch {
+            // Return original string if parsing fails
+            return arg;
+          }
+        });
+        return executor(parsedArgs);
+      };
+    }
+
+    case "stringify": {
+      // Auto-stringify the output
+      return (args: LeaValue[]) => {
+        const result = executor(args);
+        return stringify(result);
+      };
+    }
+
+    case "tease": {
+      // Try to coerce the returned value into a given type (best effort)
+      // Usage: #tease(Int) or #tease(String) or #tease(Bool) or #tease(List)
+      const targetType = (decorator.args[0] as string)?.toLowerCase() ?? "int";
+      return (args: LeaValue[]) => {
+        const result = executor(args);
+        return teaseToType(result, targetType);
       };
     }
 

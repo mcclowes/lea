@@ -420,7 +420,7 @@ export function parseDecorators(ctx: ParserContext): { name: string; args: (numb
     const name = ctx.consume(TokenType.IDENTIFIER, "Expected decorator name").lexeme;
     const args: (number | string | boolean)[] = [];
 
-    // Parse optional arguments: #retry(3) or #timeout(1000)
+    // Parse optional arguments: #retry(3) or #timeout(1000) or #coerce(Int)
     if (ctx.match(TokenType.LPAREN)) {
       if (!ctx.check(TokenType.RPAREN)) {
         do {
@@ -432,8 +432,11 @@ export function parseDecorators(ctx: ParserContext): { name: string; args: (numb
             args.push(true);
           } else if (ctx.match(TokenType.FALSE)) {
             args.push(false);
+          } else if (ctx.match(TokenType.IDENTIFIER)) {
+            // Allow identifiers (e.g., type names like Int, String, Bool)
+            args.push(ctx.previous().lexeme);
           } else {
-            throw new ParseError("Expected literal in decorator argument", ctx.peek());
+            throw new ParseError("Expected literal or identifier in decorator argument", ctx.peek());
           }
         } while (ctx.match(TokenType.COMMA));
       }
