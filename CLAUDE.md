@@ -246,6 +246,13 @@ let y = 20
 let processNumbers = /> double /> addOne
 5 /> processNumbers         -- applies pipeline to 5
 
+-- Pipeline type annotations
+let intPipe = /> double /> addOne :: Int            -- input type only
+let listPipe = /> map(double) :: [Int]              -- list input type
+let fullTyped = /> map(double) :: [Int] /> [Int]    -- input and output types
+-- In strict mode (#strict or --strict), types are validated at runtime
+-- Invalid inputs throw "[strict] Pipeline expected input type..."
+
 -- Pipeline properties
 processNumbers.length       -- 2 (number of stages)
 processNumbers.stages       -- ["double", "addOne"]
@@ -262,6 +269,9 @@ let profiledPipeline = /> double /> addOne #profile
 let loggedPipeline = /> double /> addOne #log
 5 /> debugPipeline   -- shows step-by-step execution
 5 /> profiledPipeline  -- shows timing for each stage
+
+-- Pipeline with type and decorators
+let typedAndLogged = /> map(double) :: [Int] /> [Int] #log
 
 -- Reversible functions (bidirectional transforms)
 -- Define forward with -> and use 'and' to add reverse with <-

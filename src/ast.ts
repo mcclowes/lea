@@ -116,6 +116,12 @@ export interface TypeSignature {
   returnType?: string | { tuple: string[] } | { list: string };
 }
 
+// Pipeline type annotation :: InputType or :: InputType /> OutputType
+export interface PipelineTypeSignature {
+  inputType: TypeAnnotation;
+  outputType?: TypeAnnotation;
+}
+
 export interface FunctionExpr {
   kind: "FunctionExpr";
   params: FunctionParam[];
@@ -219,10 +225,12 @@ export type AnyPipelineStage = PipelineStage | ParallelPipelineStage;
 // Pipeline literal - a reusable pipeline that can be assigned to a variable
 // Syntax: /> fn1 /> fn2 /> fn3
 // Can include parallel stages: /> fn1 \> branch1 \> branch2 /> combiner
+// Can include type signature: /> fn1 /> fn2 :: [Int] or :: [Int] /> [Int]
 export interface PipelineLiteral {
   kind: "PipelineLiteral";
   stages: AnyPipelineStage[];
   decorators: Decorator[];
+  typeSignature?: PipelineTypeSignature;
 }
 
 // Reverse pipe expression - applies a value through a pipeline in reverse
@@ -239,6 +247,7 @@ export interface BidirectionalPipelineLiteral {
   kind: "BidirectionalPipelineLiteral";
   stages: PipelineStage[];
   decorators: Decorator[];
+  typeSignature?: PipelineTypeSignature;
 }
 
 // Match case - a single arm of a match expression
@@ -554,10 +563,11 @@ export const program = (statements: Stmt[], strict: boolean = false): Program =>
   strict,
 });
 
-export const pipelineLiteral = (stages: AnyPipelineStage[], decorators: Decorator[] = []): PipelineLiteral => ({
+export const pipelineLiteral = (stages: AnyPipelineStage[], decorators: Decorator[] = [], typeSignature?: PipelineTypeSignature): PipelineLiteral => ({
   kind: "PipelineLiteral",
   stages,
   decorators,
+  typeSignature,
 });
 
 export const reversePipeExpr = (left: Expr, right: Expr): ReversePipeExpr => ({
@@ -566,10 +576,11 @@ export const reversePipeExpr = (left: Expr, right: Expr): ReversePipeExpr => ({
   right,
 });
 
-export const bidirectionalPipelineLiteral = (stages: PipelineStage[], decorators: Decorator[] = []): BidirectionalPipelineLiteral => ({
+export const bidirectionalPipelineLiteral = (stages: PipelineStage[], decorators: Decorator[] = [], typeSignature?: PipelineTypeSignature): BidirectionalPipelineLiteral => ({
   kind: "BidirectionalPipelineLiteral",
   stages,
   decorators,
+  typeSignature,
 });
 
 export const matchExpr = (value: Expr, cases: MatchCase[]): MatchExpr => ({

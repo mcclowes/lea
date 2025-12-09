@@ -7,6 +7,7 @@ import {
   PipelineStage,
   AnyPipelineStage,
   ParallelPipelineStage,
+  PipelineTypeSignature,
   MatchCase,
   numberLiteral,
   stringLiteral,
@@ -26,7 +27,7 @@ import {
 } from "../ast";
 import { ParserContext, ParseError } from "./types";
 import { parseExpression, parseUnary, finishCall, parseEquality } from "./expressions";
-import { parseGroupingOrFunction } from "./functions";
+import { parseGroupingOrFunction, parsePipelineTypeSignature } from "./functions";
 import { Lexer } from "../lexer";
 
 /**
@@ -262,13 +263,23 @@ export function parsePipelineLiteral(ctx: ParserContext): Expr {
     break;
   }
 
+  // Parse optional type signature: :: [Int] or :: [Int] /> [Int]
+  let typeSignature: PipelineTypeSignature | undefined;
+  const savedPosForType = ctx.current;
+  ctx.skipNewlines();
+  if (ctx.check(TokenType.DOUBLE_COLON)) {
+    typeSignature = parsePipelineTypeSignature(ctx);
+  } else {
+    ctx.setCurrent(savedPosForType);
+  }
+
   // Parse trailing decorators for the pipeline
   const savedPosForDecorators = ctx.current;
   const decorators = parseDecorators(ctx);
   if (decorators.length === 0) {
     ctx.setCurrent(savedPosForDecorators);
   }
-  return pipelineLiteral(stages, decorators);
+  return pipelineLiteral(stages, decorators, typeSignature);
 }
 
 /**
@@ -406,13 +417,23 @@ export function parseBidirectionalPipelineLiteral(ctx: ParserContext): Expr {
     stages.push({ expr: nextStageExpr });
   }
 
+  // Parse optional type signature: :: [Int] or :: [Int] /> [Int]
+  let typeSignature: PipelineTypeSignature | undefined;
+  const savedPosForType = ctx.current;
+  ctx.skipNewlines();
+  if (ctx.check(TokenType.DOUBLE_COLON)) {
+    typeSignature = parsePipelineTypeSignature(ctx);
+  } else {
+    ctx.setCurrent(savedPosForType);
+  }
+
   // Parse trailing decorators for the pipeline
   const savedPosForDecorators = ctx.current;
   const decorators = parseDecorators(ctx);
   if (decorators.length === 0) {
     ctx.setCurrent(savedPosForDecorators);
   }
-  return bidirectionalPipelineLiteral(stages, decorators);
+  return bidirectionalPipelineLiteral(stages, decorators, typeSignature);
 }
 
 /**

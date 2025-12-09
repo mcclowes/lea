@@ -5,6 +5,8 @@ import {
   FunctionParam,
   Decorator,
   TypeSignature,
+  PipelineTypeSignature,
+  TypeAnnotation,
   BlockBody,
   functionExpr,
   tupleExpr,
@@ -391,4 +393,25 @@ export function parseTypeSignature(ctx: ParserContext): TypeSignature | undefine
   }
 
   return { paramTypes, returnType };
+}
+
+/**
+ * Parse a pipeline type signature: :: InputType or :: InputType /> OutputType
+ * Syntax: :: [Int] or :: [Int] /> [Int]
+ */
+export function parsePipelineTypeSignature(ctx: ParserContext): PipelineTypeSignature | undefined {
+  if (!ctx.match(TokenType.DOUBLE_COLON)) {
+    return undefined;
+  }
+
+  // Parse the input type
+  const inputType = parseTypeAnnotation(ctx) as TypeAnnotation;
+
+  // Check for optional output type with />
+  let outputType: TypeAnnotation | undefined;
+  if (ctx.match(TokenType.PIPE)) {
+    outputType = parseTypeAnnotation(ctx) as TypeAnnotation;
+  }
+
+  return { inputType, outputType };
 }

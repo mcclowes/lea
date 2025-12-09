@@ -312,6 +312,52 @@ describe('Interpreter', () => {
         5 /> combined
       `)).toBe(11);
     });
+
+    it('should parse pipeline with input type only', () => {
+      const result = evaluate(`
+        let double = (x) -> x * 2
+        let p = /> map(double) :: [Int]
+        [1, 2, 3] /> p
+      `);
+      expect(result).toEqual([2, 4, 6]);
+    });
+
+    it('should parse pipeline with input and output types', () => {
+      const result = evaluate(`
+        let double = (x) -> x * 2
+        let p = /> map(double) :: [Int] /> [Int]
+        [1, 2, 3] /> p
+      `);
+      expect(result).toEqual([2, 4, 6]);
+    });
+
+    it('should validate pipeline input type in strict mode', () => {
+      expect(() => evaluate(`
+        #strict
+        let double = (x) -> x * 2
+        let p = /> map(double) :: [Int]
+        "not a list" /> p
+      `)).toThrow(/expected input type/i);
+    });
+
+    it('should validate pipeline output type in strict mode', () => {
+      expect(() => evaluate(`
+        #strict
+        let toStr = (x) -> toString(x)
+        let p = /> map(toStr) :: [Int] /> [Int]
+        [1, 2, 3] /> p
+      `)).toThrow(/expected output type/i);
+    });
+
+    it('should pass validation with correct types in strict mode', () => {
+      const result = evaluate(`
+        #strict
+        let double = (x) -> x * 2
+        let p = /> map(double) :: [Int] /> [Int]
+        [1, 2, 3] /> p
+      `);
+      expect(result).toEqual([2, 4, 6]);
+    });
   });
 
   describe('reversible functions', () => {

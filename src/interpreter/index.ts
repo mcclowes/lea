@@ -464,6 +464,7 @@ export class Interpreter implements InterpreterContext {
           stages: expr.stages,
           closure: env,
           decorators: expr.decorators,
+          typeSignature: expr.typeSignature,
         } as LeaPipeline;
       }
 
@@ -474,6 +475,7 @@ export class Interpreter implements InterpreterContext {
           stages: expr.stages,
           closure: env,
           decorators: expr.decorators,
+          typeSignature: expr.typeSignature,
         } as LeaBidirectionalPipeline;
       }
 
@@ -882,6 +884,16 @@ export class Interpreter implements InterpreterContext {
 
   // Apply a pipeline to an input value by running it through each stage
   applyPipeline(pipeline: LeaPipeline, args: LeaValue[]): LeaValue {
+    // Validate input type in strict mode if pipeline has a type signature
+    if (this.strictMode && pipeline.typeSignature) {
+      const input = args[0];
+      if (!this.matchesType(input, pipeline.typeSignature.inputType)) {
+        throw new RuntimeError(
+          `[strict] Pipeline expected input type ${this.formatType(pipeline.typeSignature.inputType)}, got ${this.getLeaType(input)}`
+        );
+      }
+    }
+
     // Create the base executor that runs the pipeline stages
     let executor = (pipeArgs: LeaValue[]): LeaValue => {
       return this.executePipelineStages(pipeline, pipeArgs);
@@ -892,7 +904,18 @@ export class Interpreter implements InterpreterContext {
       executor = applyPipelineDecorator(this, decorator, executor, pipeline);
     }
 
-    return executor(args);
+    const result = executor(args);
+
+    // Validate output type in strict mode if pipeline has an output type signature
+    if (this.strictMode && pipeline.typeSignature?.outputType) {
+      if (!this.matchesType(result, pipeline.typeSignature.outputType)) {
+        throw new RuntimeError(
+          `[strict] Pipeline expected output type ${this.formatType(pipeline.typeSignature.outputType)}, got ${this.getLeaType(result)}`
+        );
+      }
+    }
+
+    return result;
   }
 
   // Execute the core pipeline stages without decorators
@@ -1484,6 +1507,7 @@ export class Interpreter implements InterpreterContext {
           stages: expr.stages,
           closure: env,
           decorators: expr.decorators,
+          typeSignature: expr.typeSignature,
         } as LeaPipeline;
       }
 
@@ -1494,6 +1518,7 @@ export class Interpreter implements InterpreterContext {
           stages: expr.stages,
           closure: env,
           decorators: expr.decorators,
+          typeSignature: expr.typeSignature,
         } as LeaBidirectionalPipeline;
       }
 
@@ -1673,6 +1698,16 @@ export class Interpreter implements InterpreterContext {
 
   // Async version of applyPipeline
   async applyPipelineAsync(pipeline: LeaPipeline, args: LeaValue[]): Promise<LeaValue> {
+    // Validate input type in strict mode if pipeline has a type signature
+    if (this.strictMode && pipeline.typeSignature) {
+      const input = args[0];
+      if (!this.matchesType(input, pipeline.typeSignature.inputType)) {
+        throw new RuntimeError(
+          `[strict] Pipeline expected input type ${this.formatType(pipeline.typeSignature.inputType)}, got ${this.getLeaType(input)}`
+        );
+      }
+    }
+
     // Create the base executor that runs the pipeline stages
     let executor = async (pipeArgs: LeaValue[]): Promise<LeaValue> => {
       return this.executePipelineStagesAsync(pipeline, pipeArgs);
@@ -1683,7 +1718,18 @@ export class Interpreter implements InterpreterContext {
       executor = applyPipelineDecoratorAsync(this, decorator, executor, pipeline);
     }
 
-    return executor(args);
+    const result = await executor(args);
+
+    // Validate output type in strict mode if pipeline has an output type signature
+    if (this.strictMode && pipeline.typeSignature?.outputType) {
+      if (!this.matchesType(result, pipeline.typeSignature.outputType)) {
+        throw new RuntimeError(
+          `[strict] Pipeline expected output type ${this.formatType(pipeline.typeSignature.outputType)}, got ${this.getLeaType(result)}`
+        );
+      }
+    }
+
+    return result;
   }
 
   // Execute the core pipeline stages without decorators (async version)

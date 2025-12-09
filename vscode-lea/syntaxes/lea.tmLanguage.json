@@ -46,6 +46,11 @@
     "type-annotations": {
       "patterns": [
         {
+          "comment": "Pipeline type annotation :: Type /> Type - for pipelines",
+          "name": "comment.block.type-annotation.lea",
+          "match": "::\\s*(?:\\?)?(?:\\([^)]*\\)|\\[[^\\]]*\\]|[A-Z][a-zA-Z0-9]*)\\s*/>\\s*(?:\\?)?(?:\\([^)]*\\)|\\[[^\\]]*\\]|[A-Z][a-zA-Z0-9]*)"
+        },
+        {
           "comment": "Trailing type annotation :: (Type, Type) :> ReturnType or :: Type :> (Type, Type) or :: [Type] :> [Type] - styled subtly like comments",
           "name": "comment.block.type-annotation.lea",
           "match": "::\\s*(?:\\?)?(?:\\([^)]*\\)|\\[[^\\]]*\\]|[A-Z][a-zA-Z0-9]*)(?:\\s*:>\\s*(?:\\?)?(?:\\([^)]*\\)|\\[[^\\]]*\\]|[A-Z][a-zA-Z0-9]*))?"

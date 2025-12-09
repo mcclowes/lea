@@ -474,6 +474,54 @@ describe('Parser', () => {
         expect(expr.stages.length).toBe(2);
       }
     });
+
+    it('should parse pipeline with input type', () => {
+      const expr = parseExpr('/> double /> reverse :: [Int]');
+      expect(expr.kind).toBe('PipelineLiteral');
+      if (expr.kind === 'PipelineLiteral') {
+        expect(expr.typeSignature).toBeDefined();
+        expect(expr.typeSignature?.inputType).toEqual({ list: 'Int', optional: false });
+        expect(expr.typeSignature?.outputType).toBeUndefined();
+      }
+    });
+
+    it('should parse pipeline with input and output types', () => {
+      const expr = parseExpr('/> double /> reverse :: [Int] /> [Int]');
+      expect(expr.kind).toBe('PipelineLiteral');
+      if (expr.kind === 'PipelineLiteral') {
+        expect(expr.typeSignature).toBeDefined();
+        expect(expr.typeSignature?.inputType).toEqual({ list: 'Int', optional: false });
+        expect(expr.typeSignature?.outputType).toEqual({ list: 'Int', optional: false });
+      }
+    });
+
+    it('should parse pipeline with simple input type', () => {
+      const expr = parseExpr('/> double :: Int');
+      expect(expr.kind).toBe('PipelineLiteral');
+      if (expr.kind === 'PipelineLiteral') {
+        expect(expr.typeSignature?.inputType).toBe('Int');
+      }
+    });
+
+    it('should parse pipeline with tuple types', () => {
+      const expr = parseExpr('/> swap :: (Int, String) /> (String, Int)');
+      expect(expr.kind).toBe('PipelineLiteral');
+      if (expr.kind === 'PipelineLiteral') {
+        expect(expr.typeSignature?.inputType).toEqual({ tuple: ['Int', 'String'], optional: false });
+        expect(expr.typeSignature?.outputType).toEqual({ tuple: ['String', 'Int'], optional: false });
+      }
+    });
+
+    it('should parse pipeline with type and decorators', () => {
+      const expr = parseExpr('/> double :: Int /> Int #log');
+      expect(expr.kind).toBe('PipelineLiteral');
+      if (expr.kind === 'PipelineLiteral') {
+        expect(expr.typeSignature?.inputType).toBe('Int');
+        expect(expr.typeSignature?.outputType).toBe('Int');
+        expect(expr.decorators.length).toBe(1);
+        expect(expr.decorators[0].name).toBe('log');
+      }
+    });
   });
 
   describe('await expressions', () => {

@@ -19,6 +19,8 @@ foo.visualize()
 [1,2, 3, 4, 5] /> foo /> print
 [1,2, 3, 4, 5] /> foo /> print
 
+
+
 {/--}
 
 {-- function tests --}
