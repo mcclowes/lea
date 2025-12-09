@@ -50,7 +50,7 @@ data /> print
 -- Output: (1, [2, 3, 4, 5])
 
 -- Practical example: parallel transformations
-let user = { name: "Alice", age: 30 }
+let user = { name: "Alice", age: 99 }
 
 let greeting = user
   \> (u) -> "Hello, " ++ u.name ++ "!"

@@ -1,7 +1,7 @@
 -- Records (objects) in Lea
 
 -- Simple record
-let user = { name: "Alice", age: 30 }
+let user = { name: "Alice", age: 99 }
 user /> print
 
 -- Multi-line records

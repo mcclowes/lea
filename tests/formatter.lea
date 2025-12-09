@@ -25,7 +25,7 @@ let nums = [1, 2, 3, 4, 5]
 nums /> print
 
 -- Records
-let person = { name: "Alice", age: 30 }
+let person = { name: "Alice", age: 99 }
 person /> print
 person.name /> print
 

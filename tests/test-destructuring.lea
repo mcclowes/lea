@@ -1,7 +1,7 @@
 -- Test: Destructuring patterns
 
 -- Record destructuring
-let user = { name: "Alice", age: 30, city: "NYC" }
+let user = { name: "Alice", age: 99, city: "NYC" }
 let { name, age } = user
 name /> print  -- Alice
 age /> print   -- 30

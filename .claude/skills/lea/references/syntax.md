@@ -51,7 +51,7 @@ add("a", "b")     -- calls String version: "ab"
 ## Records
 
 ```lea
-let user = { name: "Max", age: 30 }
+let user = { name: "Max", age: 99 }
 user.name /> print           -- "Max"
 user.age /> print            -- 30
 

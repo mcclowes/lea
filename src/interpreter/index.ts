@@ -111,8 +111,10 @@ export class Interpreter implements InterpreterContext {
   traceDepth = 0;
   contextRegistry = new Map<string, { default: LeaValue; current: LeaValue }>();
   customDecorators = new Map<string, LeaFunction>();
+  strictMode: boolean;
 
-  constructor() {
+  constructor(strictMode: boolean = false) {
+    this.strictMode = strictMode;
     this.globals = new Environment();
     for (const [name, fn] of Object.entries(builtins)) {
       this.globals.define(name, { kind: "builtin", fn } as LeaBuiltin, false);
@@ -1108,6 +1110,7 @@ export class Interpreter implements InterpreterContext {
 
   callFunction(fn: LeaFunction, args: LeaValue[]): LeaValue {
     const isAsync = fn.decorators.some((d) => d.name === "async");
+    const hasValidateDecorator = fn.decorators.some((d) => d.name === "validate");
 
     // Apply decorators
     let executor = (fnArgs: LeaValue[]): LeaValue => {
@@ -1142,6 +1145,12 @@ export class Interpreter implements InterpreterContext {
     // Wrap with decorators (applied in reverse order)
     for (const decorator of [...fn.decorators].reverse()) {
       executor = applyFunctionDecorator(this, decorator, executor, fn);
+    }
+
+    // In strict mode, auto-apply validation for functions with type signatures
+    // (unless #validate decorator is already present)
+    if (this.strictMode && fn.typeSignature && !hasValidateDecorator) {
+      executor = applyFunctionDecorator(this, { name: "validate", args: [] }, executor, fn);
     }
 
     return executor(args);
@@ -1833,6 +1842,28 @@ export class Interpreter implements InterpreterContext {
   }
 
   async callFunctionAsync(fn: LeaFunction, args: LeaValue[]): Promise<LeaValue> {
+    const hasValidateDecorator = fn.decorators.some((d) => d.name === "validate");
+
+    // In strict mode, validate arguments before execution for functions with type signatures
+    if (this.strictMode && fn.typeSignature && !hasValidateDecorator) {
+      fn.params.forEach((param, i) => {
+        const arg = args[i];
+        const expectedType = fn.typeSignature?.paramTypes[i] ?? param.typeAnnotation;
+        const isOptional = typeof expectedType === "string" && expectedType.startsWith("?") ||
+                          typeof expectedType === "object" && (expectedType as { optional?: boolean }).optional;
+
+        if ((arg === null || arg === undefined) && !isOptional) {
+          throw new RuntimeError(`[strict] Argument '${param.name}' is null/undefined`);
+        }
+
+        if (expectedType && !this.matchesType(arg, expectedType)) {
+          throw new RuntimeError(
+            `[strict] Argument '${param.name}' expected ${this.formatType(expectedType)}, got ${this.getLeaType(arg)}`
+          );
+        }
+      });
+    }
+
     const localEnv = new Environment(fn.closure);
 
     // Bind parameters, using default values if argument not provided
@@ -1856,7 +1887,28 @@ export class Interpreter implements InterpreterContext {
     }
 
     // Execute body asynchronously
-    return this.evaluateBodyAsyncImpl(fn.body, localEnv);
+    const result = await this.evaluateBodyAsyncImpl(fn.body, localEnv);
+
+    // In strict mode, validate return type
+    if (this.strictMode && fn.typeSignature && !hasValidateDecorator) {
+      const expectedReturnType = fn.typeSignature.returnType ?? fn.returnType;
+      if (expectedReturnType) {
+        const isOptional = typeof expectedReturnType === "string" && expectedReturnType.startsWith("?") ||
+                          typeof expectedReturnType === "object" && (expectedReturnType as { optional?: boolean }).optional;
+
+        if ((result === null || result === undefined) && !isOptional) {
+          throw new RuntimeError(`[strict] Return value is null/undefined`);
+        }
+
+        if (!this.matchesType(result, expectedReturnType)) {
+          throw new RuntimeError(
+            `[strict] Expected return type ${this.formatType(expectedReturnType)}, got ${this.getLeaType(result)}`
+          );
+        }
+      }
+    }
+
+    return result;
   }
 
   // Type helpers for InterpreterContext interface

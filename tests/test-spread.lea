@@ -16,7 +16,7 @@ let withEmpty = [...empty, 1, 2, 3]
 withEmpty /> print  -- [1, 2, 3]
 
 -- Record spread
-let base = { name: "Alice", age: 30 }
+let base = { name: "Alice", age: 99 }
 let extended = { ...base, city: "NYC" }
 extended.name /> print  -- Alice
 extended.age /> print   -- 30

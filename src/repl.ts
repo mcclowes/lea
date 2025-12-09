@@ -3,12 +3,15 @@ import { Lexer, LexerError } from "./lexer";
 import { Parser, ParseError } from "./parser";
 import { Interpreter, RuntimeError } from "./interpreter";
 
+// Parse CLI arguments for --strict flag
+const strictFlag = process.argv.includes("--strict");
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-const interpreter = new Interpreter();
+const interpreter = new Interpreter(strictFlag);
 
 function run(source: string): void {
   try {
@@ -16,6 +19,12 @@ function run(source: string): void {
     const tokens = lexer.scanTokens();
     const parser = new Parser(tokens);
     const program = parser.parse();
+
+    // File-level #strict pragma can also enable strict mode
+    if (program.strict && !interpreter.strictMode) {
+      interpreter.strictMode = true;
+    }
+
     const result = interpreter.interpret(program);
     if (result !== null) {
       console.log(formatValue(result));
@@ -64,6 +73,6 @@ function prompt(): void {
   });
 }
 
-console.log("Lea Language REPL");
+console.log("Lea Language REPL" + (strictFlag ? " (strict mode)" : ""));
 console.log("Type expressions or statements. Type 'exit' to quit.\n");
 prompt();

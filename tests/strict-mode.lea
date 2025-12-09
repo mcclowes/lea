@@ -1,0 +1,14 @@
+#strict
+
+-- This file tests strict mode type enforcement
+
+-- Function with type signature - should be validated in strict mode
+let add = (a, b) -> a + b :: (Int, Int) :> Int
+
+-- This should work
+let result = add(5, 10)
+result /> print  -- 15
+
+-- Function without type signature - should NOT be validated
+let noTypes = (x) -> x * 2
+noTypes(5) /> print  -- 10 (works because no type signature)

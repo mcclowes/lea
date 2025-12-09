@@ -41,8 +41,11 @@ let add = (a, b) -> a + b :: (Int, Int) :> Int
 -- Multiline: type signature after arrow
 let greet = (name) -> :: String :> String
   "Hello " ++ name
--- Use #validate for runtime type checking
+-- Use #validate for runtime type checking (explicit)
 let safe = (x) -> x * 2 :: Int :> Int #validate
+-- Use #strict pragma for auto-validation of all typed functions
+#strict  -- at top of file enables strict mode
+-- Or use --strict CLI flag: npm run lea file.lea --strict
 -- Supported types: Int, String, Bool, List, Function, Tuple, Pipeline
 -- Optional types with ?: ?Int allows null
 -- Tuple types: (Int, String) :> (Int, String)
@@ -114,7 +117,7 @@ let items = [
 ]
 
 -- Destructuring (records and tuples/lists)
-let user = { name: "Alice", age: 30 }
+let user = { name: "Alice", age: 99 }
 let { name, age } = user           -- extracts name and age
 let point = (10, 20)
 let (x, y) = point                 -- extracts x=10, y=20
@@ -566,7 +569,9 @@ Callback receives `(element, index)` as arguments, similar to map/filter/reduce.
 
 ```bash
 npm run repl              # Interactive REPL
+npm run repl -- --strict  # REPL with strict type checking
 npm run lea file.lea      # Run a file
+npm run lea file.lea --strict  # Run with strict type checking
 npm run visualize -- file.lea           # Output Mermaid markdown
 npm run visualize -- file.lea --html    # Output HTML with diagram
 npm run visualize -- file.lea -o out.html  # Write to file

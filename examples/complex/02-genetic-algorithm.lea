@@ -80,7 +80,7 @@ let breed = (parent1, parent2) -> :: (String, String) :> String
 
 -- Create initial random population
 let createPopulation = () ->
-  iterations(POPULATION_SIZE) />>> randomIndividual
+  POPULATION_SIZE /> iterations />>> randomIndividual
 
 -- Get the best individual in population
 let bestIndividual = (population) -> :: List :> String

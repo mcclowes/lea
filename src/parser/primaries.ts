@@ -159,7 +159,7 @@ export function parseList(ctx: ParserContext): Expr {
 }
 
 /**
- * Parse a record literal: { name: "Max", age: 30 } or { ...record, field: value }
+ * Parse a record literal: { name: "Max", age: 99 } or { ...record, field: value }
  */
 export function parseRecord(ctx: ParserContext): Expr {
   const fields: RecordFieldOrSpread[] = [];

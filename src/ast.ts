@@ -349,6 +349,7 @@ export interface AssignStmt {
 export interface Program {
   kind: "Program";
   statements: Stmt[];
+  strict: boolean;  // Whether #strict pragma was set
 }
 
 // Helper constructors
@@ -536,9 +537,10 @@ export const assignStmt = (name: string, value: Expr): AssignStmt => ({
   value,
 });
 
-export const program = (statements: Stmt[]): Program => ({
+export const program = (statements: Stmt[], strict: boolean = false): Program => ({
   kind: "Program",
   statements,
+  strict,
 });
 
 export const pipelineLiteral = (stages: AnyPipelineStage[], decorators: Decorator[] = []): PipelineLiteral => ({

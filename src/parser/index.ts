@@ -10,7 +10,7 @@
  * - functions.ts: Function-related parsing (params, body, types)
  */
 
-import { Token } from "../token";
+import { Token, TokenType } from "../token";
 import { Stmt, Program, program } from "../ast";
 import { createParserContext, ParseError } from "./types";
 import { parseStatement } from "./statements";
@@ -34,14 +34,30 @@ export class Parser {
    */
   parse(): Program {
     const statements: Stmt[] = [];
+    let strict = false;
 
     this.ctx.skipNewlines();
+
+    // Check for #strict pragma at the beginning of the file
+    if (this.ctx.check(TokenType.HASH)) {
+      const savedPos = this.ctx.current;
+      this.ctx.advance(); // consume #
+      if (this.ctx.check(TokenType.IDENTIFIER) && this.ctx.peek().lexeme === "strict") {
+        this.ctx.advance(); // consume "strict"
+        strict = true;
+        this.ctx.skipNewlines();
+      } else {
+        // Not #strict, restore position
+        this.ctx.setCurrent(savedPos);
+      }
+    }
+
     while (!this.ctx.isAtEnd()) {
       statements.push(parseStatement(this.ctx));
       this.ctx.skipNewlines();
     }
 
-    return program(statements);
+    return program(statements, strict);
   }
 
   /**

@@ -6,7 +6,11 @@
 - [x] Bump syntax highlighting package & publish (v0.2.1)
 - [x] Codeblocks - sticky positioning in IDE (like markdown headers)
 - [x] Review syntax highlighting against all of the more recent language additions
-- [ ] Enforce types by default? Or just warn (with #validate to throw)? Introduce a decorator to ignore it?
+- [x] Enforce types by default? Or just warn (with #validate to throw)? Introduce a decorator to ignore it?
+  - Implemented #strict pragma and --strict CLI flag for opt-in strict type checking
+- [ ] Replace big comments with codeblocks throughout example files
+- [ ] Make codeblocks appear the same colours as comments in syntax highlighting
+- [ ] ```lea syntax highlighting in markdown?
 
 ## Feature Ideas
 

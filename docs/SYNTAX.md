@@ -78,7 +78,7 @@ snd(point)                  -- 20
 ## Records
 
 ```lea
-let user = { name: "Max", age: 30 }
+let user = { name: "Max", age: 99 }
 user.name                   -- "Max"
 
 -- Multi-line (trailing commas allowed)
@@ -93,7 +93,7 @@ let config = {
 ### Record Destructuring
 
 ```lea
-let user = { name: "Alice", age: 30 }
+let user = { name: "Alice", age: 99 }
 let { name, age } = user    -- Extracts name and age
 ```
 
@@ -178,8 +178,30 @@ let sumList = (nums) -> reduce(nums, 0, (acc, x) -> acc + x) :: [Int] :> Int
 
 ### Runtime Type Validation
 
+Use `#validate` decorator for explicit validation:
+
 ```lea
 let safe = (x) -> x * 2 :: Int :> Int #validate
+```
+
+### Strict Mode
+
+Enable automatic type validation for all typed functions with `#strict` pragma or CLI flag:
+
+```lea
+#strict
+
+-- All typed functions are now validated at runtime
+let add = (a, b) -> a + b :: (Int, Int) :> Int
+add(5, 10)        -- OK
+add("a", "b")     -- Error: Argument 'a' expected Int, got string
+```
+
+Or use the CLI flag:
+
+```bash
+npm run lea file.lea --strict
+npm run repl -- --strict
 ```
 
 ### Function Overloading

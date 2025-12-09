@@ -26,7 +26,7 @@ result /> print
 - **Multi-statement bodies**: Indentation-based or brace-delimited `{ }`
 - **Decorators**: Trailing `#log #memo #time #retry(3)` etc. after function body
 - **Bindings**: `let x = 10` immutable, `maybe x = 0` mutable
-- **Records**: `{ name: "Max", age: 30 }` with member access `record.field`
+- **Records**: `{ name: "Max", age: 99 }` with member access `record.field`
 - **Contexts**: `context Name = default` + `provide Name value` + `@Name` attachments
 
 ## Builtins

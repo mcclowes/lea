@@ -3,12 +3,16 @@ import { Lexer, LexerError } from "./lexer";
 import { Parser, ParseError } from "./parser";
 import { Interpreter, RuntimeError } from "./interpreter";
 
-async function run(source: string): Promise<void> {
+async function run(source: string, cliStrict: boolean = false): Promise<void> {
   const lexer = new Lexer(source);
   const tokens = lexer.scanTokens();
   const parser = new Parser(tokens);
   const program = parser.parse();
-  const interpreter = new Interpreter();
+
+  // CLI --strict flag overrides, but file #strict pragma also enables strict mode
+  const strictMode = cliStrict || program.strict;
+
+  const interpreter = new Interpreter(strictMode);
   // Use interpretAsync to properly handle top-level await and promises
   await interpreter.interpretAsync(program);
 }
@@ -17,11 +21,18 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.error("Usage: npm run run <filename.lea>");
+    console.error("Usage: npm run lea <filename.lea> [--strict]");
     process.exit(1);
   }
 
-  const filename = args[0];
+  // Parse CLI arguments
+  const strictFlag = args.includes("--strict");
+  const filename = args.find(arg => !arg.startsWith("--"));
+
+  if (!filename) {
+    console.error("Usage: npm run lea <filename.lea> [--strict]");
+    process.exit(1);
+  }
 
   if (!fs.existsSync(filename)) {
     console.error(`File not found: ${filename}`);
@@ -31,7 +42,7 @@ async function main(): Promise<void> {
   const source = fs.readFileSync(filename, "utf-8");
 
   try {
-    await run(source);
+    await run(source, strictFlag);
   } catch (err) {
     if (err instanceof LexerError || err instanceof ParseError || err instanceof RuntimeError) {
       console.error(`Error: ${err.message}`);

@@ -49,7 +49,7 @@ await result /> print  -- [22, 40] (11*2 and 20*2)
 -- Practical example: processing a list of users
 let users = [
   { name: "Alice", age: 25 },
-  { name: "Bob", age: 30 },
+  { name: "Bob", age: 99 },
   { name: "Charlie", age: 35 },
 ]
 

@@ -23,7 +23,7 @@ let point = (10, 20)
 ("Point: " ++ point) /> print
 
 -- Record to string
-let user = { name: "Max", age: 30 }
+let user = { name: "Max", age: 99 }
 ("User: " ++ user) /> print
 
 -- Nested structures

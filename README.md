@@ -53,13 +53,31 @@ maybe counter = 0       -- Mutable
 ```lea
 let double = (x) -> x * 2
 let add = (a, b) -> a + b
-let typed = (x: Int): Int -> x + 1
+
+-- Type annotations (trailing :: syntax)
+let typed = (x) -> x * 2 :: Int :> Int
 
 -- Multi-statement bodies
 let process = (x) ->
   let y = x * 2
   let z = y + 1
   z
+```
+
+### Strict Mode
+
+Enable strict type checking with `#strict` pragma or `--strict` CLI flag:
+
+```lea
+#strict
+
+let add = (a, b) -> a + b :: (Int, Int) :> Int
+add(5, 10)        -- OK: 15
+add("a", "b")     -- Error: Argument 'a' expected Int, got string
+```
+
+```bash
+npm run lea file.lea --strict
 ```
 
 ### Pipes
@@ -79,7 +97,7 @@ let process = (x) ->
 ### Records
 
 ```lea
-let user = { name: "Max", age: 30 }
+let user = { name: "Max", age: 99 }
 user.name /> print      -- "Max"
 
 let nested = { data: { value: 42 } }
