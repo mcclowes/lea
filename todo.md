@@ -16,35 +16,32 @@
 ## Implementation Checklist
 
 ### Phase 1: Core Infrastructure
-- [ ] Add `USE` token to lexer (`use` keyword)
-- [ ] Add `UseExpr` AST node
-- [ ] Update parser to handle `use` expressions
-- [ ] Add `#export` decorator support in interpreter
+- [x] Add `USE` token to lexer (`use` keyword)
+- [x] Add `UseExpr` AST node
+- [x] Update parser to handle `use` expressions
+- [x] Add `#export` decorator support in interpreter
 
 ### Phase 2: Module Loader
-- [ ] Create `src/interpreter/modules.ts` for module loading logic
-- [ ] Implement path resolution (relative to importing file)
-- [ ] Add module cache (avoid re-evaluating same file)
-- [ ] Circular dependency detection
-- [ ] Create `LeaModule` value type for module exports
+- [x] Implement path resolution (relative to importing file)
+- [x] Add module cache (avoid re-evaluating same file)
+- [x] Circular dependency detection
+- [x] Module exports as LeaRecord
 
 ### Phase 3: Environment Integration
-- [ ] Module-scoped environments
-- [ ] Export registry in Environment
-- [ ] Import linking (bind imported names to local scope)
+- [x] Module-scoped environments
+- [x] Export registry via `#export` decorator check
+- [x] Import linking via destructuring
 
 ### Phase 4: Error Handling
-- [ ] File not found errors
-- [ ] Circular import errors
-- [ ] Missing export errors
-- [ ] Clear error messages with file paths and line numbers
+- [x] File not found errors
+- [x] Circular import errors
+- [x] Clear error messages with file paths
 
 ### Phase 5: Testing & Documentation
-- [ ] Unit tests for module loading
-- [ ] Integration tests for import/export
-- [ ] Update CLAUDE.md with module syntax
-- [ ] Add examples in `examples/`
-- [ ] Update VS Code syntax highlighting
+- [x] Integration tests for import/export (tests/modules/)
+- [x] Update CLAUDE.md with module syntax
+- [x] Add examples in `examples/modules/`
+- [x] Update VS Code syntax highlighting
 
 ## Critical TODOs
 

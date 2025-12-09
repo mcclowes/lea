@@ -1,0 +1,22 @@
+-- Math module
+-- Demonstrates exporting functions, pipelines, and values
+
+-- Export functions with #export decorator
+let double = (x) -> x * 2 #export
+let triple = (x) -> x * 3 #export
+let add = (a, b) -> a + b #export
+let multiply = (a, b) -> a * b #export
+
+-- Export a pipeline
+let processNumbers = /> double /> triple #export
+
+-- Export a simple value (needs #export on the let statement)
+let PI = 3.14159 #export
+let E = 2.71828 #export
+
+-- Private functions (not exported)
+let internal = (x) -> x * 10
+let helper = (x) -> internal(x) + 1
+
+-- Use private functions internally
+let calculate = (x) -> helper(x) /> double #export

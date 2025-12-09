@@ -131,6 +131,30 @@ let base = { x: 1, y: 2 }
 let extended = { ...base, z: 3 }   -- { x: 1, y: 2, z: 3 }
 let updated = { ...base, y: 20 }   -- { x: 1, y: 20 } (override)
 
+-- Module system (import/export)
+-- Export with #export decorator on functions, pipelines, or bindings
+-- math.lea:
+let double = (x) -> x * 2 #export
+let add = (a, b) -> a + b #export
+let PI = 3.14159 #export           -- values need #export on the let statement
+let process = /> double /> add(10) #export
+
+-- Import with destructuring
+let { double, add, PI } = use "./math"      -- .lea extension is implicit
+let { double, add } = use "./math.lea"      -- explicit extension also works
+
+-- Re-export from another module
+let { double } = use "./math" #export
+
+-- Paths are relative to the importing file
+let { helper } = use "./utils/helper"       -- imports from ./utils/helper.lea
+let { parent } = use "../parent"            -- relative parent directory
+
+-- Decorate imported functions
+let { double } = use "./math"
+let loggedDouble = double #log
+5 /> loggedDouble
+
 -- Context system (dependency injection)
 context Logger = { log: (msg) -> print("[DEFAULT] " ++ msg) }
 provide Logger { log: (msg) -> print("[PROD] " ++ msg) }
@@ -319,7 +343,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 
 ```
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
-LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF, RETURN, INPUT
+LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF, RETURN, INPUT, USE
 PIPE (/>), SPREAD_PIPE (/>>>), PARALLEL_PIPE (\>), ARROW (->), REVERSE_ARROW (<-)
 REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), REACTIVE_PIPE (@>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
@@ -343,13 +367,14 @@ NEWLINE, EOF
 - ReturnExpr (early return with return keyword)
 - PipelineLiteral (stages: list of expressions, decorators)
 - ReversePipeExpr (left: value, right: pipeline/function)
+- UseExpr (path: string) — module import expression
 - BidirectionalPipelineLiteral (stages: list of expressions, decorators)
 - MatchExpr (value: expr, cases: MatchCase[])
 - MatchCase (pattern: expr|null, guard: expr|null, body: expr)
 - ReactivePipeExpr (source: expr, sourceName: string, stages: list of pipeline stages)
 
 **Statements:**
-- LetStmt (name, mutable, value)
+- LetStmt (name, mutable, value, pattern?, decorators?) — supports #export decorator
 - AndStmt (name, value) — extends existing function with overload or reverse
 - AssignStmt (name, value) — reassign a mutable (maybe) variable
 - ExprStmt (expression)

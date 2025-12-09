@@ -4,6 +4,7 @@ import {
   LetStmt,
   DestructurePattern,
   AndStmt,
+  Decorator,
   letStmt,
   andStmt,
   exprStmt,
@@ -15,6 +16,7 @@ import {
 } from "../ast";
 import { ParserContext } from "./types";
 import { parseExpression } from "./expressions";
+import { parseDecorators } from "./primaries";
 
 /**
  * Parse a statement
@@ -114,7 +116,15 @@ export function parseLetStatement(ctx: ParserContext, mutable: boolean): LetStmt
   ctx.skipNewlines();
   const value = parseExpression(ctx);
 
-  return letStmt(name, mutable, value, pattern);
+  // Parse optional trailing decorators for the let statement (e.g., #export)
+  // Note: This is in addition to any decorators on the value expression itself
+  const savedPos = ctx.current;
+  const decorators = parseDecorators(ctx);
+  if (decorators.length === 0) {
+    ctx.setCurrent(savedPos);
+  }
+
+  return letStmt(name, mutable, value, pattern, decorators.length > 0 ? decorators : undefined);
 }
 
 /**

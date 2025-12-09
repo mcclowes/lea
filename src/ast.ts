@@ -27,7 +27,8 @@ export type Expr =
   | ReversePipeExpr
   | BidirectionalPipelineLiteral
   | MatchExpr
-  | ReactivePipeExpr;
+  | ReactivePipeExpr
+  | UseExpr;
 
 export interface NumberLiteral {
   kind: "NumberLiteral";
@@ -270,6 +271,14 @@ export interface ReactivePipeExpr {
   stages: AnyPipelineStage[];  // The pipeline stages to apply
 }
 
+// Use expression - imports a module
+// Syntax: use "./path" or use "./path.lea"
+// Returns a record containing all exported values from the module
+export interface UseExpr {
+  kind: "UseExpr";
+  path: string;              // The module path (relative to importing file)
+}
+
 export interface BlockBody {
   kind: "BlockBody";
   statements: Stmt[];
@@ -298,6 +307,7 @@ export interface LetStmt {
   mutable: boolean;
   value: Expr;
   pattern?: DestructurePattern;  // Optional destructuring pattern
+  decorators?: Decorator[];      // Decorators on the binding (e.g., #export)
 }
 
 // And statement - extends an existing function definition (overload or reverse)
@@ -506,12 +516,13 @@ export const decoratorDefStmt = (name: string, transformer: Expr): DecoratorDefS
   transformer,
 });
 
-export const letStmt = (name: string, mutable: boolean, value: Expr, pattern?: DestructurePattern): LetStmt => ({
+export const letStmt = (name: string, mutable: boolean, value: Expr, pattern?: DestructurePattern, decorators?: Decorator[]): LetStmt => ({
   kind: "LetStmt",
   name,
   mutable,
   value,
   pattern,
+  decorators,
 });
 
 export const andStmt = (name: string, value: Expr): AndStmt => ({
@@ -572,4 +583,9 @@ export const reactivePipeExpr = (source: Expr, sourceName: string, stages: AnyPi
   source,
   sourceName,
   stages,
+});
+
+export const useExpr = (path: string): UseExpr => ({
+  kind: "UseExpr",
+  path,
 });
