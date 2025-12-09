@@ -1,5 +1,9 @@
 # todo
 
+- [ ] Clean up this file
+- [ ] Expand or remove the /docs dir
+- [ ] Codeblocks - can we get these to position: sticky to the top of the IDE as we scroll? I've seen this behaviour with markdown files and headers
+- [ ] Bump syntax highlighting package & publish
 - [ ] Refinement Types (Liquid Haskell, F*) — Types with predicates. Not just int, but int where x > 0 && x < 100. The compiler proves your code satisfies the constraints.
 - [x] Improve Pipeline.visualize() function to show parallelisation
 - [ ] Canvas visualisation of our 'pipeline's
@@ -12,7 +16,7 @@
 - [x] Pattern matching
 - [x] Record improvements (destructuring + spread operator added)
 - [x] Split the interpreter up into smaller files
-- [ ] code blocks - <> </> - this syntax is ambiguous with the bidirectional pipe syntax
+- [x] code blocks - changed from `<> </>` to `{-- --} {/--}` to avoid user confusion with bidirectional pipes
 
 ## Partitions
 

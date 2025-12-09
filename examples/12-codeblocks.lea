@@ -1,23 +1,23 @@
 -- Codeblocks in Lea
--- Codeblocks use <> to open and </> to close
--- They can have optional labels for documentation
+-- Codeblocks use {-- label --} to open and {/--} to close
+-- They provide collapsible regions for organizing code
 
-<> -- Math utilities
+{-- Math utilities --}
 
 let double = (x) -> x * 2
 let triple = (x) -> x * 3
 let square = (x) -> x * x
 
-</>
+{/--}
 
-<> -- String utilities
+{-- String utilities --}
 
 let greet = (name) -> "Hello, " ++ name
 let shout = (msg) -> msg ++ "!"
 
-</>
+{/--}
 
-<> -- Testing our utilities
+{-- Testing our utilities --}
 
 "=== Math utilities ===" /> print
 5 /> double /> print  -- 10
@@ -28,18 +28,18 @@ let shout = (msg) -> msg ++ "!"
 "World" /> greet /> print  -- Hello, World
 "Wow" /> shout /> print    -- Wow!
 
-</>
+{/--}
 
-<> -- Nested codeblocks work too
+{-- Nested codeblocks work too --}
 
 let add = (a, b) -> a + b
 
-<> -- Using add
+{-- Using add --}
 
 add(3, 4) /> print  -- 7
 
-</>
+{/--}
 
-</>
+{/--}
 
 "Codeblocks complete!" /> print

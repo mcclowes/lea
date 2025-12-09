@@ -100,7 +100,7 @@ iterations(3) /> reduce(10, (acc, _) -> acc * 2) /> print  -- 80
 -- let badReturn = (x) -> x :: Int :> String #validate
 -- badReturn(5) /> print  -- Error: expected return type String, got int
 
-<> -- TUPLES
+{-- TUPLES --}
 "=== Tuples ===" /> print
 
 -- Tuple literal syntax
@@ -118,7 +118,7 @@ makePair(3, 4) /> print  -- (3, 4)
 -- Tuple with validation
 let validatedPair = (x, y) -> (x, y) :: (Int, String) :> (Int, String) #validate
 validatedPair(42, "answer") /> print  -- (42, answer)
-</>
+{/--}
 
 -- ============================================
 -- DEFAULT PARAMETERS

@@ -28,18 +28,18 @@
     "codeblocks": {
       "patterns": [
         {
-          "comment": "Codeblock open <> with optional label - brown/region color",
+          "comment": "Codeblock open {-- label --} - brown/region color",
           "name": "markup.heading.codeblock.lea",
-          "match": "<>\\s*(--\\s*)?(.*)$",
+          "match": "\\{--\\s*(.*)\\s*--\\}",
           "captures": {
             "0": { "name": "markup.heading.codeblock.lea" },
-            "2": { "name": "entity.name.section.codeblock.lea" }
+            "1": { "name": "entity.name.section.codeblock.lea" }
           }
         },
         {
-          "comment": "Codeblock close </> - brown/region color",
+          "comment": "Codeblock close {/--} - brown/region color",
           "name": "markup.heading.codeblock.lea",
-          "match": "</>"
+          "match": "\\{/--\\}"
         }
       ]
     },

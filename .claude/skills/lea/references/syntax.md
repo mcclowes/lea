@@ -171,18 +171,18 @@ Template strings use backticks and `{expr}` for interpolation. Any expression ca
 ## Codeblocks
 
 ```lea
--- Codeblocks group related code with <> and </>
-<> -- Section label (optional)
+-- Codeblocks group related code with {-- --} and {/--}
+{-- Section label --}
 let x = 10
 let y = 20
-</>
+{/--}
 
 -- Nested codeblocks are allowed
-<> -- Outer
-<> -- Inner
+{-- Outer --}
+{-- Inner --}
 let z = 30
-</>
-</>
+{/--}
+{/--}
 ```
 
 ## Ternary Expressions
@@ -331,7 +331,7 @@ EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 DOUBLE_COLON (::), COLON_GT (:>)
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
 COMMA, COLON, DOT (.), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
-CODEBLOCK_OPEN (<>), CODEBLOCK_CLOSE (</>)
+CODEBLOCK_OPEN ({-- --}), CODEBLOCK_CLOSE ({/--})
 NEWLINE, EOF
 ```
 

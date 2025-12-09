@@ -209,10 +209,10 @@ let process = /> double /> addOne
 [1, 2, 3] />>>process             -- [3, 5, 7]
 
 -- Codeblocks (collapsible regions)
-<> -- Section name
+{-- Section name --}
 let x = 10
 let y = 20
-</>
+{/--}
 
 -- Pipelines as first-class values
 -- Define a reusable pipeline (starts with />)
@@ -324,7 +324,7 @@ EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
 DOUBLE_COLON (::), COLON_GT (:>)
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
 COMMA, COLON, DOT (.), SPREAD (...), UNDERSCORE (_), HASH (#), AT (@), QUESTION (?)
-CODEBLOCK_OPEN (<>), CODEBLOCK_CLOSE (</>)
+CODEBLOCK_OPEN ({-- --}), CODEBLOCK_CLOSE ({/--})
 NEWLINE, EOF
 ```
 

@@ -180,21 +180,20 @@ export function parseDecoratorDefStatement(ctx: ParserContext): Stmt {
  * Parse a codeblock statement
  */
 export function parseCodeblockStatement(ctx: ParserContext): Stmt {
-  const openToken = ctx.consume(TokenType.CODEBLOCK_OPEN, "Expected '<>'");
+  const openToken = ctx.consume(TokenType.CODEBLOCK_OPEN, "Expected '{-- --}'");
   const label = openToken.literal as string | null;
 
   ctx.skipNewlines();
 
-  // Parse statements until we hit a closing </> or EOF
-  // Note: </> now produces BIDIRECTIONAL_PIPE token (used for both codeblock close and bidirectional pipelines)
+  // Parse statements until we hit a closing {/--} or EOF
   const statements: Stmt[] = [];
-  while (!ctx.check(TokenType.BIDIRECTIONAL_PIPE) && !ctx.isAtEnd()) {
+  while (!ctx.check(TokenType.CODEBLOCK_CLOSE) && !ctx.isAtEnd()) {
     statements.push(parseStatement(ctx));
     ctx.skipNewlines();
   }
 
-  // Consume closing </> (BIDIRECTIONAL_PIPE token)
-  ctx.consume(TokenType.BIDIRECTIONAL_PIPE, "Expected '</>' to close codeblock");
+  // Consume closing {/--}
+  ctx.consume(TokenType.CODEBLOCK_CLOSE, "Expected '{/--}' to close codeblock");
 
   return codeblockStmt(label, statements);
 }

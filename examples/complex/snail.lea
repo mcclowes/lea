@@ -17,7 +17,7 @@ let snail = (matrix) ->
         /> snail
       /> concat
 
-<> -- Test cases
+{-- Test cases --}
 "=== Snail Sort ===" /> print
 
 -- 2x2 matrix
@@ -52,4 +52,4 @@ snail([[1]]) /> print  -- [1]
 snail([]) /> print     -- []
 
 "Done!" /> print
-</>
+{/--}

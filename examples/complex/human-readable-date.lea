@@ -15,7 +15,7 @@ let DAY = 24 * 60 * 60
 let HOUR = 60 * 60
 let MINUTE = 60
 
-<> -- Helper Functions
+{-- Helper Functions --}
 
 -- Pluralize a unit name based on count
 let pluralize = (count, singular) ->
@@ -27,9 +27,9 @@ let formatComponent = (component) ->
   let (count, unit) = component
   `{count} {pluralize(count, unit)}`
 
-</>
+{/--}
 
-<> -- Core Logic
+{-- Core Logic --}
 
 -- Extract time components from seconds into tuple list
 let extractComponents = (seconds) ->
@@ -67,9 +67,9 @@ let joinParts = (parts) ->
     | 2 -> parts[0] ++ " and " ++ parts[1]
     | join(take(parts, len - 1), ", ") ++ " and " ++ parts[len - 1]
 
-</>
+{/--}
 
-<> -- Pipeline Composition
+{-- Pipeline Composition --}
 
 -- The core transformation pipeline
 let durationPipeline = /> extractComponents /> filterNonZero /> formatAll /> joinParts
@@ -79,17 +79,17 @@ let formatDuration = (seconds) -> match seconds
   | 0 -> "now"
   | seconds /> durationPipeline
 
-</>
+{/--}
 
-<> -- Pipeline Introspection
+{-- Pipeline Introspection --}
 
 "=== Duration Pipeline ===" /> print
 `Stages: {durationPipeline.stages}` /> print
 `Stage count: {durationPipeline.length}` /> print
 
-</>
+{/--}
 
-<> -- Test Cases
+{-- Test Cases --}
 
 "=== Test Cases ===" /> print
 
@@ -99,12 +99,13 @@ let testCases = [0, 1, 62, 120, 3662, 15731080]
 testCases />>> (seconds) ->
   `{seconds}s -> "{formatDuration(seconds)}"` /> print
 
-</>
+{/--}
 
-<> -- Pipeline Visualization
+{-- Pipeline Visualization --}
 
 "" /> print
 "=== Pipeline Visualization ===" /> print
 durationPipeline.visualize()
 
-</>
+{/--}
+

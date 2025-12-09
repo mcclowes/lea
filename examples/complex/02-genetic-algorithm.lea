@@ -11,7 +11,7 @@ let GENERATIONS = 150
 -- Character set for generating random strings
 let CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "
 
-<> -- Helper Functions
+{-- Helper Functions --}
 
 -- Generate a random character from our charset
 let randomChar = (_) -> CHARS /> chars /> randomChoice :: Int :> String
@@ -25,13 +25,14 @@ let randomIndividual = (_) -> :: Int :> String
 let fitness = (individual) -> :: String :> Int
   let individualChars = chars(individual)
   let targetChars = chars(TARGET)
-  zip([individualChars, targetChars])
+  [individualChars, targetChars] 
+    /> zip
     /> filter((pair) -> pair[0] == pair[1])
     /> length
 
-</>
+{/--}
 
-<> -- Selection
+{-- Selection --}
 
 -- Pick the fitter of two individuals using match
 let fitter = (a, b) -> :: (String, String) :> String
@@ -48,9 +49,9 @@ let tournamentSelect = (population, k) -> :: (List, Int) :> String
 -- Select parent using tournament selection
 let selectParent = (population) -> tournamentSelect(population, 3) :: List :> String
 
-</>
+{/--}
 
-<> -- Genetic Operators
+{-- Genetic Operators --}
 
 -- Single-point crossover: combine two parents
 let crossover = (parent1, parent2) -> :: (String, String) :> String
@@ -73,9 +74,9 @@ let breedPipeline = /> mutate
 let breed = (parent1, parent2) -> :: (String, String) :> String
   crossover(parent1, parent2) /> breedPipeline
 
-</>
+{/--}
 
-<> -- Population Management
+{-- Population Management --}
 
 -- Create initial random population
 let createPopulation = () ->
@@ -98,9 +99,9 @@ let evolveGeneration = (population) -> :: List :> List
   let children = iterations(POPULATION_SIZE - 1) />>> breedOne
   [...children, elite]
 
-</>
+{/--}
 
-<> -- Main Evolution Loop
+{-- Main Evolution Loop --}
 
 -- Log progress every 10 generations
 let logProgress = (gen, best, bestFit) ->
@@ -167,7 +168,7 @@ let runGA = () ->
   `Final result: "{result}"` /> print
   result
 
-</>
+{/--}
 
 -- Run the algorithm
 runGA()

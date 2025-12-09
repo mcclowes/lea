@@ -38,7 +38,17 @@ export class Lexer {
       case ")": this.addToken(TokenType.RPAREN); break;
       case "[": this.addToken(TokenType.LBRACKET); break;
       case "]": this.addToken(TokenType.RBRACKET); break;
-      case "{": this.addToken(TokenType.LBRACE); break;
+      case "{":
+        if (this.match("-") && this.match("-")) {
+          // {-- codeblock open
+          this.codeblockOpen();
+        } else if (this.match("/") && this.match("-") && this.match("-") && this.match("}")) {
+          // {/--} codeblock close
+          this.addToken(TokenType.CODEBLOCK_CLOSE);
+        } else {
+          this.addToken(TokenType.LBRACE);
+        }
+        break;
       case "}": this.addToken(TokenType.RBRACE); break;
       case ",": this.addToken(TokenType.COMMA); break;
       case "|": this.addToken(TokenType.PIPE_CHAR); break;
@@ -126,18 +136,13 @@ export class Lexer {
 
       case "<":
         if (this.match("/")) {
-          // Could be </> (codeblock close / bidirectional pipe) or </ (reverse pipe)
+          // Could be </> (bidirectional pipe) or </ (reverse pipe)
           if (this.match(">")) {
-            // </> - Use BIDIRECTIONAL_PIPE for expression context
-            // The parser will distinguish between codeblock close and bidirectional pipe
             this.addToken(TokenType.BIDIRECTIONAL_PIPE);
           } else {
             // </ - Reverse pipe operator
             this.addToken(TokenType.REVERSE_PIPE);
           }
-        } else if (this.match(">")) {
-          // Codeblock open <> - capture optional label on same line
-          this.codeblockOpen();
         } else if (this.match("-")) {
           this.addToken(TokenType.RETURN);
         } else if (this.match("=")) {
@@ -189,32 +194,38 @@ export class Lexer {
   }
 
   private codeblockOpen(): void {
-    // Skip whitespace after <>
+    // Skip whitespace after {--
     while (this.peek() === " " || this.peek() === "\t") {
       this.advance();
     }
 
-    // Check for optional label (rest of line after <> and whitespace)
+    // Capture label until --}
     let label = "";
-    if (this.peek() !== "\n" && !this.isAtEnd() && this.peek() !== "-") {
-      const labelStart = this.current;
-      while (this.peek() !== "\n" && !this.isAtEnd()) {
+    const labelStart = this.current;
+
+    // Read until we find --}
+    while (!this.isAtEnd()) {
+      if (this.peek() === "-" && this.peekNext() === "-") {
+        // Check if followed by }
+        const savedCurrent = this.current;
+        this.advance(); // -
+        this.advance(); // -
+        if (this.peek() === "}") {
+          this.advance(); // }
+          label = this.source.slice(labelStart, savedCurrent).trim();
+          break;
+        }
+        // Not --}, continue reading
+      } else if (this.peek() === "\n") {
+        // Newline before --} means no closing, error
+        throw new LexerError("Unterminated codeblock open - expected '--}'", this.line, this.column);
+      } else {
         this.advance();
       }
-      label = this.source.slice(labelStart, this.current).trim();
-    } else if (this.peek() === "-" && this.peekNext() === "-") {
-      // It's a comment, skip to capture label from comment
-      this.advance(); // -
-      this.advance(); // -
-      // Skip whitespace after --
-      while (this.peek() === " " || this.peek() === "\t") {
-        this.advance();
-      }
-      const labelStart = this.current;
-      while (this.peek() !== "\n" && !this.isAtEnd()) {
-        this.advance();
-      }
-      label = this.source.slice(labelStart, this.current).trim();
+    }
+
+    if (this.isAtEnd() && label === "") {
+      throw new LexerError("Unterminated codeblock open - expected '--}'", this.line, this.column);
     }
 
     this.addToken(TokenType.CODEBLOCK_OPEN, label || null);
