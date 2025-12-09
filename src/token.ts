@@ -71,6 +71,9 @@ export enum TokenType {
   REVERSE_PIPE = "REVERSE_PIPE",             // </
   REVERSE_ARROW = "REVERSE_ARROW",           // <- (in function context)
 
+  // Reactive pipelines
+  REACTIVE_PIPE = "REACTIVE_PIPE",           // @>
+
   // Special
   NEWLINE = "NEWLINE",
   EOF = "EOF",

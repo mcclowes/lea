@@ -157,6 +157,11 @@
     "operators": {
       "patterns": [
         {
+          "comment": "Reactive pipe operator - creates auto-recomputing reactive binding",
+          "name": "keyword.operator.reactive-pipe.lea",
+          "match": "@>"
+        },
+        {
           "comment": "Bidirectional pipe operator - for reversible pipelines",
           "name": "keyword.operator.bidirectional-pipe.lea",
           "match": "</>"

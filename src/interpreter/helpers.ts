@@ -17,6 +17,7 @@ import {
   LeaPipeline,
   LeaBidirectionalPipeline,
   LeaReversibleFunction,
+  LeaReactiveValue,
   RuntimeError,
   Environment,
 } from "./types";
@@ -77,6 +78,11 @@ export function isLeaBuiltin(val: LeaValue): val is LeaBuiltin {
 // Type guard for LeaTuple
 export function isLeaTuple(val: LeaValue): val is LeaTuple {
   return val !== null && typeof val === "object" && "kind" in val && val.kind === "tuple";
+}
+
+// Type guard for LeaReactiveValue
+export function isReactiveValue(val: LeaValue): val is LeaReactiveValue {
+  return val !== null && typeof val === "object" && "kind" in val && val.kind === "reactive";
 }
 
 // Unwrap a LeaPromise to its underlying value
@@ -168,6 +174,9 @@ export function stringify(val: LeaValue): string {
     if (val.kind === "reversible_function") {
       return "<reversible_function>";
     }
+    if (val.kind === "reactive") {
+      return `<reactive[${val.sourceName}]>`;
+    }
     return "<function>";
   }
   return String(val);
@@ -210,6 +219,7 @@ export function getLeaType(val: LeaValue): string {
     if (val.kind === "tuple") return "tuple";
     if (val.kind === "pipeline") return "pipeline";
     if (val.kind === "bidirectional_pipeline") return "pipeline";
+    if (val.kind === "reactive") return "reactive";
   }
   return "unknown";
 }

@@ -1,6 +1,7 @@
 import { TokenType } from "../token";
 import {
   Expr,
+  AnyPipelineStage,
   binaryExpr,
   pipeExpr,
   spreadPipeExpr,
@@ -13,9 +14,10 @@ import {
   callExpr,
   indexExpr,
   memberExpr,
+  reactivePipeExpr,
 } from "../ast";
 import { ParserContext } from "./types";
-import { parsePrimary } from "./primaries";
+import { parsePrimary, parseStageExpr } from "./primaries";
 
 // ============================================
 // Main Expression Parsing (Full Precedence Chain)
@@ -116,11 +118,61 @@ export function parseFactor(ctx: ParserContext): Expr {
 }
 
 /**
- * Parse pipe term: /> />> \> </
+ * Parse pipe term: /> />> \> </ @>
  * Pipe operators bind tighter than arithmetic, so `a /> b + c` means `(a /> b) + c`
  */
 export function parsePipeTerm(ctx: ParserContext): Expr {
   let expr = parseUnary(ctx);
+
+  // Check for reactive pipe @> (only valid at the start of a pipe chain)
+  // Syntax: source @> fn1 /> fn2 /> fn3
+  const reactiveSavedPos = ctx.current;
+  ctx.skipNewlines();
+  if (ctx.match(TokenType.REACTIVE_PIPE)) {
+    // The left side must be an identifier for tracking
+    if (expr.kind !== "Identifier") {
+      // Restore and continue with normal parsing
+      ctx.setCurrent(reactiveSavedPos);
+    } else {
+      const sourceName = expr.name;
+      const stages: AnyPipelineStage[] = [];
+
+      // Parse the first stage after @>
+      ctx.skipNewlines();
+      const firstStage = parseStageExpr(ctx);
+      stages.push({ expr: firstStage });
+
+      // Continue collecting /> stages
+      while (true) {
+        const savedPos = ctx.current;
+        ctx.skipNewlines();
+
+        if (ctx.match(TokenType.PIPE)) {
+          ctx.skipNewlines();
+          const stageExpr = parseStageExpr(ctx);
+          stages.push({ expr: stageExpr });
+          continue;
+        }
+
+        // Check for spread pipe />> within reactive chain
+        if (ctx.match(TokenType.SPREAD_PIPE)) {
+          ctx.skipNewlines();
+          const stageExpr = parseStageExpr(ctx);
+          // For spread pipe, we wrap it specially - but for now treat as regular stage
+          // The interpreter will handle spread semantics
+          stages.push({ expr: stageExpr });
+          continue;
+        }
+
+        ctx.setCurrent(savedPos);
+        break;
+      }
+
+      return reactivePipeExpr(expr, sourceName, stages);
+    }
+  } else {
+    ctx.setCurrent(reactiveSavedPos);
+  }
 
   while (true) {
     const savedPos = ctx.current;

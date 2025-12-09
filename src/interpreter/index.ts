@@ -23,6 +23,7 @@ import {
   AnyPipelineStage,
   ParallelPipelineStage,
   MatchCase,
+  ReactivePipeExpr,
 } from "../ast";
 
 // Re-export types for consumers
@@ -38,6 +39,7 @@ export {
   LeaPipeline,
   LeaBidirectionalPipeline,
   LeaReversibleFunction,
+  LeaReactiveValue,
   RuntimeError,
   ReturnValue,
   Environment,
@@ -51,6 +53,7 @@ import {
   LeaRecord,
   LeaPipeline,
   LeaBidirectionalPipeline,
+  LeaReactiveValue,
   RuntimeError,
   ReturnValue,
   Environment,
@@ -64,6 +67,7 @@ import {
   isPipeline,
   isBidirectionalPipeline,
   isReversibleFunction,
+  isReactiveValue,
   unwrapPromise,
   wrapPromise,
   asNumber,
@@ -226,6 +230,12 @@ export class Interpreter implements InterpreterContext {
         }
         return result;
       }
+
+      case "AssignStmt": {
+        const value = this.evaluateExpr(stmt.value, env);
+        env.assign(stmt.name, value);
+        return value;
+      }
     }
   }
 
@@ -340,7 +350,14 @@ export class Interpreter implements InterpreterContext {
         if (isPipeline(obj)) {
           return getPipelineMember(this, obj, expr.member, env);
         }
-        throw new RuntimeError("Member access requires a record or pipeline");
+        // Handle reactive .value member access
+        if (isReactiveValue(obj)) {
+          if (expr.member === "value") {
+            return this.getReactiveValue(obj);
+          }
+          throw new RuntimeError(`Reactive value only supports .value, not .${expr.member}`);
+        }
+        throw new RuntimeError("Member access requires a record, pipeline, or reactive");
       }
 
       case "TernaryExpr": {
@@ -393,6 +410,10 @@ export class Interpreter implements InterpreterContext {
         const matchValue = this.evaluateExpr(expr.value, env);
         return this.evaluateMatch(matchValue, expr.cases, env);
       }
+
+      case "ReactivePipeExpr": {
+        return this.evaluateReactivePipe(expr, env);
+      }
     }
   }
 
@@ -424,6 +445,82 @@ export class Interpreter implements InterpreterContext {
     throw new RuntimeError("No matching case in match expression");
   }
 
+  // Evaluate a reactive pipe expression
+  private evaluateReactivePipe(expr: ReactivePipeExpr, env: Environment): LeaValue {
+    // Evaluate the source to check if it's static
+    const sourceValue = this.evaluateExpr(expr.source, env);
+
+    // Check if source is a static primitive (not object/array)
+    // For static primitives, just evaluate the pipeline immediately and return the result
+    const isStaticSource =
+      typeof sourceValue === "number" ||
+      typeof sourceValue === "string" ||
+      typeof sourceValue === "boolean" ||
+      sourceValue === null;
+
+    if (isStaticSource) {
+      // Not a reactive - just run the pipeline and return the value directly
+      let current: LeaValue = sourceValue;
+      for (const stage of expr.stages) {
+        if (stage.isParallel) {
+          const parallelStage = stage as ParallelPipelineStage;
+          const branchResults: LeaValue[] = parallelStage.branches.map((branchExpr) => {
+            return this.evaluatePipeWithValue(current, branchExpr, env);
+          });
+          current = { kind: "parallel_result" as const, values: branchResults };
+        } else {
+          current = this.evaluatePipeWithValue(current, stage.expr, env);
+        }
+      }
+      return current;
+    }
+
+    // Create a reactive value
+    const reactive: LeaReactiveValue = {
+      kind: "reactive",
+      sourceName: expr.sourceName,
+      stages: expr.stages,
+      closure: env,
+      cachedValue: null,
+      dirty: true,  // Start dirty so first .value access computes
+    };
+
+    // Register the reactive to be notified when source changes
+    env.registerReactive(expr.sourceName, reactive);
+
+    return reactive;
+  }
+
+  // Get the value from a reactive, computing if dirty (lazy evaluation)
+  getReactiveValue(reactive: LeaReactiveValue): LeaValue {
+    if (!reactive.dirty && reactive.cachedValue !== null) {
+      return reactive.cachedValue;
+    }
+
+    // Get current source value from closure
+    const sourceValue = reactive.closure.get(reactive.sourceName);
+
+    // Run the pipeline
+    let current: LeaValue = sourceValue;
+    for (const stage of reactive.stages) {
+      if (stage.isParallel) {
+        const parallelStage = stage as ParallelPipelineStage;
+        const branchResults: LeaValue[] = parallelStage.branches.map((branchExpr) => {
+          return this.evaluatePipeWithValue(current, branchExpr, reactive.closure);
+        });
+        current = { kind: "parallel_result" as const, values: branchResults };
+      } else {
+        current = this.evaluatePipeWithValue(current, stage.expr, reactive.closure);
+      }
+    }
+
+    // Cache the result and mark clean
+    reactive.cachedValue = current;
+    reactive.dirty = false;
+
+    return current;
+  }
+
   // Async version of evaluateMatch
   private async evaluateMatchAsync(matchValue: LeaValue, cases: MatchCase[], env: Environment): Promise<LeaValue> {
     for (const matchCase of cases) {
@@ -453,6 +550,14 @@ export class Interpreter implements InterpreterContext {
   }
 
   private evaluateBinary(op: TokenType, left: LeaValue, right: LeaValue): LeaValue {
+    // Auto-unwrap reactive values in binary operations
+    if (isReactiveValue(left)) {
+      left = this.getReactiveValue(left);
+    }
+    if (isReactiveValue(right)) {
+      right = this.getReactiveValue(right);
+    }
+
     switch (op) {
       case TokenType.PLUS:
         return asNumber(left) + asNumber(right);
@@ -1106,6 +1211,12 @@ export class Interpreter implements InterpreterContext {
         return result;
       }
 
+      case "AssignStmt": {
+        const value = await this.evaluateExprAsync(stmt.value, env);
+        env.assign(stmt.name, value);
+        return value;
+      }
+
       default:
         throw new RuntimeError(`Unknown statement kind: ${(stmt as Stmt).kind}`);
     }
@@ -1229,7 +1340,14 @@ export class Interpreter implements InterpreterContext {
         if (isPipeline(obj)) {
           return getPipelineMember(this, obj, expr.member, env);
         }
-        throw new RuntimeError("Member access requires a record or pipeline");
+        // Handle reactive .value member access
+        if (isReactiveValue(obj)) {
+          if (expr.member === "value") {
+            return this.getReactiveValue(obj);
+          }
+          throw new RuntimeError(`Reactive value only supports .value, not .${expr.member}`);
+        }
+        throw new RuntimeError("Member access requires a record, pipeline, or reactive");
       }
 
       case "TernaryExpr": {
@@ -1281,6 +1399,11 @@ export class Interpreter implements InterpreterContext {
       case "MatchExpr": {
         const matchValue = await this.evaluateExprAsync(expr.value, env);
         return this.evaluateMatchAsync(matchValue, expr.cases, env);
+      }
+
+      case "ReactivePipeExpr": {
+        // Reactive evaluation is sync (lazy), so just delegate to sync version
+        return this.evaluateReactivePipe(expr as ReactivePipeExpr, env);
       }
 
       default:
