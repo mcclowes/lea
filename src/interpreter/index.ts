@@ -56,6 +56,7 @@ import {
   LeaTuple,
   LeaPipeline,
   LeaBidirectionalPipeline,
+  LeaReversibleFunction,
   LeaReactiveValue,
   RuntimeError,
   ReturnValue,
@@ -98,6 +99,7 @@ import {
   matchesType,
   formatType,
   resolveOverload,
+  getForwardFunction,
 } from "./overloads";
 
 import { InterpreterContext } from "./context";
@@ -743,7 +745,8 @@ export class Interpreter implements InterpreterContext {
       if (right.kind === "Identifier") {
         const callee = this.evaluateExpr(right, env);
         if (isOverloadSet(callee)) {
-          const fn = this.resolveOverload(callee.overloads, pipedValue.values);
+          const resolved = this.resolveOverload(callee.overloads, pipedValue.values);
+          const fn = getForwardFunction(resolved);
           return this.callFunction(fn, pipedValue.values);
         }
         if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
@@ -769,7 +772,8 @@ export class Interpreter implements InterpreterContext {
         const allArgs = [...pipedValue.values, ...additionalArgs];
 
         if (isOverloadSet(callee)) {
-          const fn = this.resolveOverload(callee.overloads, allArgs);
+          const resolved = this.resolveOverload(callee.overloads, allArgs);
+          const fn = getForwardFunction(resolved);
           return this.callFunction(fn, allArgs);
         }
         if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
@@ -916,6 +920,15 @@ export class Interpreter implements InterpreterContext {
       return this.callFunction(target.reverse, [value]);
     }
 
+    // If target is an overload set, resolve the overload and check if it's reversible
+    if (isOverloadSet(target)) {
+      const resolved = this.resolveOverload(target.overloads, [value]);
+      if (resolved.kind === "reversible_function") {
+        return this.callFunction((resolved as LeaReversibleFunction).reverse, [value]);
+      }
+      throw new RuntimeError("Cannot apply reverse to overloaded function - the matching overload is not reversible. Define a reverse with (x) <- expr");
+    }
+
     // If target is a bidirectional pipeline, apply stages in reverse order
     if (isBidirectionalPipeline(target)) {
       let current = value;
@@ -957,6 +970,15 @@ export class Interpreter implements InterpreterContext {
       // If it's a reversible function, call its reverse
       if (isReversibleFunction(stageVal)) {
         return this.callFunction(stageVal.reverse, [value]);
+      }
+
+      // If it's an overload set, resolve and check if the matching overload is reversible
+      if (isOverloadSet(stageVal)) {
+        const resolved = this.resolveOverload(stageVal.overloads, [value]);
+        if (resolved.kind === "reversible_function") {
+          return this.callFunction((resolved as LeaReversibleFunction).reverse, [value]);
+        }
+        throw new RuntimeError(`Cannot apply reverse to stage '${stageExpr.name}' - the matching overload is not reversible`);
       }
 
       // If it's a bidirectional pipeline, apply in reverse
@@ -1082,7 +1104,8 @@ export class Interpreter implements InterpreterContext {
 
     // Overload set - resolve the best matching overload
     if (isOverloadSet(callee)) {
-      const fn = this.resolveOverload(callee.overloads, args);
+      const resolved = this.resolveOverload(callee.overloads, args);
+      const fn = getForwardFunction(resolved);
       return this.callFunction(fn, args);
     }
 
@@ -1513,7 +1536,8 @@ export class Interpreter implements InterpreterContext {
       if (right.kind === "Identifier") {
         const callee = await this.evaluateExprAsync(right, env);
         if (isOverloadSet(callee)) {
-          const fn = this.resolveOverload(callee.overloads, pipedValue.values);
+          const resolved = this.resolveOverload(callee.overloads, pipedValue.values);
+          const fn = getForwardFunction(resolved);
           return this.callFunctionAsync(fn, pipedValue.values);
         }
         if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
@@ -1541,7 +1565,8 @@ export class Interpreter implements InterpreterContext {
         const allArgs = [...pipedValue.values, ...additionalArgs];
 
         if (isOverloadSet(callee)) {
-          const fn = this.resolveOverload(callee.overloads, allArgs);
+          const resolved = this.resolveOverload(callee.overloads, allArgs);
+          const fn = getForwardFunction(resolved);
           return this.callFunctionAsync(fn, allArgs);
         }
         if (callee && typeof callee === "object" && "kind" in callee && callee.kind === "function") {
@@ -1683,6 +1708,15 @@ export class Interpreter implements InterpreterContext {
       return this.callFunctionAsync(target.reverse, [value]);
     }
 
+    // If target is an overload set, resolve the overload and check if it's reversible
+    if (isOverloadSet(target)) {
+      const resolved = this.resolveOverload(target.overloads, [value]);
+      if (resolved.kind === "reversible_function") {
+        return this.callFunctionAsync((resolved as LeaReversibleFunction).reverse, [value]);
+      }
+      throw new RuntimeError("Cannot apply reverse to overloaded function - the matching overload is not reversible. Define a reverse with (x) <- expr");
+    }
+
     // If target is a bidirectional pipeline, apply stages in reverse order
     if (isBidirectionalPipeline(target)) {
       let current = value;
@@ -1721,6 +1755,15 @@ export class Interpreter implements InterpreterContext {
 
       if (isReversibleFunction(stageVal)) {
         return this.callFunctionAsync(stageVal.reverse, [value]);
+      }
+
+      // If it's an overload set, resolve and check if the matching overload is reversible
+      if (isOverloadSet(stageVal)) {
+        const resolved = this.resolveOverload(stageVal.overloads, [value]);
+        if (resolved.kind === "reversible_function") {
+          return this.callFunctionAsync((resolved as LeaReversibleFunction).reverse, [value]);
+        }
+        throw new RuntimeError(`Cannot apply reverse to stage '${stageExpr.name}' - the matching overload is not reversible`);
       }
 
       if (isBidirectionalPipeline(stageVal)) {
@@ -1831,7 +1874,8 @@ export class Interpreter implements InterpreterContext {
 
     // Overload set - resolve the best matching overload
     if (isOverloadSet(callee)) {
-      const fn = this.resolveOverload(callee.overloads, args);
+      const resolved = this.resolveOverload(callee.overloads, args);
+      const fn = getForwardFunction(resolved);
       return this.callFunctionAsync(fn, args);
     }
 
@@ -1929,7 +1973,7 @@ export class Interpreter implements InterpreterContext {
     return formatType(t);
   }
 
-  resolveOverload(overloads: LeaFunction[], args: LeaValue[]): LeaFunction {
+  resolveOverload(overloads: (LeaFunction | LeaReversibleFunction)[], args: LeaValue[]): LeaFunction | LeaReversibleFunction {
     return resolveOverload(overloads, args);
   }
 

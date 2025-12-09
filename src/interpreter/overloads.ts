@@ -8,10 +8,22 @@
 import {
   LeaValue,
   LeaFunction,
+  LeaReversibleFunction,
   LeaTuple,
   RuntimeError,
 } from "./types";
 import { getLeaType } from "./helpers";
+
+/**
+ * Extract the forward LeaFunction from an overload entry
+ * (handles both LeaFunction and LeaReversibleFunction)
+ */
+export function getForwardFunction(entry: LeaFunction | LeaReversibleFunction): LeaFunction {
+  if (entry.kind === "reversible_function") {
+    return (entry as LeaReversibleFunction).forward;
+  }
+  return entry as LeaFunction;
+}
 
 /**
  * Check if a value matches an expected type annotation
@@ -117,14 +129,19 @@ export function scoreOverloadMatch(fn: LeaFunction, args: LeaValue[]): number {
 
 /**
  * Resolve the best matching overload from an overload set
+ * Returns the original entry (LeaFunction or LeaReversibleFunction) so caller can use reverse if needed
  */
-export function resolveOverload(overloads: LeaFunction[], args: LeaValue[]): LeaFunction {
-  const candidates: { fn: LeaFunction; score: number }[] = [];
+export function resolveOverload(
+  overloads: (LeaFunction | LeaReversibleFunction)[],
+  args: LeaValue[]
+): LeaFunction | LeaReversibleFunction {
+  const candidates: { entry: LeaFunction | LeaReversibleFunction; fn: LeaFunction; score: number }[] = [];
 
-  for (const fn of overloads) {
+  for (const entry of overloads) {
+    const fn = getForwardFunction(entry);
     const score = scoreOverloadMatch(fn, args);
     if (score >= 0) {
-      candidates.push({ fn, score });
+      candidates.push({ entry, fn, score });
     }
   }
 
@@ -132,7 +149,8 @@ export function resolveOverload(overloads: LeaFunction[], args: LeaValue[]): Lea
     // No matching overload found - generate helpful error message
     const argTypes = args.map((a) => getLeaType(a)).join(", ");
     const availableSignatures = overloads
-      .map((fn) => {
+      .map((entry) => {
+        const fn = getForwardFunction(entry);
         if (fn.typeSignature) {
           const paramTypes = fn.typeSignature.paramTypes.map((t) => formatType(t)).join(", ");
           const returnType = fn.typeSignature.returnType ? formatType(fn.typeSignature.returnType) : "?";
@@ -157,5 +175,5 @@ export function resolveOverload(overloads: LeaFunction[], args: LeaValue[]): Lea
     );
   }
 
-  return candidates[0].fn;
+  return candidates[0].entry;
 }

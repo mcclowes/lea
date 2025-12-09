@@ -10,6 +10,7 @@ import { Expr, Stmt, Decorator, CallExpr, FunctionExpr, BlockBody } from "../ast
 import {
   LeaValue,
   LeaFunction,
+  LeaReversibleFunction,
   LeaPipeline,
   LeaBidirectionalPipeline,
   Environment,
@@ -56,7 +57,7 @@ export interface InterpreterContext {
   evaluateCallAsync(expr: CallExpr, env: Environment, pipedValue?: LeaValue): Promise<LeaValue>;
 
   // Overload resolution
-  resolveOverload(overloads: LeaFunction[], args: LeaValue[]): LeaFunction;
+  resolveOverload(overloads: (LeaFunction | LeaReversibleFunction)[], args: LeaValue[]): LeaFunction | LeaReversibleFunction;
 
   // Type helpers
   getLeaType(val: LeaValue): string;

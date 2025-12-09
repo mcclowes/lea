@@ -45,6 +45,7 @@ bar([1,2, 3, 4, 5]) /> print
 let abc = bar([1,2, 3, 4, 5]) 
 abc /> print
 bar(1) /> print
-bar(2) </ print
+1 /> bar /> print
+2 </ bar /> print
 
 {/--}

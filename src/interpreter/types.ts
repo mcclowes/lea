@@ -54,7 +54,7 @@ export interface LeaTuple {
 
 export interface LeaOverloadSet {
   kind: "overload_set";
-  overloads: LeaFunction[];
+  overloads: (LeaFunction | LeaReversibleFunction)[];
 }
 
 // A pipeline is a first-class value representing a composable chain of transformations
@@ -197,6 +197,19 @@ export class Environment {
         overloads: [existingFn, fn],
       };
       this.values.set(name, { value: overloadSet, mutable: false });
+    } else if (
+      existing.value !== null &&
+      typeof existing.value === "object" &&
+      "kind" in existing.value &&
+      existing.value.kind === "reversible_function"
+    ) {
+      // Convert existing reversible function to an overload set
+      const existingFn = existing.value as LeaReversibleFunction;
+      const overloadSet: LeaOverloadSet = {
+        kind: "overload_set",
+        overloads: [existingFn, fn],
+      };
+      this.values.set(name, { value: overloadSet, mutable: false });
     } else {
       throw new RuntimeError(`Cannot overload '${name}' - existing binding is not a function`);
     }
@@ -237,6 +250,68 @@ export class Environment {
     ) {
       // Already a reversible function - update the reverse
       (existing.value as LeaReversibleFunction).reverse = reverse;
+    } else if (
+      existing.value !== null &&
+      typeof existing.value === "object" &&
+      "kind" in existing.value &&
+      existing.value.kind === "overload_set"
+    ) {
+      // Overload set - find the matching overload and make it reversible
+      const overloadSet = existing.value as LeaOverloadSet;
+      // Find an overload with matching type signature to make reversible
+      // The reverse function's type signature should match one of the overloads
+      const reverseTypes = reverse.typeSignature;
+
+      let foundMatch = false;
+      for (let i = 0; i < overloadSet.overloads.length; i++) {
+        const overload = overloadSet.overloads[i];
+        // Get the forward function from the overload (could be LeaFunction or LeaReversibleFunction)
+        const forwardFn = overload.kind === "reversible_function"
+          ? (overload as LeaReversibleFunction).forward
+          : overload as LeaFunction;
+
+        // Check if type signatures match (if both have them)
+        if (reverseTypes && forwardFn.typeSignature) {
+          const forwardTypes = forwardFn.typeSignature;
+          // Compare param types and return types
+          const paramsMatch = JSON.stringify(reverseTypes.paramTypes) === JSON.stringify(forwardTypes.paramTypes);
+          const returnMatch = JSON.stringify(reverseTypes.returnType) === JSON.stringify(forwardTypes.returnType);
+
+          if (paramsMatch && returnMatch) {
+            // Found matching overload - convert to reversible
+            if (overload.kind === "reversible_function") {
+              // Already reversible - update the reverse
+              (overload as LeaReversibleFunction).reverse = reverse;
+            } else {
+              // Convert to reversible
+              overloadSet.overloads[i] = {
+                kind: "reversible_function",
+                forward: forwardFn,
+                reverse,
+              };
+            }
+            foundMatch = true;
+            break;
+          }
+        }
+      }
+
+      if (!foundMatch) {
+        // No matching type signature found - add reverse to the last overload
+        // This handles the case where no type signatures are specified
+        const lastIdx = overloadSet.overloads.length - 1;
+        const lastOverload = overloadSet.overloads[lastIdx];
+
+        if (lastOverload.kind === "reversible_function") {
+          (lastOverload as LeaReversibleFunction).reverse = reverse;
+        } else {
+          overloadSet.overloads[lastIdx] = {
+            kind: "reversible_function",
+            forward: lastOverload as LeaFunction,
+            reverse,
+          };
+        }
+      }
     } else {
       throw new RuntimeError(`Cannot add reverse to '${name}' - existing binding is not a function`);
     }
