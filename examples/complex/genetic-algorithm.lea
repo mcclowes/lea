@@ -14,77 +14,97 @@ let CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "
 <> -- Helper Functions
 
 -- Generate a random character from our charset
-let randomChar = () -> randomChoice(chars(CHARS))
+-- Uses _ to ignore input, enabling use with spread pipe
+let randomChar = (_) -> randomChoice(chars(CHARS)) :: Int :> String
 
 -- Generate a random individual (string of target length)
-let randomIndividual = () ->
-  range(0, length(TARGET)) /> map((i) -> randomChar()) /> join("")
+-- Uses iterations with spread pipe for cleaner generation
+let randomIndividual = (_) -> :: Int :> String
+  iterations(length(TARGET)) />> randomChar /> join("")
 
 -- Calculate fitness: count matching characters (higher is better)
-let fitness = (individual) ->
-  let pairs = zip([chars(individual), chars(TARGET)])
-  pairs /> filter((pair) -> at(pair, 0) == at(pair, 1)) /> length
+-- Uses zip and filter pipeline pattern
+let fitness = (individual) -> :: String :> Int
+  zip([chars(individual), chars(TARGET)])
+    /> filter((pair) -> at(pair, 0) == at(pair, 1))
+    /> length
 
 </>
 
 <> -- Selection
 
 -- Pick the fitter of two individuals
-let fitter = (a, b) -> fitness(a) > fitness(b) ? a : b
+let fitter = (a, b) -> fitness(a) > fitness(b) ? a : b :: (String, String) :> String
 
 -- Tournament selection: pick best from k random candidates
-let tournamentSelect = (population, k) ->
-  let candidates = range(0, k) /> map((i) -> randomChoice(population))
+-- Uses iterations with spread pipe for candidate generation
+let tournamentSelect = (population, k) -> :: (List, Int) :> String
+  let pickRandom = (_) -> randomChoice(population)
+  let candidates = iterations(k) />> pickRandom
   candidates /> reduce(head(candidates), fitter)
 
 -- Select parent using tournament selection
-let selectParent = (population) -> tournamentSelect(population, 3)
+let selectParent = (population) -> tournamentSelect(population, 3) :: List :> String
 
 </>
 
 <> -- Genetic Operators
 
 -- Single-point crossover: combine two parents
-let crossover = (parent1, parent2) ->
+-- Slices at random point and combines halves
+let crossover = (parent1, parent2) -> :: (String, String) :> String
   let point = randomInt(1, length(TARGET))
   let p1Chars = chars(parent1)
   let p2Chars = chars(parent2)
-  let child = concat(slice(p1Chars, 0, point), slice(p2Chars, point))
-  join(child, "")
+  concat(slice(p1Chars, 0, point), slice(p2Chars, point)) /> join("")
+
+-- Maybe mutate a character based on mutation rate
+let maybeMutate = (c) -> random() < MUTATION_RATE ? randomChar(0) : c :: String :> String
 
 -- Mutate an individual: randomly change characters
-let mutate = (individual) ->
-  chars(individual) /> map((c) -> random() < MUTATION_RATE ? randomChar() : c) /> join("")
+-- Uses pipeline pattern for character transformation
+let mutate = (individual) -> :: String :> String
+  chars(individual) />> maybeMutate /> join("")
 
 -- Create single offspring from two parents
-let breed = (parent1, parent2) -> crossover(parent1, parent2) /> mutate
+-- Combines crossover and mutation in a pipeline
+let breed = (parent1, parent2) -> :: (String, String) :> String
+  crossover(parent1, parent2) /> mutate
 
 </>
 
 <> -- Population Management
 
 -- Create initial random population
+-- Uses iterations with spread pipe for clean generation
 let createPopulation = () ->
-  range(0, POPULATION_SIZE) /> map((i) -> randomIndividual())
+  iterations(POPULATION_SIZE) />> randomIndividual
 
 -- Get the best individual in population
-let bestIndividual = (population) -> population /> reduce(head(population), fitter)
+let bestIndividual = (population) -> :: List :> String
+  population /> reduce(head(population), fitter)
 
 -- Create one child for the next generation
-let createChild = (population) ->
+let createChild = (population) -> :: List :> String
   let p1 = selectParent(population)
   let p2 = selectParent(population)
   breed(p1, p2)
 
--- Create next generation with elitism
-let evolveGeneration = (population) ->
+-- Create next generation with elitism (best individual preserved)
+-- Uses iterations with spread pipe for child generation
+let evolveGeneration = (population) -> :: List :> List
   let elite = bestIndividual(population)
-  let children = range(0, POPULATION_SIZE - 1) /> map((i) -> createChild(population))
+  let breedOne = (_) -> createChild(population)
+  let children = iterations(POPULATION_SIZE - 1) />> breedOne
   push(children, elite)
 
 </>
 
 <> -- Main Evolution Loop
+
+-- Log progress every 10 generations
+let logProgress = (gen, best, bestFit) ->
+  gen % 10 == 0 ? `Gen {gen}: "{best}" (fitness: {bestFit}/{length(TARGET)})` /> print : 0
 
 -- Single evolution step (returns {population, best, done, generation})
 let step = (state) ->
@@ -94,7 +114,7 @@ let step = (state) ->
   let bestFit = fitness(best)
   let done = best == TARGET
   let maxed = gen >= GENERATIONS
-  gen % 10 == 0 ? `Gen {gen}: "{best}" (fitness: {bestFit}/{length(TARGET)})` /> print : 0
+  logProgress(gen, best, bestFit)
   done ? `Found target "{TARGET}" in generation {gen}!` /> print : 0
   maxed ? `Max generations. Best: "{best}"` /> print : 0
   {
@@ -104,7 +124,7 @@ let step = (state) ->
     done: done ? true : maxed,
   }
 
--- Run evolution loop
+-- Run evolution loop (tail recursive)
 let runLoop = (state) ->
   state.done ? state.best : runLoop(step(state))
 
