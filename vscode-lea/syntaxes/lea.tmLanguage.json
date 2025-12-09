@@ -28,17 +28,17 @@
     "codeblocks": {
       "patterns": [
         {
-          "comment": "Codeblock open {-- label --} - brown/region color",
-          "name": "markup.heading.codeblock.lea",
+          "comment": "Codeblock open {-- label --} - same color as comments",
+          "name": "comment.block.codeblock.lea",
           "match": "\\{--\\s*(.*)\\s*--\\}",
           "captures": {
-            "0": { "name": "markup.heading.codeblock.lea" },
-            "1": { "name": "entity.name.section.codeblock.lea" }
+            "0": { "name": "comment.block.codeblock.lea" },
+            "1": { "name": "comment.block.codeblock.label.lea" }
           }
         },
         {
-          "comment": "Codeblock close {/--} - brown/region color",
-          "name": "markup.heading.codeblock.lea",
+          "comment": "Codeblock close {/--} - same color as comments",
+          "name": "comment.block.codeblock.lea",
           "match": "\\{/--\\}"
         }
       ]

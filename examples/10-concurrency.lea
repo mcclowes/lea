@@ -1,9 +1,7 @@
 -- Concurrency in Lea
 -- Lea provides several primitives for concurrent and async operations
 
--- ============================================
--- PARALLEL PIPE OPERATOR (\>)
--- ============================================
+{-- Parallel Pipe Operator --}
 
 -- Fan-out: run multiple operations on the same input concurrently
 "Basic fan-out:" /> print
@@ -28,9 +26,9 @@
   \> (x) -> x * x
   /> print  -- [6, 10, 25]
 
--- ============================================
--- ASYNC FUNCTIONS
--- ============================================
+{/--}
+
+{-- Async Functions --}
 
 -- delay(ms, value) returns a promise that resolves after ms milliseconds
 "Async with delay:" /> print
@@ -43,9 +41,9 @@ let fetchUser = (id) ->
 
 await fetchUser("123") /> print  -- "User-123"
 
--- ============================================
--- PARALLEL WITH ASYNC
--- ============================================
+{/--}
+
+{-- Parallel with Async --}
 
 -- Parallel pipes work seamlessly with async operations
 "Parallel async operations:" /> print
@@ -55,9 +53,9 @@ await fetchUser("123") /> print  -- "User-123"
   /> (profile, posts) -> profile ++ " | " ++ posts
   /> print  -- "Profile-user1 | Posts-user1"
 
--- ============================================
--- parallel() BUILTIN
--- ============================================
+{/--}
+
+{-- parallel() Builtin --}
 
 -- parallel() maps a function over a list concurrently
 "parallel() builtin:" /> print
@@ -75,9 +73,9 @@ let opts = { limit: 2 }
 let nums3 = [1, 2, 3, 4, 5]
 nums3 /> parallel((x) -> delay(10, x * 2), opts) /> print
 
--- ============================================
--- race() BUILTIN
--- ============================================
+{/--}
+
+{-- race() Builtin --}
 
 -- race() returns the first promise to resolve
 "race() - first wins:" /> print
@@ -86,9 +84,9 @@ let slow = () -> delay(100, "slow")
 let racers = [fast, slow]
 racers /> race /> print  -- "fast"
 
--- ============================================
--- then() BUILTIN
--- ============================================
+{/--}
+
+{-- then() Builtin --}
 
 -- then() chains promise transformations
 "then() chaining:" /> print
@@ -97,9 +95,9 @@ delay(20, 5)
   /> then((x) -> x + 1)
   /> print  -- 11
 
--- ============================================
--- NESTED PIPES IN PARALLEL BRANCHES
--- ============================================
+{/--}
+
+{-- Nested Pipes in Parallel Branches --}
 
 -- Each parallel branch can contain its own pipe chain
 -- Nested pipes must be more indented than the \>
@@ -121,9 +119,9 @@ delay(20, 5)
   /> (a, b) -> a + b
   /> print  -- (5+1)*2 + (5*2)+1 = 12 + 11 = 23
 
--- ============================================
--- REAL-WORLD PATTERN: Fetch Multiple Resources
--- ============================================
+{/--}
+
+{-- Real-World Pattern: Fetch Multiple Resources --}
 
 "Real-world pattern:" /> print
 
@@ -135,5 +133,7 @@ userId
   \> (id) -> delay(30, "Prefs-" ++ id)
   /> (user, prefs) -> user ++ " with " ++ prefs
   /> print
+
+{/--}
 
 "Done!" /> print

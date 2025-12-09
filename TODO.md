@@ -8,9 +8,10 @@
 - [x] Review syntax highlighting against all of the more recent language additions
 - [x] Enforce types by default? Or just warn (with #validate to throw)? Introduce a decorator to ignore it?
   - Implemented #strict pragma and --strict CLI flag for opt-in strict type checking
-- [ ] Replace big comments with codeblocks throughout example files
-- [ ] Make codeblocks appear the same colours as comments in syntax highlighting
-- [ ] ```lea syntax highlighting in markdown?
+- [x] Replace big comments with codeblocks throughout example files
+- [x] Make codeblocks appear the same colours as comments in syntax highlighting
+- [x] \`\`\`lea syntax highlighting in markdown
+- [ ] Leveraging Lea functionality within TypeScript?
 
 ## Feature Ideas
 
@@ -19,6 +20,9 @@
 ```lea
 let pipe = /> double /> reverse :: [Int]            -- input type only
 let pipe = /> double /> reverse :: [Int] /> [Int]   -- input and output
+let pipe = :: [Int] /> [Int]  -- multi-line
+  /> double 
+  /> reverse 
 ```
 
 ### Refinement Types
@@ -30,7 +34,7 @@ let clamp = (x) -> x :: Int where x > 0 && x < 100 :> Int
 
 ### Canvas Visualization
 
-Visual/graphical pipeline visualization (beyond ASCII `.visualize()`).
+Visual/graphical pipeline visualization (beyond ASCII `.visualize()`). Mermaid?
 
 ### Structured Concurrency (`concurrent` blocks)
 

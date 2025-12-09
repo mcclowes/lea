@@ -2,9 +2,7 @@
 -- Lea supports optional type annotations using trailing :: syntax
 -- Use the #validate decorator to enable runtime type checking
 
--- ============================================
--- NEW TYPE ANNOTATION SYNTAX
--- ============================================
+{-- Type Annotation Syntax --}
 
 -- Single parameter, single-line: body :: Type :> ReturnType
 let double = (x) -> x * 2 :: Int :> Int
@@ -20,9 +18,9 @@ let greet = (name) -> :: String :> String
 
 greet("World") /> print  -- Hello World
 
--- ============================================
--- RUNTIME VALIDATION WITH #validate
--- ============================================
+{/--}
+
+{-- Runtime Validation with #validate --}
 
 "=== Runtime type checking ===" /> print
 
@@ -49,9 +47,9 @@ let requireValue = (x) -> :: Int :> Int
 
 requireValue(10) /> print  -- 20
 
--- ============================================
--- SUPPORTED TYPES
--- ============================================
+{/--}
+
+{-- Supported Types --}
 
 -- Int - integers and floats
 let processNum = (n) -> n + 1 :: Int :> Int #validate
@@ -75,9 +73,9 @@ let apply = (f, x) -> f(x) :: (Function, Int) :> Int #validate
 let triple = (n) -> n * 3
 apply(triple, 4) /> print  -- 12
 
--- ============================================
--- USING _ FOR IGNORED PARAMETERS
--- ============================================
+{/--}
+
+{-- Using _ for Ignored Parameters --}
 
 -- Underscore can be used for ignored params
 let ignoreSecond = (x, _) -> x :: (Int, Int) :> Int #validate
@@ -89,9 +87,9 @@ ignoreSecond(5, 100) /> print  -- 5
 -- Or when you don't need the element
 iterations(3) /> reduce(10, (acc, _) -> acc * 2) /> print  -- 80
 
--- ============================================
--- TYPE ERRORS (commented out - would fail at runtime)
--- ============================================
+{/--}
+
+{-- Type Errors (examples - commented out) --}
 
 -- Uncomment to see type validation errors:
 -- let badNum = (x) -> x :: Int :> Int #validate
@@ -100,7 +98,9 @@ iterations(3) /> reduce(10, (acc, _) -> acc * 2) /> print  -- 80
 -- let badReturn = (x) -> x :: Int :> String #validate
 -- badReturn(5) /> print  -- Error: expected return type String, got int
 
-{-- TUPLES --}
+{/--}
+
+{-- Tuples --}
 "=== Tuples ===" /> print
 
 -- Tuple literal syntax
@@ -118,11 +118,10 @@ makePair(3, 4) /> print  -- (3, 4)
 -- Tuple with validation
 let validatedPair = (x, y) -> (x, y) :: (Int, String) :> (Int, String) #validate
 validatedPair(42, "answer") /> print  -- (42, answer)
+
 {/--}
 
--- ============================================
--- DEFAULT PARAMETERS
--- ============================================
+{-- Default Parameters --}
 
 "=== Default parameters ===" /> print
 
@@ -137,13 +136,15 @@ createPoint() /> print  -- (0, 0)
 createPoint(5) /> print  -- (5, 0)
 createPoint(5, 10) /> print  -- (5, 10)
 
--- ============================================
--- OPTIONAL TYPES
--- ============================================
+{/--}
+
+{-- Optional Types --}
 
 "=== Optional types ===" /> print
 
 -- Optional parameter type with ?Type syntax
 -- (Note: optional types allow null/undefined values)
+
+{/--}
 
 "=== Type annotation examples complete ===" /> print

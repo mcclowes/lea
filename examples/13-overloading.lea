@@ -1,9 +1,8 @@
--- ============================================
--- Example 13: Function Overloading
--- ============================================
--- Define multiple functions with the same name but
--- different type signatures. The correct overload
--- is selected at runtime based on argument types.
+-- Function Overloading in Lea
+-- Define multiple functions with the same name but different type signatures.
+-- The correct overload is selected at runtime based on argument types.
+
+{-- Basic Overloading --}
 
 -- Basic overloading: same name, different types
 -- Use 'and' to add additional overloads to an existing function
@@ -16,7 +15,9 @@ add(10, 20) /> print           -- 30
 "--- String add ---" /> print
 add("Hello, ", "World!") /> print  -- Hello, World!
 
--- Overloading with different arity
+{/--}
+
+{-- Overloading with Different Arity --}
 let format = (value) -> "Value: " ++ value :: String :> String
 and format = (value, label) -> label ++ ": " ++ value :: (String, String) :> String
 and format = (value, label, suffix) -> label ++ ": " ++ value ++ suffix :: (String, String, String) :> String
@@ -26,7 +27,9 @@ format("42") /> print                    -- Value: 42
 format("42", "Number") /> print          -- Number: 42
 format("42", "Number", "!") /> print     -- Number: 42!
 
--- Overloading with pipes
+{/--}
+
+{-- Overloading with Pipes --}
 let double = (x) -> x * 2 :: Int :> Int
 and double = (s) -> s ++ s :: String :> String
 
@@ -34,7 +37,9 @@ and double = (s) -> s ++ s :: String :> String
 5 /> double /> print           -- 10
 "ab" /> double /> print        -- abab
 
--- Practical example: polymorphic stringify
+{/--}
+
+{-- Practical Example: Polymorphic Stringify --}
 let stringify = (n) -> :: Int :> String
   let result = n + 0
   "Int(" ++ "number" ++ ")"
@@ -46,5 +51,7 @@ and stringify = (b) -> :: Bool :> String
 stringify(42) /> print         -- Int(number)
 stringify("hello") /> print    -- String(hello)
 stringify(true) /> print       -- Bool(true)
+
+{/--}
 
 "--- Done! ---" /> print

@@ -1,8 +1,6 @@
 -- Decorators: function and pipeline modifiers
 
--- ==========================================
--- Function Decorators
--- ==========================================
+{-- Function Decorators --}
 
 "=== Function Decorators ===" /> print
 
@@ -44,9 +42,9 @@ let process = (x) ->
 
 process(10) /> print
 
--- ==========================================
--- Pipeline Decorators
--- ==========================================
+{/--}
+
+{-- Pipeline Decorators --}
 
 "=== Pipeline Decorators ===" /> print
 
@@ -92,9 +90,9 @@ let profiledPipeline = /> double /> addOne /> square #profile
 let tracedPipeline = /> double /> addOne #trace
 5 /> tracedPipeline /> print
 
--- ==========================================
--- Combining decorators
--- ==========================================
+{/--}
+
+{-- Combining Decorators --}
 
 "=== Combined Decorators ===" /> print
 
@@ -102,18 +100,18 @@ let tracedPipeline = /> double /> addOne #trace
 let fullyInstrumented = /> double /> addOne /> square #log #time
 5 /> fullyInstrumented /> print
 
--- ==========================================
--- Practical example: Data processing pipeline
--- ==========================================
+{/--}
+
+{-- Practical Example: Data Processing Pipeline --}
 
 "=== Practical Example ===" /> print
 
 let processData = /> filter((x) -> x > 0) /> map((x) -> x * 2) /> reduce(0, (acc, x) -> acc + x) #profile
 [-1, 2, -3, 4, 5] /> processData /> print
 
--- ==========================================
--- Custom Decorators
--- ==========================================
+{/--}
+
+{-- Custom Decorators --}
 
 "=== Custom Decorators ===" /> print
 
@@ -141,9 +139,9 @@ squared(3) /> print
 let traced = (x) -> x + 10 #bump #log
 traced(5) /> print
 
--- ==========================================
--- Type Coercion Decorators
--- ==========================================
+{/--}
+
+{-- Type Coercion Decorators --}
 
 "=== Type Coercion Decorators ===" /> print
 
@@ -215,5 +213,7 @@ let asString = (x) -> x #stringify
 let roundTrip = (x) -> x + 100 #parse #stringify
 "50" /> roundTrip /> print
 -- 150 (as string)
+
+{/--}
 
 "Decorators complete!" /> print

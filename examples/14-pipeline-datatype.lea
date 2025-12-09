@@ -1,6 +1,8 @@
 -- Pipelines as First-Class Data Types
 -- Pipelines can be defined as reusable transformations and composed together
 
+{-- Pipeline Basics --}
+
 -- Define helper functions
 let double = (x) -> x * 2
 let addOne = (x) -> x + 1
@@ -52,9 +54,9 @@ let multiplyPipeline = /> (x) -> x * multiplier
 "Visualizing processNumber:" /> print
 processNumber.visualize()
 
--- ==========================================
--- Pipeline Algebra
--- ==========================================
+{/--}
+
+{-- Pipeline Algebra --}
 
 "--- Pipeline Algebra ---" /> print
 
@@ -138,5 +140,7 @@ concatenated.stages /> print  -- [double, addOne, double]
 let functions = [double, addOne, square]
 let fromList = Pipeline.from(functions)
 5 /> fromList /> print  -- 121 ((5 * 2 + 1)^2)
+
+{/--}
 
 "Pipeline algebra demo complete!" /> print

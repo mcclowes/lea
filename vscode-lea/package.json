@@ -2,7 +2,7 @@
   "name": "lea-language",
   "displayName": "Lea Language",
   "description": "Syntax highlighting for the Lea programming language - a pipe-oriented functional language",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "mcclowes",
   "author": {
     "name": "Max Clayton Clowes"
@@ -51,6 +51,14 @@
         "language": "lea",
         "scopeName": "source.lea",
         "path": "./syntaxes/lea.tmLanguage.json"
+      },
+      {
+        "scopeName": "markdown.lea.codeblock",
+        "path": "./syntaxes/lea.markdown.json",
+        "injectTo": ["text.html.markdown"],
+        "embeddedLanguages": {
+          "meta.embedded.block.lea": "lea"
+        }
       }
     ],
     "configurationDefaults": {
@@ -85,20 +93,6 @@
             "scope": "keyword.operator.parallel-pipe.lea",
             "settings": {
               "foreground": "#DCDCAA"
-            }
-          },
-          {
-            "scope": "markup.heading.codeblock.lea",
-            "settings": {
-              "foreground": "#D19A66",
-              "fontStyle": "bold"
-            }
-          },
-          {
-            "scope": "entity.name.section.codeblock.lea",
-            "settings": {
-              "foreground": "#98C379",
-              "fontStyle": "italic"
             }
           }
         ]
