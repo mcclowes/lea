@@ -46,10 +46,10 @@ let safe = (x) -> x * 2 :: Int :> Int #validate
 -- Underscore for ignored params
 let ignoreSecond = (x, _) -> x
 
--- Function overloading (multiple definitions with same name)
+-- Function overloading (use 'and' to extend with additional overloads)
 -- Resolution based on argument types at runtime
 let add = (a, b) -> a + b :: (Int, Int) :> Int
-let add = (a, b) -> a ++ b :: (String, String) :> String
+and add = (a, b) -> a ++ b :: (String, String) :> String
 add(1, 2)         -- calls Int version: 3
 add("a", "b")     -- calls String version: "ab"
 
@@ -193,9 +193,9 @@ let loggedPipeline = /> double /> addOne #log
 5 /> profiledPipeline  -- shows timing for each stage
 
 -- Reversible functions (bidirectional transforms)
--- Define forward with -> and reverse with <-
+-- Define forward with -> and use 'and' to add reverse with <-
 let double = (x) -> x * 2
-let double = (x) <- x / 2         -- adds reverse definition
+and double = (x) <- x / 2         -- adds reverse definition
 
 -- Apply forward or reverse
 5 /> double                        -- 10 (forward: 5 * 2)
@@ -249,7 +249,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 
 ```
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
-LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF
+LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF
 PIPE (/>), SPREAD_PIPE (/>>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
 REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
@@ -279,6 +279,7 @@ NEWLINE, EOF
 
 **Statements:**
 - LetStmt (name, mutable, value)
+- AndStmt (name, value) — extends existing function with overload or reverse
 - ExprStmt (expression)
 - ContextDefStmt (name, defaultValue)
 - ProvideStmt (contextName, value)
@@ -398,7 +399,7 @@ Maps a function or pipeline over each element of a list or parallel result.
 - `@Name` — attach context to function (inject into scope)
 
 **Function Overloading:**
-- Define multiple functions with the same name but different type signatures
+- Use `and` to add additional overloads to an existing function
 - Functions must have type annotations (`::`) to participate in overloading
 - Resolution is based on argument types at call time
 - More specific type matches are preferred over generic ones
@@ -429,7 +430,7 @@ Maps a function or pipeline over each element of a list or parallel result.
 - Decorators can be attached: `let p = /> fn1 /> fn2 #debug #profile`
 
 **Reversible Functions:**
-- Define forward with `(x) -> expr` and reverse with `(x) <- expr`
+- Define forward with `(x) -> expr`, then use `and` to add reverse with `(x) <- expr`
 - When both are defined on same name, creates a `LeaReversibleFunction`
 - Forward: `value /> fn` calls the forward transformation
 - Reverse: `value </ fn` calls the reverse transformation

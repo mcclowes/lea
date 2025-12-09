@@ -162,6 +162,34 @@ export class Interpreter implements InterpreterContext {
         return value;
       }
 
+      case "AndStmt": {
+        // 'and' extends an existing function definition (overload or reverse)
+        const value = this.evaluateExpr(stmt.value, env);
+
+        // The name must already exist
+        if (!env.hasInCurrentScope(stmt.name)) {
+          throw new RuntimeError(`Cannot use 'and' - '${stmt.name}' is not defined. Use 'let' to define it first.`);
+        }
+
+        // Must be a function
+        const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
+        if (!isFunction) {
+          throw new RuntimeError(`'and' can only be used with function definitions`);
+        }
+
+        const fn = value as LeaFunction;
+        const isReverse = fn.isReverse === true;
+
+        if (isReverse) {
+          // Add reverse function definition
+          env.addReverse(stmt.name, fn);
+        } else {
+          // Add as overload
+          env.addOverload(stmt.name, fn);
+        }
+        return value;
+      }
+
       case "ExprStmt":
         return this.evaluateExpr(stmt.expression, env);
 
@@ -1009,6 +1037,34 @@ export class Interpreter implements InterpreterContext {
           env.addOverload(stmt.name, fn);
         } else {
           env.define(stmt.name, value, stmt.mutable);
+        }
+        return value;
+      }
+
+      case "AndStmt": {
+        // 'and' extends an existing function definition (overload or reverse)
+        const value = await this.evaluateExprAsync(stmt.value, env);
+
+        // The name must already exist
+        if (!env.hasInCurrentScope(stmt.name)) {
+          throw new RuntimeError(`Cannot use 'and' - '${stmt.name}' is not defined. Use 'let' to define it first.`);
+        }
+
+        // Must be a function
+        const isFunction = value !== null && typeof value === "object" && "kind" in value && value.kind === "function";
+        if (!isFunction) {
+          throw new RuntimeError(`'and' can only be used with function definitions`);
+        }
+
+        const fn = value as LeaFunction;
+        const isReverse = fn.isReverse === true;
+
+        if (isReverse) {
+          // Add reverse function definition
+          env.addReverse(stmt.name, fn);
+        } else {
+          // Add as overload
+          env.addOverload(stmt.name, fn);
         }
         return value;
       }

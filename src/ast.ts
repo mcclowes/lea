@@ -245,12 +245,20 @@ export interface BlockBody {
 }
 
 // Statement types
-export type Stmt = LetStmt | ExprStmt | ContextDefStmt | ProvideStmt | DecoratorDefStmt | CodeblockStmt;
+export type Stmt = LetStmt | AndStmt | ExprStmt | ContextDefStmt | ProvideStmt | DecoratorDefStmt | CodeblockStmt;
 
 export interface LetStmt {
   kind: "LetStmt";
   name: string;
   mutable: boolean;
+  value: Expr;
+}
+
+// And statement - extends an existing function definition (overload or reverse)
+// Syntax: and name = expr
+export interface AndStmt {
+  kind: "AndStmt";
+  name: string;
   value: Expr;
 }
 
@@ -447,6 +455,12 @@ export const letStmt = (name: string, mutable: boolean, value: Expr): LetStmt =>
   kind: "LetStmt",
   name,
   mutable,
+  value,
+});
+
+export const andStmt = (name: string, value: Expr): AndStmt => ({
+  kind: "AndStmt",
+  name,
   value,
 });
 
