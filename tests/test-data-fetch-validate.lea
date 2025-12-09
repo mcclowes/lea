@@ -1,0 +1,125 @@
+-- Test data fetch and validation patterns
+
+-- Helper functions
+let both = (a, b) -> a ? b : false
+let allThree = (a, b, c) -> a ? (b ? c : false) : false
+
+-- Validation helpers
+let inRange = (value, min, max) -> value >= min ? (value <= max) : false
+let hasAtSign = (email) -> includes(email, "@")
+
+-- Status classification using pattern matching
+let classifyStatus = (status) -> match status
+  | if inRange(input, 200, 299) -> "success"
+  | if inRange(input, 400, 499) -> "client_error"
+  | if input >= 500 -> "server_error"
+  | "unknown"
+
+-- Test status classification
+"=== Status Classification ===" /> print
+classifyStatus(200) /> print
+classifyStatus(404) /> print
+classifyStatus(500) /> print
+classifyStatus(100) /> print
+
+-- Error message pattern matching
+let getErrorMessage = (status) -> match status
+  | 400 -> "Bad Request"
+  | 401 -> "Unauthorized"
+  | 404 -> "Not Found"
+  | 500 -> "Server Error"
+  | "Unknown error"
+
+"=== Error Messages ===" /> print
+getErrorMessage(400) /> print
+getErrorMessage(404) /> print
+getErrorMessage(999) /> print
+
+-- User validation
+let validateUser = (user) ->
+  let hasValidId = user.id > 0
+  let hasValidName = length(user.name) > 0
+  let hasValidEmail = hasAtSign(user.email)
+  allThree(hasValidId, hasValidName, hasValidEmail)
+
+"=== User Validation ===" /> print
+let validUser = { id: 1, name: "Alice", email: "alice@example.com" }
+let invalidUser1 = { id: 0, name: "Bob", email: "bob@example.com" }
+let invalidUser2 = { id: 2, name: "", email: "invalid" }
+
+validateUser(validUser) /> print
+validateUser(invalidUser1) /> print
+validateUser(invalidUser2) /> print
+
+-- Data transformation pipeline
+let normalizeUser = (user) ->
+  let result = { id: user.id, name: trim(user.name), email: trim(user.email) }
+  result
+
+let enrichUser = (user) ->
+  let displayName = user.name ++ " <" ++ user.email ++ ">"
+  { ...user, displayName: displayName }
+
+let processUser = /> normalizeUser /> enrichUser
+
+"=== User Transformation ===" /> print
+let rawUser = { id: 1, name: "  Alice  ", email: "  alice@test.com  " }
+rawUser /> processUser /> print
+
+-- List processing with validation
+let users = [
+  { id: 1, name: "Alice", email: "alice@test.com" },
+  { id: 2, name: "", email: "invalid" },
+  { id: 3, name: "Charlie", email: "charlie@test.com" },
+]
+
+"=== Filtered Valid Users ===" /> print
+let validUsers = users /> filter(validateUser)
+length(validUsers) /> print
+
+-- Process and filter
+let processedUsers = users
+  /> filter(validateUser)
+  /> map((u) -> u /> processUser)
+
+"=== Processed Users ===" /> print
+length(processedUsers) /> print
+processedUsers /> map((u) -> u.displayName) /> print
+
+-- Response validation with early return
+let fetchAndValidate = (response) ->
+  response.ok == false ? return { success: false, error: "Request failed" } : 0
+  let users = response.body.users
+  length(users) == 0 ? return { success: false, error: "No users" } : 0
+  let validUsers = users /> filter(validateUser)
+  let metadata = { total: length(users), valid: length(validUsers) }
+  { success: true, data: validUsers, metadata: metadata }
+
+"=== Response Validation ===" /> print
+
+-- Test success response
+let successResponse = { ok: true, body: { users: [{ id: 1, name: "Alice", email: "a@b.com" }] } }
+let result1 = fetchAndValidate(successResponse)
+result1.success /> print
+result1.metadata.valid /> print
+
+-- Test error response
+let errorResponse = { ok: false, body: {} }
+let result2 = fetchAndValidate(errorResponse)
+result2.success /> print
+result2.error /> print
+
+-- Validator combinators
+let allOf = (validators) -> (value) ->
+  validators /> map((v) -> v(value)) /> filter((r) -> r == false) /> isEmpty
+
+let isPositive = (n) -> n > 0
+let isSmall = (n) -> n < 100
+let isValidNumber = allOf([isPositive, isSmall])
+
+"=== Validator Combinators ===" /> print
+isValidNumber(50) /> print
+isValidNumber(-5) /> print
+isValidNumber(150) /> print
+
+"=== All Tests Passed ===" /> print
