@@ -1,8 +1,8 @@
 -- Genetic Algorithm in Lea
 -- Evolves a population of strings to match a target phrase
--- Demonstrates: mutation, crossover, selection, fitness functions
+-- Demonstrates: match, destructuring, spread pipe, codeblocks, type annotations
 
--- Configuration (tuned for tree-walk interpreter performance)
+-- Configuration
 let TARGET = "LEA"
 let POPULATION_SIZE = 40
 let MUTATION_RATE = 0.05
@@ -14,30 +14,32 @@ let CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "
 <> -- Helper Functions
 
 -- Generate a random character from our charset
--- Uses _ to ignore input, enabling use with spread pipe
-let randomChar = (_) -> randomChoice(chars(CHARS)) :: Int :> String
+let randomChar = (_) -> CHARS /> chars /> randomChoice :: Int :> String
 
 -- Generate a random individual (string of target length)
--- Uses iterations with spread pipe for cleaner generation
 let randomIndividual = (_) -> :: Int :> String
-  iterations(length(TARGET)) />>> randomChar /> join("")
+  TARGET /> length /> iterations />>> randomChar /> join("")
 
 -- Calculate fitness: count matching characters (higher is better)
--- Uses zip and filter pipeline pattern
+-- Uses zip and spread pipe with index access
 let fitness = (individual) -> :: String :> Int
-  zip([chars(individual), chars(TARGET)])
-    /> filter((pair) -> at(pair, 0) == at(pair, 1))
+  let individualChars = chars(individual)
+  let targetChars = chars(TARGET)
+  zip([individualChars, targetChars])
+    /> filter((pair) -> pair[0] == pair[1])
     /> length
 
 </>
 
 <> -- Selection
 
--- Pick the fitter of two individuals
-let fitter = (a, b) -> fitness(a) > fitness(b) ? a : b :: (String, String) :> String
+-- Pick the fitter of two individuals using match
+let fitter = (a, b) -> :: (String, String) :> String
+  match fitness(a) > fitness(b)
+    | true -> a
+    | b
 
 -- Tournament selection: pick best from k random candidates
--- Uses iterations with spread pipe for candidate generation
 let tournamentSelect = (population, k) -> :: (List, Int) :> String
   let pickRandom = (_) -> randomChoice(population)
   let candidates = iterations(k) />>> pickRandom
@@ -51,32 +53,31 @@ let selectParent = (population) -> tournamentSelect(population, 3) :: List :> St
 <> -- Genetic Operators
 
 -- Single-point crossover: combine two parents
--- Slices at random point and combines halves
 let crossover = (parent1, parent2) -> :: (String, String) :> String
   let point = randomInt(1, length(TARGET))
   let p1Chars = chars(parent1)
   let p2Chars = chars(parent2)
-  concat(slice(p1Chars, 0, point), slice(p2Chars, point)) /> join("")
+  [...slice(p1Chars, 0, point), ...slice(p2Chars, point)] /> join("")
 
 -- Maybe mutate a character based on mutation rate
 let maybeMutate = (c) -> random() < MUTATION_RATE ? randomChar(0) : c :: String :> String
 
 -- Mutate an individual: randomly change characters
--- Uses pipeline pattern for character transformation
 let mutate = (individual) -> :: String :> String
   chars(individual) />>> maybeMutate /> join("")
 
+-- Create offspring pipeline
+let breedPipeline = /> mutate
+
 -- Create single offspring from two parents
--- Combines crossover and mutation in a pipeline
 let breed = (parent1, parent2) -> :: (String, String) :> String
-  crossover(parent1, parent2) /> mutate
+  crossover(parent1, parent2) /> breedPipeline
 
 </>
 
 <> -- Population Management
 
 -- Create initial random population
--- Uses iterations with spread pipe for clean generation
 let createPopulation = () ->
   iterations(POPULATION_SIZE) />>> randomIndividual
 
@@ -91,12 +92,11 @@ let createChild = (population) -> :: List :> String
   breed(p1, p2)
 
 -- Create next generation with elitism (best individual preserved)
--- Uses iterations with spread pipe for child generation
 let evolveGeneration = (population) -> :: List :> List
   let elite = bestIndividual(population)
   let breedOne = (_) -> createChild(population)
   let children = iterations(POPULATION_SIZE - 1) />>> breedOne
-  push(children, elite)
+  [...children, elite]
 
 </>
 
@@ -104,29 +104,49 @@ let evolveGeneration = (population) -> :: List :> List
 
 -- Log progress every 10 generations
 let logProgress = (gen, best, bestFit) ->
-  gen % 10 == 0 ? `Gen {gen}: "{best}" (fitness: {bestFit}/{length(TARGET)})` /> print : 0
+  gen % 10 == 0
+    ? `Gen {gen}: "{best}" (fitness: {bestFit}/{length(TARGET)})` /> print
+    : 0
 
--- Single evolution step (returns {population, best, done, generation})
-let step = (state) ->
-  let pop = state.population
-  let gen = state.generation
-  let best = bestIndividual(pop)
-  let bestFit = fitness(best)
-  let done = best == TARGET
-  let maxed = gen >= GENERATIONS
-  logProgress(gen, best, bestFit)
-  done ? `Found target "{TARGET}" in generation {gen}!` /> print : 0
-  maxed ? `Max generations. Best: "{best}"` /> print : 0
+-- Handle found target state
+let handleFoundTarget = (state, generation, best) ->
+  `Found target "{TARGET}" in generation {generation}!` /> print
+  { ...state, done: true, best: best }
+
+-- Handle max generations state
+let handleMaxedOut = (state, best) ->
+  `Max generations. Best: "{best}"` /> print
+  { ...state, done: true, best: best }
+
+-- Handle continue evolution state
+let handleContinue = (state, population, generation, best) ->
   {
-    population: done ? pop : (maxed ? pop : evolveGeneration(pop)),
-    generation: gen + 1,
+    ...state,
+    population: evolveGeneration(population),
+    generation: generation + 1,
     best: best,
-    done: done ? true : maxed,
   }
 
+-- Determine next state
+-- Uses record destructuring and spread operator
+let nextState = (state, best, bestFit) ->
+  let { population, generation } = state
+  let foundTarget = best == TARGET
+  let maxedOut = generation >= GENERATIONS
+  foundTarget ? handleFoundTarget(state, generation, best) : maxedOut ? handleMaxedOut(state, best) : handleContinue(state, population, generation, best)
+
+-- Single evolution step
+let step = (state) ->
+  let { population, generation } = state
+  let best = bestIndividual(population)
+  let bestFit = fitness(best)
+  logProgress(generation, best, bestFit)
+  nextState(state, best, bestFit)
+
 -- Run evolution loop (tail recursive)
-let runLoop = (state) ->
-  state.done ? state.best : runLoop(step(state))
+let runLoop = (state) -> match state.done
+  | true -> state.best
+  | runLoop(step(state))
 
 -- Main entry point
 let runGA = () ->
@@ -134,12 +154,14 @@ let runGA = () ->
   `Target: "{TARGET}"` /> print
   `Population: {POPULATION_SIZE}, Mutation Rate: {MUTATION_RATE}` /> print
   "" /> print
+
   let initialState = {
     population: createPopulation(),
     generation: 0,
     best: "",
     done: false,
   }
+
   let result = runLoop(step(initialState))
   "" /> print
   `Final result: "{result}"` /> print

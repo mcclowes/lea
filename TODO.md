@@ -12,6 +12,7 @@
 - [x] Pattern matching
 - [x] Record improvements (destructuring + spread operator added)
 - [x] Split the interpreter up into smaller files
+- [ ] code blocks - <> </> - this syntax is ambiguous with the bidirectional pipe syntax
 
 ## Partitions
 

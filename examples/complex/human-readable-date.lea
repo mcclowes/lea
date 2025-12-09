@@ -2,7 +2,7 @@
 -- https://www.codewars.com/kata/52742f58faf5485cae000b9a
 --
 -- Formats a duration in seconds as a human-friendly string.
--- Uses Pipeline datatype for composable, reusable transformations.
+-- Demonstrates: match expressions, destructuring, pipelines, spread pipe
 --
 -- Examples:
 --   0 -> "now"
@@ -15,25 +15,21 @@ let DAY = 24 * 60 * 60
 let HOUR = 60 * 60
 let MINUTE = 60
 
--- ==========================================
--- Helper functions
--- ==========================================
+<> -- Helper Functions
 
 -- Pluralize a unit name based on count
 let pluralize = (count, singular) ->
   count == 1 ? singular : singular ++ "s"
 
 -- Format a single component tuple (count, unit) -> "2 hours"
-let formatComponent = (c) ->
-  fst(c) /> toString ++ " " ++ pluralize(fst(c), snd(c))
+-- Uses tuple destructuring
+let formatComponent = (component) ->
+  let (count, unit) = component
+  `{count} {pluralize(count, unit)}`
 
--- Join parts with commas and "and" for last item
-let commas = (commaPart) -> 
-  `{commaPart} and {parts /> at(len - 1)}`
+</>
 
--- ==========================================
--- Pipeline stages for duration processing
--- ==========================================
+<> -- Core Logic
 
 -- Extract time components from seconds into tuple list
 let extractComponents = (seconds) ->
@@ -54,58 +50,61 @@ let extractComponents = (seconds) ->
   ]
 
 -- Filter to only non-zero components
-let filterNonZero = (components) -> components /> filter((c) -> fst(c) > 0)
+let filterNonZero = (components) ->
+  components /> filter((c) -> fst(c) > 0)
 
--- Format each component to string
-let formatAll = (components) -> components /> map(formatComponent)
+-- Format each component to string using spread pipe
+let formatAll = (components) ->
+  components />>> formatComponent
 
--- Join with commas and "and" for last item
-let joinParts = (parts) -> parts
-  /> length
-  /> match
+-- Join parts with proper English formatting
+-- Uses match expression for clean branching
+let joinParts = (parts) ->
+  let len = length(parts)
+  match len
     | 0 -> "now"
-    | 1 -> parts[0]
-    | 2 -> parts[0] ++ " and " ++ head(tail(parts))
-    | parts /> take(len - 1) /> reduce("", (acc, p) -> acc == "" ? p : acc ++ ", " ++ p) /> commas
+    | 1 -> head(parts)
+    | 2 -> parts[0] ++ " and " ++ parts[1]
+    | join(take(parts, len - 1), ", ") ++ " and " ++ parts[len - 1]
 
--- ==========================================
--- Compose the main pipeline
--- ==========================================
+</>
+
+<> -- Pipeline Composition
 
 -- The core transformation pipeline
 let durationPipeline = /> extractComponents /> filterNonZero /> formatAll /> joinParts
 
 -- Main function with zero-check
-let formatDuration = (seconds) ->
-  seconds == 0
-    ? "now"
-    : seconds /> durationPipeline
+let formatDuration = (seconds) -> match seconds
+  | 0 -> "now"
+  | seconds /> durationPipeline
 
--- ==========================================
--- Pipeline introspection
--- ==========================================
+</>
+
+<> -- Pipeline Introspection
 
 "=== Duration Pipeline ===" /> print
-"Stages:" /> print
-durationPipeline.stages /> print
-"Stage count:" /> print
-durationPipeline.length /> print
+`Stages: {durationPipeline.stages}` /> print
+`Stage count: {durationPipeline.length}` /> print
 
--- ==========================================
--- Test cases
--- ==========================================
+</>
+
+<> -- Test Cases
 
 "=== Test Cases ===" /> print
-0 /> formatDuration /> print
-1 /> formatDuration /> print
-62 /> formatDuration /> print
-120 /> formatDuration /> print
-3662 /> formatDuration /> print
-15731080 /> formatDuration /> print
 
--- ==========================================
--- Pipeline visualization
--- ==========================================
+let testCases = [0, 1, 62, 120, 3662, 15731080]
 
+-- Test each case and show result
+testCases />>> (seconds) ->
+  `{seconds}s -> "{formatDuration(seconds)}"` /> print
+
+</>
+
+<> -- Pipeline Visualization
+
+"" /> print
 "=== Pipeline Visualization ===" /> print
 durationPipeline.visualize()
+
+</>
