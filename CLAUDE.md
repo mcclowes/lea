@@ -10,6 +10,20 @@ After modifying or adding functionality, always update:
 3. **Tests** — Add/update unit tests in `__tests__/` and integration tests in `tests/`
 4. **Syntax highlighting** - Update the syntax highlighting vscode extension to support this functionality appropriately
 
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| `docs/GETTING-STARTED.md` | Beginner-friendly tutorial and setup guide |
+| `docs/CHEATSHEET.md` | Quick reference for syntax and builtins |
+| `docs/FAQ.md` | Common questions and pitfalls |
+| `docs/LEA-FOR-JAVASCRIPT-DEVELOPERS.md` | Guide for JS developers |
+| `docs/LEA-FOR-PYTHON-DEVELOPERS.md` | Guide for Python developers |
+| `docs/SYNTAX.md` | Detailed syntax reference |
+| `docs/BUILTINS.md` | Built-in functions reference |
+| `docs/PIPELINES.md` | First-class pipelines documentation |
+| `docs/CONCURRENCY.md` | Async and concurrency guide |
+
 ## Syntax
 
 ```
@@ -622,8 +636,13 @@ Callback receives `(element, index)` as arguments, similar to map/filter/reduce.
 ```bash
 npm run repl              # Interactive REPL
 npm run repl -- --strict  # REPL with strict type checking
+npm run repl -- --tutorial  # Start interactive tutorial
 npm run lea file.lea      # Run a file
 npm run lea file.lea --strict  # Run with strict type checking
+npm run lea:init          # Initialize new project (interactive)
+npm run lea:init my-project  # Create project in new directory
+npm run lea:init --template minimal  # Use minimal template
+npm run lea:init --list   # List available templates
 npm run visualize -- file.lea           # Output Mermaid markdown
 npm run visualize -- file.lea --html    # Output HTML with diagram
 npm run visualize -- file.lea -o out.html  # Write to file
@@ -633,6 +652,43 @@ npm run format -- file.lea -w           # Format file in place
 npm run format -- dir/ -w               # Format all .lea files in directory
 npm run format -- file.lea --check      # Check if file is formatted
 ```
+
+## REPL Commands
+
+The interactive REPL provides extensive help and learning features:
+
+```bash
+.help              # Show main help
+.help <topic>      # Topic help: pipes, functions, lists, decorators,
+                   # types, async, patterns, contexts, pipelines
+.examples          # Show example snippets
+.example <n>       # Run example number n
+.type <expr>       # Show the type of an expression
+.bindings          # List current variable bindings
+.multiline         # Toggle multi-line input mode
+.tutorial          # Start interactive tutorial
+.clear             # Clear the screen
+.reset             # Reset interpreter state
+.exit              # Exit the REPL
+```
+
+Features:
+- **Tab completion** for keywords and builtins
+- **Command history** (up/down arrows)
+- **Multi-line input** mode for complex expressions
+- **Interactive tutorial** for learning Lea step-by-step
+- **Helpful error messages** with suggestions and "did you mean?" hints
+
+## Project Templates
+
+Initialize new projects with `npm run lea:init`:
+
+| Template | Description |
+|----------|-------------|
+| `default` | Standard project with examples and tests |
+| `minimal` | Just main.lea |
+| `data-processing` | Pipelines and data transformation |
+| `async` | Async operations and API calls |
 
 ## Testing
 

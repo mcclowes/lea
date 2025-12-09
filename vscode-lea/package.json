@@ -46,6 +46,12 @@
         }
       }
     ],
+    "snippets": [
+      {
+        "language": "lea",
+        "path": "./snippets/lea.json"
+      }
+    ],
     "grammars": [
       {
         "language": "lea",

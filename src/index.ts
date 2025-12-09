@@ -2,6 +2,7 @@ import * as fs from "fs";
 import { Lexer, LexerError } from "./lexer";
 import { Parser, ParseError } from "./parser";
 import { Interpreter, RuntimeError } from "./interpreter";
+import { formatError } from "./errors";
 
 async function run(source: string, filename: string, cliStrict: boolean = false): Promise<void> {
   const lexer = new Lexer(source);
@@ -47,7 +48,7 @@ async function main(): Promise<void> {
     await run(source, filename, strictFlag);
   } catch (err) {
     if (err instanceof LexerError || err instanceof ParseError || err instanceof RuntimeError) {
-      console.error(`Error: ${err.message}`);
+      console.error(formatError(err));
       process.exit(1);
     }
     throw err;
