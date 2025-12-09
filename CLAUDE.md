@@ -95,10 +95,10 @@ let process = (x) ->
   let z = y + 1
   z
 
--- Early return (<-)
+-- Early return (return keyword)
 let clamp = (x) ->
   let doubled = x * 2
-  doubled > 100 ? <- 100 : 0
+  doubled > 100 ? return 100 : 0
   doubled + 1
 
 -- Records and member access
@@ -319,8 +319,8 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 
 ```
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
-LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF
-PIPE (/>), SPREAD_PIPE (/>>>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
+LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF, RETURN
+PIPE (/>), SPREAD_PIPE (/>>>), PARALLEL_PIPE (\>), ARROW (->), REVERSE_ARROW (<-)
 REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), REACTIVE_PIPE (@>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
@@ -340,7 +340,7 @@ NEWLINE, EOF
 - ListExpr, IndexExpr, PlaceholderExpr, TupleExpr
 - RecordExpr, MemberExpr, AwaitExpr
 - BlockBody (multi-statement function body)
-- ReturnExpr (early return with <-)
+- ReturnExpr (early return with return keyword)
 - PipelineLiteral (stages: list of expressions, decorators)
 - ReversePipeExpr (left: value, right: pipeline/function)
 - BidirectionalPipelineLiteral (stages: list of expressions, decorators)

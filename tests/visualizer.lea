@@ -75,7 +75,7 @@ let step3 = step2 /> square
 -- Test 13: Early return in function
 let clamp = (x) ->
   let doubled = x * 2
-  doubled > 100 ? <- 100 : 0
+  doubled > 100 ? return 100 : 0
   doubled
 
 let earlyReturn = 75 /> clamp

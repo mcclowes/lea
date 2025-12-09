@@ -704,7 +704,7 @@ export class Formatter {
 
   private formatReturnExpr(expr: ReturnExpr, ctx: FormatContext): string {
     const value = this.formatExpr(expr.value, ctx);
-    return `<- ${value}`;
+    return `return ${value}`;
   }
 
   private formatTupleExpr(expr: TupleExpr, ctx: FormatContext): string {

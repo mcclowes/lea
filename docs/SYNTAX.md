@@ -218,10 +218,12 @@ add("a", "b")       -- "ab" (String version)
 
 ### Early Return
 
+Use the `return` keyword for early return from functions:
+
 ```lea
 let clamp = (x) ->
   let doubled = x * 2
-  doubled > 100 ? <- 100 : 0
+  doubled > 100 ? return 100 : 0
   doubled + 1
 ```
 
@@ -277,7 +279,7 @@ let double = (x) -> match x
 
 ## Pipes
 
-### Basic Pipe `/>
+### Basic Pipe `/>`
 
 ```lea
 16 /> sqrt                  -- sqrt(16) = 4

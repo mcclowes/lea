@@ -12,6 +12,7 @@
 - [x] Make codeblocks appear the same colours as comments in syntax highlighting
 - [x] \`\`\`lea syntax highlighting in markdown
 - [ ] Leveraging Lea functionality within TypeScript?
+- [ ] Ambiguity with ignored and templated params? - Ignored Parameters - let ignoreSecond = (x, _) -> x
 
 ## Feature Ideas
 

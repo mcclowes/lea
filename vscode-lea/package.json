@@ -83,13 +83,6 @@
             }
           },
           {
-            "scope": "keyword.control.return.lea",
-            "settings": {
-              "foreground": "#C586C0",
-              "fontStyle": "bold"
-            }
-          },
-          {
             "scope": "keyword.operator.parallel-pipe.lea",
             "settings": {
               "foreground": "#DCDCAA"

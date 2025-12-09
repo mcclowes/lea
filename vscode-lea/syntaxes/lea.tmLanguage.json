@@ -113,7 +113,7 @@
       "patterns": [
         {
           "name": "keyword.control.lea",
-          "match": "\\b(let|and|maybe|await|context|provide|decorator|match|if)\\b"
+          "match": "\\b(let|and|maybe|await|context|provide|decorator|match|if|return)\\b"
         },
         {
           "name": "storage.type.lea",
@@ -191,8 +191,8 @@
           "match": "->"
         },
         {
-          "comment": "Early return / reverse function arrow - control flow color",
-          "name": "keyword.control.return.lea",
+          "comment": "Reverse function arrow - for (x) <- expr definitions",
+          "name": "keyword.operator.reverse-arrow.lea",
           "match": "<-"
         },
         {

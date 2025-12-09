@@ -17,13 +17,13 @@ export enum TokenType {
   DECORATOR = "DECORATOR",
   MATCH = "MATCH",
   IF = "IF",
+  RETURN = "RETURN",       // return keyword for early return
 
   // Operators
   PIPE = "PIPE",           // />
   SPREAD_PIPE = "SPREAD_PIPE", // />>>
   PARALLEL_PIPE = "PARALLEL_PIPE", // \>
   ARROW = "ARROW",         // ->
-  RETURN = "RETURN",       // <-
   PLUS = "PLUS",           // +
   MINUS = "MINUS",         // -
   STAR = "STAR",           // *
@@ -100,6 +100,7 @@ export const KEYWORDS: Record<string, TokenType> = Object.create(null, {
   decorator: { value: TokenType.DECORATOR, enumerable: true },
   match: { value: TokenType.MATCH, enumerable: true },
   if: { value: TokenType.IF, enumerable: true },
+  return: { value: TokenType.RETURN, enumerable: true },
 });
 
 export const createToken = (

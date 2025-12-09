@@ -144,7 +144,8 @@ export class Lexer {
             this.addToken(TokenType.REVERSE_PIPE);
           }
         } else if (this.match("-")) {
-          this.addToken(TokenType.RETURN);
+          // <- is only for reverse function definitions, not early return
+          this.addToken(TokenType.REVERSE_ARROW);
         } else if (this.match("=")) {
           this.addToken(TokenType.LTE);
         } else {

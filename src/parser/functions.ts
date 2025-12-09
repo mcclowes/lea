@@ -33,7 +33,7 @@ export function parseGroupingOrFunction(ctx: ParserContext): Expr {
       return functionExpr([], body, undefined, decorators, attachments, typeSignature, false);
     }
     // Check for reverse function: () <-
-    if (ctx.match(TokenType.RETURN)) {
+    if (ctx.match(TokenType.REVERSE_ARROW)) {
       const { attachments, body, typeSignature } = parseFunctionBody(ctx);
       const decorators = parseDecorators(ctx);
       return functionExpr([], body, undefined, decorators, attachments, typeSignature, true);
@@ -60,7 +60,7 @@ export function parseGroupingOrFunction(ctx: ParserContext): Expr {
     }
 
     // Check for reverse function: (params) <-
-    if (ctx.match(TokenType.RETURN)) {
+    if (ctx.match(TokenType.REVERSE_ARROW)) {
       const { attachments, body, typeSignature } = parseFunctionBody(ctx);
       const decorators = parseDecorators(ctx);
       return functionExpr(params, body, returnType, decorators, attachments, typeSignature, true);
@@ -112,7 +112,7 @@ export function looksLikeFunctionParams(ctx: ParserContext): boolean {
       }
     }
     // Check for either forward (->) or reverse (<-) function arrow
-    const isFunction = ctx.check(TokenType.ARROW) || ctx.check(TokenType.RETURN);
+    const isFunction = ctx.check(TokenType.ARROW) || ctx.check(TokenType.REVERSE_ARROW);
     ctx.setCurrent(saved);
     return isFunction;
   }

@@ -80,8 +80,8 @@ result /> print
 
 -- Early return
 let clamp = (x) ->
-  x > 100 ? <- 100 : 0
-  x < 0 ? <- 0 : 0
+  x > 100 ? return 100 : 0
+  x < 0 ? return 0 : 0
   x
 clamp(150) /> print
 clamp(-5) /> print
