@@ -4,6 +4,8 @@
  * This module contains all the built-in functions available in Lea.
  */
 
+import * as fs from "fs/promises";
+import * as path from "path";
 import {
   LeaValue,
   LeaPromise,
@@ -18,6 +20,7 @@ import {
   isTruthy,
   stringify,
   isLeaPromise,
+  isRecord,
   unwrapPromise,
   wrapPromise,
 } from "./helpers";
@@ -668,4 +671,199 @@ export const builtins: Record<string, BuiltinFn> = {
     // If not a promise, just apply the function
     return fn([promise]);
   },
+
+  // ===== I/O Builtins =====
+
+  // File operations
+  readFile: (args: LeaValue[]) => {
+    const filePath = args[0];
+    if (typeof filePath !== "string") {
+      throw new RuntimeError("readFile requires a string path");
+    }
+    return wrapPromise(
+      fs.readFile(filePath, "utf-8").catch((err) => {
+        throw new RuntimeError(`readFile failed: ${err.message}`);
+      })
+    );
+  },
+
+  writeFile: (args: LeaValue[]) => {
+    const filePath = args[0];
+    const content = args[1];
+    if (typeof filePath !== "string") {
+      throw new RuntimeError("writeFile requires a string path");
+    }
+    if (typeof content !== "string") {
+      throw new RuntimeError("writeFile requires string content");
+    }
+    return wrapPromise(
+      fs.writeFile(filePath, content, "utf-8").then(() => true).catch((err) => {
+        throw new RuntimeError(`writeFile failed: ${err.message}`);
+      })
+    );
+  },
+
+  appendFile: (args: LeaValue[]) => {
+    const filePath = args[0];
+    const content = args[1];
+    if (typeof filePath !== "string") {
+      throw new RuntimeError("appendFile requires a string path");
+    }
+    if (typeof content !== "string") {
+      throw new RuntimeError("appendFile requires string content");
+    }
+    return wrapPromise(
+      fs.appendFile(filePath, content, "utf-8").then(() => true).catch((err) => {
+        throw new RuntimeError(`appendFile failed: ${err.message}`);
+      })
+    );
+  },
+
+  fileExists: (args: LeaValue[]) => {
+    const filePath = args[0];
+    if (typeof filePath !== "string") {
+      throw new RuntimeError("fileExists requires a string path");
+    }
+    return wrapPromise(
+      fs.access(filePath).then(() => true).catch(() => false)
+    );
+  },
+
+  deleteFile: (args: LeaValue[]) => {
+    const filePath = args[0];
+    if (typeof filePath !== "string") {
+      throw new RuntimeError("deleteFile requires a string path");
+    }
+    return wrapPromise(
+      fs.unlink(filePath).then(() => true).catch((err) => {
+        throw new RuntimeError(`deleteFile failed: ${err.message}`);
+      })
+    );
+  },
+
+  readDir: (args: LeaValue[]) => {
+    const dirPath = args[0];
+    if (typeof dirPath !== "string") {
+      throw new RuntimeError("readDir requires a string path");
+    }
+    return wrapPromise(
+      fs.readdir(dirPath).catch((err) => {
+        throw new RuntimeError(`readDir failed: ${err.message}`);
+      })
+    );
+  },
+
+  // HTTP operations
+  fetch: (args: LeaValue[]) => {
+    const url = args[0];
+    const options = args[1];
+
+    if (typeof url !== "string") {
+      throw new RuntimeError("fetch requires a string URL");
+    }
+
+    // Build fetch options from Lea record
+    const fetchOptions: RequestInit = {};
+
+    if (options && isRecord(options)) {
+      const record = options as LeaRecord;
+
+      // Method
+      const method = record.fields.get("method");
+      if (method !== undefined) {
+        if (typeof method !== "string") {
+          throw new RuntimeError("fetch method must be a string");
+        }
+        fetchOptions.method = method;
+      }
+
+      // Headers
+      const headers = record.fields.get("headers");
+      if (headers !== undefined) {
+        if (!isRecord(headers)) {
+          throw new RuntimeError("fetch headers must be a record");
+        }
+        const headerObj: Record<string, string> = {};
+        for (const [key, value] of (headers as LeaRecord).fields) {
+          headerObj[key] = String(value);
+        }
+        fetchOptions.headers = headerObj;
+      }
+
+      // Body
+      const body = record.fields.get("body");
+      if (body !== undefined) {
+        if (typeof body === "string") {
+          fetchOptions.body = body;
+        } else if (isRecord(body)) {
+          // JSON-encode record bodies
+          const obj: Record<string, LeaValue> = {};
+          for (const [key, value] of (body as LeaRecord).fields) {
+            obj[key] = value;
+          }
+          fetchOptions.body = JSON.stringify(obj);
+        } else {
+          fetchOptions.body = stringify(body);
+        }
+      }
+    }
+
+    return wrapPromise(
+      (async () => {
+        try {
+          const response = await globalThis.fetch(url, fetchOptions);
+          const contentType = response.headers.get("content-type") || "";
+
+          // Build response record
+          const fields = new Map<string, LeaValue>();
+          fields.set("status", response.status);
+          fields.set("ok", response.ok);
+          fields.set("statusText", response.statusText);
+
+          // Parse body based on content type
+          if (contentType.includes("application/json")) {
+            try {
+              const json = await response.json();
+              fields.set("body", convertJsonToLea(json));
+            } catch {
+              fields.set("body", await response.text());
+            }
+          } else {
+            fields.set("body", await response.text());
+          }
+
+          // Headers as record
+          const headerFields = new Map<string, LeaValue>();
+          response.headers.forEach((value, key) => {
+            headerFields.set(key, value);
+          });
+          fields.set("headers", { kind: "record", fields: headerFields } as LeaRecord);
+
+          return { kind: "record", fields } as LeaRecord;
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          throw new RuntimeError(`fetch failed: ${message}`);
+        }
+      })()
+    );
+  },
 };
+
+// Helper to convert JSON values to Lea values
+function convertJsonToLea(json: unknown): LeaValue {
+  if (json === null) return null;
+  if (typeof json === "number") return json;
+  if (typeof json === "string") return json;
+  if (typeof json === "boolean") return json;
+  if (Array.isArray(json)) {
+    return json.map(convertJsonToLea);
+  }
+  if (typeof json === "object") {
+    const fields = new Map<string, LeaValue>();
+    for (const [key, value] of Object.entries(json as Record<string, unknown>)) {
+      fields.set(key, convertJsonToLea(value));
+    }
+    return { kind: "record", fields } as LeaRecord;
+  }
+  return null;
+}
