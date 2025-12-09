@@ -452,6 +452,33 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 **ASCII Diagram Parser:**
 - `breakPieces(shape)` — parse ASCII diagram into minimal closed pieces
 
+**I/O Builtins:**
+- `readFile(path)` — async read file contents as string
+- `writeFile(path, content)` — async write string to file, returns true on success
+- `appendFile(path, content)` — async append string to file, returns true on success
+- `fileExists(path)` — async check if file exists, returns boolean
+- `deleteFile(path)` — async delete file, returns true on success
+- `readDir(path)` — async read directory, returns list of filenames
+- `fetch(url, options?)` — async HTTP request, returns response record
+
+**fetch options and response:**
+```
+-- Simple GET
+let response = await fetch("https://api.example.com/data")
+response.status      -- HTTP status code (e.g. 200)
+response.ok          -- true if status 200-299
+response.statusText  -- status message
+response.body        -- response body (parsed as JSON if content-type is application/json)
+response.headers     -- headers as record
+
+-- POST with options
+let response = await fetch("https://api.example.com/data", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: { name: "Max", age: 99 }
+})
+```
+
 **Parallel Pipe Operator:**
 ```
 value \> fn1 \> fn2 /> combine

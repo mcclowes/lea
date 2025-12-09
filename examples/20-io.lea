@@ -1,0 +1,73 @@
+-- I/O Primitives Example
+-- Demonstrates file operations and HTTP fetch
+
+-- ===== File Operations =====
+
+-- Write a file
+let writeResult = await writeFile("test-output.txt", "Hello, Lea!")
+print(writeResult)  -- true
+
+-- Read the file back
+let content = await readFile("test-output.txt")
+print(content)  -- "Hello, Lea!"
+
+-- Append to file
+let appendResult = await appendFile("test-output.txt", "\nSecond line")
+print(appendResult)  -- true
+
+-- Read updated content
+let updated = await readFile("test-output.txt")
+print(updated)  -- "Hello, Lea!\nSecond line"
+
+-- Check if file exists
+let exists = await fileExists("test-output.txt")
+print(exists)  -- true
+
+let notExists = await fileExists("nonexistent.txt")
+print(notExists)  -- false
+
+-- Read directory
+let files = await readDir(".")
+print(files)  -- list of files in current directory
+
+-- Delete test file
+let deleteResult = await deleteFile("test-output.txt")
+print(deleteResult)  -- true
+
+-- Verify deletion
+let afterDelete = await fileExists("test-output.txt")
+print(afterDelete)  -- false
+
+-- ===== HTTP Fetch =====
+
+-- Simple GET request (using httpbin for testing)
+-- Note: Requires network access
+-- let response = await fetch("https://httpbin.org/get")
+-- print(response.status)   -- 200
+-- print(response.ok)       -- true
+-- print(response.body)     -- response body as record
+
+-- POST request with JSON body
+-- let postResponse = await fetch("https://httpbin.org/post", {
+--   method: "POST",
+--   headers: { "Content-Type": "application/json" },
+--   body: { name: "Max", score: 99 }
+-- })
+-- print(postResponse.status)  -- 200
+-- print(postResponse.body)    -- echoes back the posted data
+
+-- ===== Practical Example: JSON Config =====
+
+-- Write a config file
+let config = { host: "localhost", port: 8080, debug: true }
+let configJson = "[" ++ config.host ++ ":" ++ config.port ++ "]"
+await writeFile("config.txt", configJson)
+
+-- Read and display config
+let savedConfig = await readFile("config.txt")
+print("Saved config: " ++ savedConfig)
+
+-- Cleanup
+await deleteFile("config.txt")
+
+print("I/O example complete!")

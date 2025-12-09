@@ -1,0 +1,39 @@
+-- Test I/O builtins
+
+-- Test writeFile
+let writeResult = await writeFile("test-io-temp.txt", "Hello Lea!")
+print(writeResult == true ? "writeFile: PASS" : "writeFile: FAIL")
+
+-- Test readFile
+let content = await readFile("test-io-temp.txt")
+print(content == "Hello Lea!" ? "readFile: PASS" : "readFile: FAIL")
+
+-- Test appendFile
+let appendResult = await appendFile("test-io-temp.txt", " More text.")
+print(appendResult == true ? "appendFile: PASS" : "appendFile: FAIL")
+
+-- Verify append
+let appended = await readFile("test-io-temp.txt")
+print(appended == "Hello Lea! More text." ? "appendFile content: PASS" : "appendFile content: FAIL")
+
+-- Test fileExists (true case)
+let exists = await fileExists("test-io-temp.txt")
+print(exists == true ? "fileExists (true): PASS" : "fileExists (true): FAIL")
+
+-- Test fileExists (false case)
+let notExists = await fileExists("nonexistent-file-12345.txt")
+print(notExists == false ? "fileExists (false): PASS" : "fileExists (false): FAIL")
+
+-- Test readDir
+let files = await readDir(".")
+print(length(files) > 0 ? "readDir: PASS" : "readDir: FAIL")
+
+-- Test deleteFile
+let deleteResult = await deleteFile("test-io-temp.txt")
+print(deleteResult == true ? "deleteFile: PASS" : "deleteFile: FAIL")
+
+-- Verify deletion
+let afterDelete = await fileExists("test-io-temp.txt")
+print(afterDelete == false ? "deleteFile verified: PASS" : "deleteFile verified: FAIL")
+
+print("I/O tests complete!")
