@@ -113,7 +113,7 @@
       "patterns": [
         {
           "name": "keyword.control.lea",
-          "match": "\\b(let|maybe|await|context|provide|decorator|match|if)\\b"
+          "match": "\\b(let|and|maybe|await|context|provide|decorator|match|if)\\b"
         },
         {
           "name": "storage.type.lea",
@@ -169,7 +169,7 @@
         {
           "comment": "Spread pipe operator - maps function over list elements",
           "name": "keyword.operator.spread-pipe.lea",
-          "match": "/>>"
+          "match": "/>>>"
         },
         {
           "name": "keyword.operator.pipe.lea",
@@ -233,7 +233,7 @@
       "patterns": [
         {
           "name": "support.function.builtin.lea",
-          "match": "\\b(print|sqrt|abs|floor|ceil|round|min|max|length|head|tail|push|concat|reverse|zip|isEmpty|fst|snd|take|at|toString|map|filter|reduce|partition|range|iterations|delay|parallel|race|then|split|lines|charAt|join|padEnd|padStart|trim|trimEnd|indexOf|includes|repeat|slice|chars|listSet|setAdd|setHas|breakPieces)\\b"
+          "match": "\\b(print|sqrt|abs|floor|ceil|round|min|max|length|head|tail|push|concat|reverse|zip|isEmpty|fst|snd|take|at|toString|map|filter|reduce|partition|range|iterations|delay|parallel|race|then|split|lines|charAt|join|padEnd|padStart|trim|trimEnd|indexOf|includes|repeat|slice|chars|listSet|setAdd|setHas|breakPieces|random|randomInt|randomFloat|randomChoice|shuffle)\\b"
         }
       ]
     },

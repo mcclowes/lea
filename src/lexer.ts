@@ -95,8 +95,8 @@ export class Lexer {
 
       case "/":
         if (this.match(">")) {
-          // Check for />> (spread pipe) vs /> (regular pipe)
-          if (this.match(">")) {
+          // Check for />>> (spread pipe) vs /> (regular pipe)
+          if (this.match(">") && this.match(">")) {
             this.addToken(TokenType.SPREAD_PIPE);
           } else {
             this.addToken(TokenType.PIPE);

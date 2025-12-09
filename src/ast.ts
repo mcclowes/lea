@@ -75,7 +75,7 @@ export interface PipeExpr {
 }
 
 // Spread pipe expression - maps a function/pipeline over each element of a list
-// Syntax: [1, 2, 3] />> fn OR parallelResult />> fn
+// Syntax: [1, 2, 3] />>> fn OR parallelResult />>> fn
 export interface SpreadPipeExpr {
   kind: "SpreadPipeExpr";
   left: Expr;   // The list or parallel result to spread
@@ -278,7 +278,7 @@ export interface TuplePattern {
 }
 
 // Statement types
-export type Stmt = LetStmt | ExprStmt | ContextDefStmt | ProvideStmt | DecoratorDefStmt | CodeblockStmt;
+export type Stmt = LetStmt | AndStmt | ExprStmt | ContextDefStmt | ProvideStmt | DecoratorDefStmt | CodeblockStmt;
 
 export interface LetStmt {
   kind: "LetStmt";
@@ -286,6 +286,14 @@ export interface LetStmt {
   mutable: boolean;
   value: Expr;
   pattern?: DestructurePattern;  // Optional destructuring pattern
+}
+
+// And statement - extends an existing function definition (overload or reverse)
+// Syntax: and name = expr
+export interface AndStmt {
+  kind: "AndStmt";
+  name: string;
+  value: Expr;
 }
 
 export interface ExprStmt {
@@ -483,6 +491,12 @@ export const letStmt = (name: string, mutable: boolean, value: Expr, pattern?: D
   mutable,
   value,
   pattern,
+});
+
+export const andStmt = (name: string, value: Expr): AndStmt => ({
+  kind: "AndStmt",
+  name,
+  value,
 });
 
 export const exprStmt = (expression: Expr): ExprStmt => ({

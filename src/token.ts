@@ -7,6 +7,7 @@ export enum TokenType {
 
   // Keywords
   LET = "LET",
+  AND = "AND",
   MAYBE = "MAYBE",
   TRUE = "TRUE",
   FALSE = "FALSE",
@@ -19,7 +20,7 @@ export enum TokenType {
 
   // Operators
   PIPE = "PIPE",           // />
-  SPREAD_PIPE = "SPREAD_PIPE", // />>
+  SPREAD_PIPE = "SPREAD_PIPE", // />>>
   PARALLEL_PIPE = "PARALLEL_PIPE", // \>
   ARROW = "ARROW",         // ->
   RETURN = "RETURN",       // <-
@@ -86,6 +87,7 @@ export interface Token {
 
 export const KEYWORDS: Record<string, TokenType> = Object.create(null, {
   let: { value: TokenType.LET, enumerable: true },
+  and: { value: TokenType.AND, enumerable: true },
   maybe: { value: TokenType.MAYBE, enumerable: true },
   true: { value: TokenType.TRUE, enumerable: true },
   false: { value: TokenType.FALSE, enumerable: true },

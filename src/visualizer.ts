@@ -10,6 +10,7 @@ import {
   Stmt,
   Expr,
   LetStmt,
+  AndStmt,
   ExprStmt,
   PipeExpr,
   ParallelPipeExpr,
@@ -908,6 +909,8 @@ export class ASTVisualizer {
     switch (stmt.kind) {
       case "LetStmt":
         return this.visualizeLetStmt(stmt);
+      case "AndStmt":
+        return this.visualizeAndStmt(stmt);
       case "ExprStmt":
         return this.visualizeExpr(stmt.expression);
       case "CodeblockStmt":
@@ -961,6 +964,55 @@ export class ASTVisualizer {
       const valueLabel = this.describeExpr(stmt.value);
       return {
         nodes: [{ id, label: `${mutLabel} ${stmt.name} = ${valueLabel}`, type: "binding" }],
+        edges: [],
+        subgraphs: [],
+        entryNode: id,
+        exitNode: id,
+      };
+    }
+  }
+
+  private visualizeAndStmt(stmt: AndStmt): VisualizationResult {
+    const nodes: MermaidNode[] = [];
+    const edges: MermaidEdge[] = [];
+    const subgraphs: MermaidSubgraph[] = [];
+
+    // Check if the value contains pipes (interesting to visualize)
+    const hasPipes = this.containsPipes(stmt.value);
+
+    if (hasPipes) {
+      // Create a subgraph for this binding
+      const valueResult = this.visualizeExpr(stmt.value);
+
+      const bindingId = this.genId("bind");
+      nodes.push({ id: bindingId, label: `and ${stmt.name}`, type: "binding" });
+
+      if (valueResult.exitNode) {
+        edges.push({ from: valueResult.exitNode, to: bindingId });
+      }
+
+      const subgraph: MermaidSubgraph = {
+        id: this.genId("and"),
+        label: stmt.name,
+        nodes: valueResult.nodes,
+        edges: valueResult.edges,
+        subgraphs: valueResult.subgraphs,
+      };
+      subgraphs.push(subgraph);
+
+      return {
+        nodes,
+        edges,
+        subgraphs,
+        entryNode: valueResult.entryNode,
+        exitNode: bindingId,
+      };
+    } else {
+      // Simple binding, just show as a single node
+      const id = this.genId("and");
+      const valueLabel = this.describeExpr(stmt.value);
+      return {
+        nodes: [{ id, label: `and ${stmt.name} = ${valueLabel}`, type: "binding" }],
         edges: [],
         subgraphs: [],
         entryNode: id,

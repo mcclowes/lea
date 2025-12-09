@@ -48,10 +48,10 @@ let sumList = (nums) -> reduce(nums, 0, (acc, x) -> acc + x) :: [Int] :> Int
 -- Underscore for ignored params
 let ignoreSecond = (x, _) -> x
 
--- Function overloading (multiple definitions with same name)
+-- Function overloading (use 'and' to extend with additional overloads)
 -- Resolution based on argument types at runtime
 let add = (a, b) -> a + b :: (Int, Int) :> Int
-let add = (a, b) -> a ++ b :: (String, String) :> String
+and add = (a, b) -> a ++ b :: (String, String) :> String
 add(1, 2)         -- calls Int version: 3
 add("a", "b")     -- calls String version: "ab"
 
@@ -127,6 +127,11 @@ await fetchData() /> print
 [1, 2, 3] /> filter((x) -> x > 1)
 [1, 2, 3] /> reduce(0, (acc, x) -> acc + x)
 
+-- Array index access (callbacks receive index as optional second argument)
+["a", "b", "c"] /> map((x, i) -> `{i}: {x}`)       -- ["0: a", "1: b", "2: c"]
+[10, 20, 30, 40] /> filter((_, i) -> i < 2)        -- [10, 20] (first 2 elements)
+["a", "b"] /> reduce("", (acc, x, i) -> acc ++ `{i}:{x} `)  -- "0:a 1:b "
+
 -- String concatenation (with automatic type coercion)
 "Hello" ++ " World"
 "The answer is " ++ 42       -- "The answer is 42"
@@ -170,16 +175,21 @@ value
 
 -- Spread pipe (map over elements)
 -- Applies function/pipeline to each element of a list
-[1, 2, 3] />> double              -- [2, 4, 6]
-[1, 2, 3] />> add(10)             -- [11, 12, 13]
-[1, 2, 3] />> print               -- prints 1, 2, 3 (returns [1, 2, 3])
+-- Callback receives (element, index) like map/filter/reduce
+[1, 2, 3] />>>double              -- [2, 4, 6]
+[1, 2, 3] />>>add(10)             -- [11, 12, 13]
+[1, 2, 3] />>>print               -- prints "1 0", "2 1", "3 2" (element and index)
+
+-- Spread pipe with index access
+["a", "b", "c"] />>>(x, i) -> `{i}: {x}`  -- ["0: a", "1: b", "2: c"]
+[10, 20, 30] />>>(x, i) -> x + i          -- [10, 21, 32]
 
 -- Spread pipe with parallel results
-5 \> addOne \> double />> print   -- prints each branch result individually
+5 \> addOne \> double />>>print   -- prints each branch result individually
 
 -- Spread pipe with pipelines
 let process = /> double /> addOne
-[1, 2, 3] />> process             -- [3, 5, 7]
+[1, 2, 3] />>>process             -- [3, 5, 7]
 
 -- Codeblocks (collapsible regions)
 <> -- Section name
@@ -210,9 +220,9 @@ let loggedPipeline = /> double /> addOne #log
 5 /> profiledPipeline  -- shows timing for each stage
 
 -- Reversible functions (bidirectional transforms)
--- Define forward with -> and reverse with <-
+-- Define forward with -> and use 'and' to add reverse with <-
 let double = (x) -> x * 2
-let double = (x) <- x / 2         -- adds reverse definition
+and double = (x) <- x / 2         -- adds reverse definition
 
 -- Apply forward or reverse
 5 /> double                        -- 10 (forward: 5 * 2)
@@ -261,13 +271,15 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `src/index.ts` — File runner entry point
 - `src/visualizer.ts` — AST to Mermaid flowchart generator
 - `src/visualize.ts` — CLI entry point for visualization
+- `src/formatter.ts` — Prettier-like code formatter
+- `src/format.ts` — CLI entry point for formatting
 
 ## Token Types
 
 ```
 NUMBER, STRING, TEMPLATE_STRING (`...{expr}...`), IDENTIFIER
-LET, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF
-PIPE (/>), SPREAD_PIPE (/>>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
+LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF
+PIPE (/>), SPREAD_PIPE (/>>>), PARALLEL_PIPE (\>), ARROW (->), RETURN (<-)
 REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ (=), EQEQ (==), NEQ (!=), LT, GT, LTE, GTE
@@ -296,6 +308,7 @@ NEWLINE, EOF
 
 **Statements:**
 - LetStmt (name, mutable, value)
+- AndStmt (name, value) — extends existing function with overload or reverse
 - ExprStmt (expression)
 - ContextDefStmt (name, defaultValue)
 - ProvideStmt (contextName, value)
@@ -308,7 +321,7 @@ NEWLINE, EOF
 3. Comparison (`<`, `>`, `<=`, `>=`)
 4. Term (`+`, `-`, `++`)
 5. Factor (`*`, `/`, `%`)
-6. Pipe (`/>`, `/>>`, `\>`, `</`)
+6. Pipe (`/>`, `/>>>`, `\>`, `</`)
 7. Unary (`-`)
 8. Call (function calls, indexing)
 9. Primary (literals, identifiers, grouping, functions)
@@ -351,14 +364,25 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 - `print` (returns first arg for chaining)
 - `sqrt`, `abs`, `floor`, `ceil`, `round`, `min`, `max`
 - `length`, `head`, `tail`, `push`, `concat`, `reverse`, `zip`, `isEmpty`
-- `map`, `filter`, `reduce`, `partition`, `range`, `iterations`
+- `map(list, fn)` — transform each element; callback receives `(element, index)`
+- `filter(list, fn)` — keep elements matching predicate; callback receives `(element, index)`
+- `reduce(list, initial, fn)` — fold into single value; callback receives `(acc, element, index)`
+- `partition`
+- `range`, `iterations`
 - `fst`, `snd` — first/second element of tuple or list
 - `take(list, n)`, `at(list, index)` — list access
 - `toString` — convert value to string
 - `delay(ms, value)` — returns promise that resolves after ms
-- `parallel(list, fn, opts?)` — concurrent map with optional `{ limit: n }`
+- `parallel(list, fn, opts?)` — concurrent map with optional `{ limit: n }`; callback receives `(element, index)`
 - `race(fns)` — returns first promise to resolve
 - `then(promise, fn)` — chain promise transformations
+
+**Random Builtins:**
+- `random()` — random float in [0, 1)
+- `randomInt(max)` or `randomInt(min, max)` — random integer in [0, max) or [min, max)
+- `randomFloat(max)` or `randomFloat(min, max)` — random float in [0, max) or [min, max)
+- `randomChoice(list)` — random element from list
+- `shuffle(list)` — return shuffled copy of list (Fisher-Yates)
 
 **String Builtins:**
 - `split(str, delimiter)` — split string into list
@@ -399,12 +423,15 @@ value
 
 **Spread Pipe Operator:**
 ```
-list />> fn
+list />>>fn
 ```
 Maps a function or pipeline over each element of a list or parallel result.
+Callback receives `(element, index)` as arguments, similar to map/filter/reduce.
 
-- `[1, 2, 3] />> double` returns `[2, 4, 6]` (maps double over each element)
-- `parallelResult />> print` applies print to each branch result individually
+- `[1, 2, 3] />>>double` returns `[2, 4, 6]` (maps double over each element)
+- `[1, 2, 3] />>>(x, i) -> x + i` returns `[1, 3, 5]` (element + index)
+- `["a", "b"] />>>(x, i) -> \`{i}: {x}\`` returns `["0: a", "1: b"]`
+- `parallelResult />>>print` applies print to each branch result individually
 - If the left side is not a list or parallel result, throws a RuntimeError
 - Returns an array of results from applying the function to each element
 - Async-aware: if any result is a promise, returns a promise that resolves to all results
@@ -415,7 +442,7 @@ Maps a function or pipeline over each element of a list or parallel result.
 - `@Name` — attach context to function (inject into scope)
 
 **Function Overloading:**
-- Define multiple functions with the same name but different type signatures
+- Use `and` to add additional overloads to an existing function
 - Functions must have type annotations (`::`) to participate in overloading
 - Resolution is based on argument types at call time
 - More specific type matches are preferred over generic ones
@@ -446,7 +473,7 @@ Maps a function or pipeline over each element of a list or parallel result.
 - Decorators can be attached: `let p = /> fn1 /> fn2 #debug #profile`
 
 **Reversible Functions:**
-- Define forward with `(x) -> expr` and reverse with `(x) <- expr`
+- Define forward with `(x) -> expr`, then use `and` to add reverse with `(x) <- expr`
 - When both are defined on same name, creates a `LeaReversibleFunction`
 - Forward: `value /> fn` calls the forward transformation
 - Reverse: `value </ fn` calls the reverse transformation
@@ -488,6 +515,47 @@ npm run visualize -- file.lea           # Output Mermaid markdown
 npm run visualize -- file.lea --html    # Output HTML with diagram
 npm run visualize -- file.lea -o out.html  # Write to file
 npm run visualize -- file.lea --tb      # Top-to-bottom layout
+npm run format -- file.lea              # Print formatted code to stdout
+npm run format -- file.lea -w           # Format file in place
+npm run format -- dir/ -w               # Format all .lea files in directory
+npm run format -- file.lea --check      # Check if file is formatted
+```
+
+## Formatting
+
+The formatter provides Prettier-like code formatting for Lea source files.
+
+### CLI Options
+
+```bash
+-w, --write           Format file(s) in place
+--check               Check if file(s) are formatted (exit with error if not)
+--indent <n>          Number of spaces for indentation (default: 2)
+--print-width <n>     Maximum line width (default: 80)
+--no-trailing-commas  Don't use trailing commas in multi-line lists/records
+-h, --help            Show help message
+```
+
+### Formatting Rules
+
+- **Indentation**: 2 spaces (configurable)
+- **Line width**: 80 characters (configurable)
+- **Trailing commas**: Added in multi-line lists and records
+- **Pipe chains**: Broken into multiple lines when exceeding print width
+- **Parentheses**: Automatically added where needed for operator precedence
+- **Records/Lists**: Multi-line when exceeding print width
+
+### Example
+
+```bash
+# Format a single file
+npm run format -- examples/01-basics.lea -w
+
+# Check formatting in CI
+npm run format -- src/ --check
+
+# Format with custom settings
+npm run format -- file.lea --indent 4 --print-width 100
 ```
 
 ## Visualization

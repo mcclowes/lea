@@ -1,0 +1,52 @@
+-- Test enhanced Pipeline.visualize() with colors, decorators, spread pipes, and parallel branches
+
+let double = (x) -> x * 2
+let triple = (x) -> x * 3
+let addOne = (x) -> x + 1
+let square = (x) -> x * x
+
+-- Test 1: Simple linear pipeline with named functions
+"Test 1: Linear pipeline with named functions (cyan color):" /> print
+let linearPipe = /> double /> triple /> addOne
+linearPipe.visualize()
+print("")
+
+-- Test 2: Pipeline with lambda expressions
+"Test 2: Pipeline with lambda (magenta color):" /> print
+let lambdaPipe = /> (x) -> x * 2 /> (x) -> x + 1
+lambdaPipe.visualize()
+print("")
+
+-- Test 3: Pipeline with function calls
+"Test 3: Pipeline with function calls (yellow color):" /> print
+let callPipe = /> map((x) -> x * 2) /> filter((x) -> x > 5)
+callPipe.visualize()
+print("")
+
+-- Test 4: Pipeline with decorators
+"Test 4: Pipeline with decorators (bright yellow #tags):" /> print
+let decoratedPipe = /> double /> addOne #log #time
+decoratedPipe.visualize()
+print("")
+
+-- Test 5: Pipeline with decorated lambda stages
+"Test 5: Decorated lambda in pipeline:" /> print
+let decoratedLambdaPipe = /> (x) -> x * 2 #memo /> addOne
+decoratedLambdaPipe.visualize()
+print("")
+
+-- Test 6: Nested pipeline
+"Test 6: Nested pipeline (blue color):" /> print
+let innerPipe = /> double /> triple
+let outerPipe = /> addOne /> innerPipe /> square
+outerPipe.visualize()
+print("")
+
+-- Test 7: Verify return value (now returns the string)
+"Test 7: visualize() returns the diagram string:" /> print
+let result = linearPipe.visualize()
+"Return type check - got string with length:" /> print
+result /> length /> print
+print("")
+
+"All enhanced visualization tests completed!" /> print
