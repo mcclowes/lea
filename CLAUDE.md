@@ -7,7 +7,7 @@ Tree-walk interpreter in TypeScript for a pipe-oriented functional language.
 After modifying or adding functionality, always update:
 1. **Documentation** — `CLAUDE.md` and skill reference docs
 2. **Examples** — Add/update files in `examples/`
-3. **Tests** — Add/update files in `tests/`
+3. **Tests** — Add/update unit tests in `__tests__/` and integration tests in `tests/`
 4. **Syntax highlighting** - Update the syntax highlighting vscode extension to support this functionality appropriately
 
 ## Syntax
@@ -581,6 +581,23 @@ npm run format -- file.lea -w           # Format file in place
 npm run format -- dir/ -w               # Format all .lea files in directory
 npm run format -- file.lea --check      # Check if file is formatted
 ```
+
+## Testing
+
+```bash
+npm test                  # Run all unit tests (Jest)
+npm run test:unit         # Run unit tests (alias for npm test)
+npm run test:integration  # Run integration tests (.lea files in tests/)
+npm run test:watch        # Run tests in watch mode
+npm run test:coverage     # Run tests with coverage report
+```
+
+### Test Structure
+
+- `__tests__/lexer.test.ts` — Lexer unit tests (tokenization)
+- `__tests__/parser.test.ts` — Parser unit tests (AST generation)
+- `__tests__/interpreter.test.ts` — Interpreter unit tests (evaluation)
+- `tests/*.lea` — Integration tests (full Lea programs)
 
 ## Formatting
 
