@@ -2,7 +2,7 @@
   "name": "lea-language",
   "displayName": "Lea Language",
   "description": "Language support for Lea - a pipe-oriented functional programming language with autocomplete, go-to-definition, hover documentation, and error diagnostics",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "mcclowes",
   "author": {
     "name": "Max Clayton Clowes"

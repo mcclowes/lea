@@ -336,6 +336,14 @@ export class CompletionProvider {
         sortText: "3_pipe",
       },
       {
+        label: "pipespread",
+        kind: CompletionItemKind.Snippet,
+        detail: "Spread pipeline definition",
+        documentation: "Create a pipeline starting with spread pipe (maps over list elements)",
+        insertText: "let $1 = />>> $2 /> $0",
+        sortText: "3_pipespread",
+      },
+      {
         label: "match",
         kind: CompletionItemKind.Snippet,
         detail: "Match expression",
