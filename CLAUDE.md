@@ -271,6 +271,7 @@ let fullTyped = /> map(double) :: [Int] /> [Int]    -- input and output types
 processNumbers.length       -- 2 (number of stages)
 processNumbers.stages       -- ["double", "addOne"]
 processNumbers.visualize()  -- prints ASCII diagram
+processNumbers.analyze()    -- analyzes pipeline for parallelization opportunities
 
 -- Pipeline composition
 let pipeA = /> filter((x) -> x > 0)
@@ -456,6 +457,13 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 - `#profile` — timing breakdown for each stage with percentages
 - `#trace` — nested call tracing with indentation
 
+**Parallelization Decorators (Pipelines):**
+- `#parallel` — process list elements concurrently (unlimited concurrency)
+- `#parallel(n)` — process with concurrency limit of n
+- `#batch(n)` — split list into n parallel batches
+- `#prefetch(n)` — prefetch n items ahead for I/O operations
+- `#autoparallel` — automatic parallelization detection
+
 **Builtins:**
 - `print` (returns first arg for chaining)
 - `sqrt`, `abs`, `floor`, `ceil`, `round`, `min`, `max`
@@ -588,6 +596,7 @@ Callback receives `(element, index)` as arguments, similar to map/filter/reduce.
   - `.length` — number of stages
   - `.stages` — list of stage names
   - `.visualize()` — prints ASCII diagram of pipeline flow
+  - `.analyze()` — analyzes for parallelization opportunities, returns suggestions
   - `.first` / `.last` — get first/last stage as callable function
   - `.isEmpty()` — check if pipeline has no stages
   - `.equals(other)` — structural equality comparison

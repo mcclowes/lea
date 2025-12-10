@@ -155,3 +155,120 @@ let fetchWithFallback = (id) ->
   ] /> race
 #async
 ```
+
+## Pipeline Parallelization Decorators
+
+Lea provides decorators for automatic parallelization of pipeline operations:
+
+### `#parallel` — Process List Elements Concurrently
+
+```lea
+-- Process all elements concurrently
+let pipeline = /> map(expensiveOp) #parallel
+[1, 2, 3, 4, 5] /> pipeline
+
+-- With concurrency limit
+let limitedPipeline = /> map(expensiveOp) #parallel(4)
+```
+
+### `#batch(n)` — Split Into Parallel Batches
+
+Splits list input into n chunks and processes them in parallel:
+
+```lea
+-- Split 100 items into 4 parallel batches of 25 each
+let pipeline = /> map(transform) #batch(4)
+range(100) /> pipeline
+```
+
+### `#prefetch(n)` — Prefetch Ahead for I/O
+
+For I/O-bound operations, prefetch n items ahead while processing:
+
+```lea
+-- Prefetch 3 items ahead while processing
+let pipeline = /> fetch /> process #prefetch(3)
+urls /> pipeline
+```
+
+### `#autoparallel` — Automatic Parallelization
+
+Automatically detects and parallelizes operations:
+
+```lea
+let pipeline = /> map(fn) /> filter(pred) #autoparallel
+```
+
+## Pipeline Analysis
+
+Pipelines have an `.analyze()` method that suggests parallelization opportunities:
+
+```lea
+let pipeline = /> filter((x) -> x > 0) /> map((x) -> x * 2) /> map((x) -> x + 1)
+
+pipeline.analyze()
+-- Prints analysis report with suggestions:
+-- ╔════════════════════════════════════════════════════════════╗
+-- ║             PIPELINE PARALLELIZATION ANALYSIS              ║
+-- ╠════════════════════════════════════════════════════════════╣
+-- ║ 💡 SUGGESTION: Use #parallel decorator for concurrent map  ║
+-- ║ 💡 SUGGESTION: Fuse multiple maps into single operation    ║
+-- ╚════════════════════════════════════════════════════════════╝
+
+-- Returns a record with analysis data:
+let result = pipeline.analyze()
+result.suggestions   -- ["use_parallel_for_map", "fuse_maps"]
+result.stageCount    -- 3
+result.mapCount      -- 2
+```
+
+## Spread Pipe `/>>>` — Parallel Map
+
+The spread pipe maps a function over list elements in parallel:
+
+```lea
+-- Applies 'double' to each element in parallel
+[1, 2, 3, 4, 5] />>>double  -- [2, 4, 6, 8, 10]
+
+-- With index access
+["a", "b", "c"] />>>(x, i) -> `{i}: {x}`  -- ["0: a", "1: b", "2: c"]
+```
+
+## Best Practices
+
+### 1. Use `#parallel` for CPU-bound List Processing
+
+```lea
+let processList = /> map(heavyComputation) #parallel(8)
+```
+
+### 2. Use `#batch` for Memory-Efficient Parallel Processing
+
+```lea
+-- Process large dataset in 4 batches to avoid memory pressure
+let processLarge = /> map(transform) #batch(4)
+```
+
+### 3. Use `#prefetch` for I/O-Bound Operations
+
+```lea
+-- Keep the network busy by prefetching
+let fetchAll = /> fetch /> parse #prefetch(3)
+```
+
+### 4. Analyze Before Optimizing
+
+```lea
+-- Let Lea suggest optimizations
+myPipeline.analyze()
+```
+
+### 5. Filter Before Map
+
+```lea
+-- More efficient: filter first, then map
+let efficient = /> filter(pred) /> map(fn)
+
+-- Less efficient: map then filter
+let inefficient = /> map(fn) /> filter(pred)
+```

@@ -11,6 +11,7 @@ import {
   LeaFunction,
   LeaBuiltin,
   LeaPipeline,
+  LeaRecord,
   RuntimeError,
   Environment,
 } from "./types";
@@ -359,6 +360,115 @@ export function getPipelineMember(
             closure: pipeline.closure,
             decorators: [],
           } as LeaPipeline;
+        }
+      } as LeaBuiltin;
+    }
+
+    case "analyze": {
+      // Return a builtin that analyzes the pipeline for parallelization opportunities
+      return {
+        kind: "builtin" as const,
+        fn: (): LeaValue => {
+          const suggestions: string[] = [];
+          const stageNames = pipeline.stages.map(s => describeAnyStage(s));
+
+          // Check for parallelizable patterns
+          let hasMap = false;
+          let hasFilter = false;
+          let hasMultipleMaps = 0;
+          let hasAsyncOps = false;
+          let hasParallelStages = false;
+
+          for (const stage of pipeline.stages) {
+            if (isParallelStage(stage)) {
+              hasParallelStages = true;
+              continue;
+            }
+
+            const name = describeAnyStage(stage);
+
+            // Check for map operations
+            if (name === "map" || name.startsWith("map(")) {
+              hasMap = true;
+              hasMultipleMaps++;
+            }
+
+            // Check for filter operations
+            if (name === "filter" || name.startsWith("filter(")) {
+              hasFilter = true;
+            }
+
+            // Check for async operations (common async builtins)
+            if (["fetch", "readFile", "writeFile", "delay"].includes(name)) {
+              hasAsyncOps = true;
+            }
+          }
+
+          // Generate suggestions
+          console.log("\n╔════════════════════════════════════════════════════════════╗");
+          console.log("║             PIPELINE PARALLELIZATION ANALYSIS              ║");
+          console.log("╠════════════════════════════════════════════════════════════╣");
+          console.log(`║ Stages: ${stageNames.join(" /> ").padEnd(51)}║`);
+          console.log("╠════════════════════════════════════════════════════════════╣");
+
+          if (hasParallelStages) {
+            console.log("║ ✓ Already using parallel stages (\\>)                       ║");
+            suggestions.push("already_parallel");
+          }
+
+          if (hasMap && !hasParallelStages) {
+            console.log("║ 💡 SUGGESTION: Use #parallel decorator for concurrent map  ║");
+            console.log("║    Example: let p = /> map(fn) #parallel                   ║");
+            suggestions.push("use_parallel_for_map");
+          }
+
+          if (hasMultipleMaps > 1) {
+            console.log("║ 💡 SUGGESTION: Fuse multiple maps into single operation    ║");
+            console.log("║    Example: /> map((x) -> g(f(x))) instead of /> map(f)    ║");
+            console.log("║              /> map(g)                                     ║");
+            suggestions.push("fuse_maps");
+          }
+
+          if (hasAsyncOps) {
+            console.log("║ 💡 SUGGESTION: Use #prefetch for I/O-bound operations      ║");
+            console.log("║    Example: let p = /> fetch /> process #prefetch(3)       ║");
+            suggestions.push("use_prefetch_for_async");
+          }
+
+          if (pipeline.stages.length > 3 && !hasParallelStages) {
+            console.log("║ 💡 SUGGESTION: Use #batch to process in parallel chunks    ║");
+            console.log("║    Example: let p = /> transform #batch(4)                 ║");
+            suggestions.push("use_batch");
+          }
+
+          if (hasMap && hasFilter) {
+            console.log("║ 💡 SUGGESTION: Filter before map to reduce work            ║");
+            console.log("║    Example: /> filter(pred) /> map(fn) is more efficient   ║");
+            suggestions.push("filter_before_map");
+          }
+
+          if (suggestions.length === 0 && !hasParallelStages) {
+            console.log("║ ℹ️  No obvious parallelization opportunities found         ║");
+            console.log("║    Consider using parallel pipes (\\>) for fan-out/fan-in  ║");
+          }
+
+          console.log("╠════════════════════════════════════════════════════════════╣");
+          console.log("║ AVAILABLE PARALLELIZATION DECORATORS:                       ║");
+          console.log("║   #parallel      - Process list elements concurrently       ║");
+          console.log("║   #parallel(n)   - With concurrency limit of n              ║");
+          console.log("║   #batch(n)      - Split into n parallel batches            ║");
+          console.log("║   #prefetch(n)   - Prefetch n items ahead                   ║");
+          console.log("║   #autoparallel  - Auto-detect parallelization              ║");
+          console.log("╚════════════════════════════════════════════════════════════╝\n");
+
+          // Return suggestions as a record
+          const fields = new Map<string, LeaValue>();
+          fields.set("suggestions", suggestions);
+          fields.set("stageCount", pipeline.stages.length);
+          fields.set("hasParallelStages", hasParallelStages);
+          fields.set("hasAsyncOps", hasAsyncOps);
+          fields.set("mapCount", hasMultipleMaps);
+          return { kind: "record", fields } as LeaRecord;
         }
       } as LeaBuiltin;
     }
