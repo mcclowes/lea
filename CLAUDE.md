@@ -362,6 +362,29 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `src/visualize.ts` — CLI entry point for visualization
 - `src/formatter.ts` — Prettier-like code formatter
 - `src/format.ts` — CLI entry point for formatting
+- `src/lsp/` — Language Server Protocol implementation
+
+### LSP (Language Server Protocol)
+
+The LSP implementation provides IDE features:
+
+- `src/lsp/server.ts` — Main LSP server entry point
+- `src/lsp/analyzer.ts` — Document analysis (symbols, references, errors)
+- `src/lsp/completion.ts` — Autocomplete provider
+- `src/lsp/hover.ts` — Hover documentation provider
+- `src/lsp/definition.ts` — Go-to-definition and references
+- `src/lsp/diagnostics.ts` — Real-time error diagnostics
+- `src/lsp/builtins-docs.ts` — Documentation for built-in functions
+- `src/lsp/types.ts` — LSP type definitions
+
+**Features:**
+- Autocomplete for builtins, keywords, and user definitions
+- Go-to-definition for user-defined symbols
+- Hover documentation with type information
+- Real-time error diagnostics with "did you mean?" suggestions
+- Find references
+- Rename symbol
+- Document highlighting
 
 ## Token Types
 
@@ -661,6 +684,41 @@ npm run format -- file.lea              # Print formatted code to stdout
 npm run format -- file.lea -w           # Format file in place
 npm run format -- dir/ -w               # Format all .lea files in directory
 npm run format -- file.lea --check      # Check if file is formatted
+npm run lsp                             # Start LSP server (stdio mode)
+npm run lsp:build                       # Build LSP server for distribution
+```
+
+## IDE Support (VSCode Extension)
+
+The `vscode-lea` extension provides full IDE support:
+
+### Features
+- **Autocomplete** — Builtins, keywords, user definitions, decorators
+- **Go-to-definition** — Jump to symbol definitions
+- **Hover documentation** — Type information and docs on hover
+- **Error diagnostics** — Real-time syntax and semantic errors
+- **Find references** — Find all usages of a symbol
+- **Rename symbol** — Rename across the entire file
+- **Syntax highlighting** — Full TextMate grammar support
+
+### Installation
+```bash
+# From VS Code marketplace
+code --install-extension mcclowes.lea-language
+
+# Or build locally
+cd vscode-lea
+npm install
+npm run build
+# Then install the .vsix file
+```
+
+### Configuration
+```json
+{
+  "lea.trace.server": "off",     // "off" | "messages" | "verbose"
+  "lea.strictMode": false        // Enable strict type checking
+}
 ```
 
 ## TypeScript API

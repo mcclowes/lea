@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "outDir": "./dist/lsp",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "moduleResolution": "node"
+  },
+  "include": [
+    "src/lsp/**/*",
+    "src/lexer.ts",
+    "src/parser/**/*",
+    "src/ast.ts",
+    "src/token.ts",
+    "src/errors.ts"
+  ],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
