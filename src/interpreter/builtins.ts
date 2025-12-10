@@ -94,6 +94,187 @@ export const builtins: Record<string, BuiltinFn> = {
   TAU: () => Math.PI * 2,
   INFINITY: () => Infinity,
 
+  // ===== Bitwise Operations =====
+
+  bitAnd: (args) => {
+    const a = asNumber(args[0]);
+    const b = asNumber(args[1]);
+    return a & b;
+  },
+
+  bitOr: (args) => {
+    const a = asNumber(args[0]);
+    const b = asNumber(args[1]);
+    return a | b;
+  },
+
+  bitXor: (args) => {
+    const a = asNumber(args[0]);
+    const b = asNumber(args[1]);
+    return a ^ b;
+  },
+
+  bitNot: (args) => {
+    const a = asNumber(args[0]);
+    return ~a;
+  },
+
+  bitShiftLeft: (args) => {
+    const a = asNumber(args[0]);
+    const b = asNumber(args[1]);
+    return a << b;
+  },
+
+  bitShiftRight: (args) => {
+    const a = asNumber(args[0]);
+    const b = asNumber(args[1]);
+    return a >> b;
+  },
+
+  bitShiftRightUnsigned: (args) => {
+    const a = asNumber(args[0]);
+    const b = asNumber(args[1]);
+    return a >>> b;
+  },
+
+  // ===== Statistics Builtins =====
+
+  sum: (args) => {
+    const list = asList(args[0]);
+    return list.reduce((acc: number, val) => acc + asNumber(val), 0);
+  },
+
+  product: (args) => {
+    const list = asList(args[0]);
+    return list.reduce((acc: number, val) => acc * asNumber(val), 1);
+  },
+
+  mean: (args) => {
+    const list = asList(args[0]);
+    if (list.length === 0) throw new RuntimeError("mean requires a non-empty list");
+    const sum = list.reduce((acc: number, val) => acc + asNumber(val), 0);
+    return sum / list.length;
+  },
+
+  median: (args) => {
+    const list = asList(args[0]);
+    if (list.length === 0) throw new RuntimeError("median requires a non-empty list");
+    const sorted = [...list].map(asNumber).sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    if (sorted.length % 2 === 0) {
+      return (sorted[mid - 1] + sorted[mid]) / 2;
+    }
+    return sorted[mid];
+  },
+
+  variance: (args) => {
+    const list = asList(args[0]);
+    if (list.length === 0) throw new RuntimeError("variance requires a non-empty list");
+    const nums = list.map(asNumber);
+    const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
+    const squaredDiffs = nums.map(x => (x - mean) ** 2);
+    return squaredDiffs.reduce((a, b) => a + b, 0) / nums.length;
+  },
+
+  stdDev: (args) => {
+    const list = asList(args[0]);
+    if (list.length === 0) throw new RuntimeError("stdDev requires a non-empty list");
+    const nums = list.map(asNumber);
+    const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
+    const squaredDiffs = nums.map(x => (x - mean) ** 2);
+    const variance = squaredDiffs.reduce((a, b) => a + b, 0) / nums.length;
+    return Math.sqrt(variance);
+  },
+
+  // ===== Number Theory Builtins =====
+
+  gcd: (args) => {
+    let a = Math.abs(asNumber(args[0]));
+    let b = Math.abs(asNumber(args[1]));
+    while (b !== 0) {
+      const t = b;
+      b = a % b;
+      a = t;
+    }
+    return a;
+  },
+
+  lcm: (args) => {
+    const a = Math.abs(asNumber(args[0]));
+    const b = Math.abs(asNumber(args[1]));
+    if (a === 0 || b === 0) return 0;
+    // Use the formula: lcm(a,b) = |a*b| / gcd(a,b)
+    let gcdVal = a, temp = b;
+    while (temp !== 0) {
+      const t = temp;
+      temp = gcdVal % temp;
+      gcdVal = t;
+    }
+    return (a * b) / gcdVal;
+  },
+
+  isPrime: (args) => {
+    const n = asNumber(args[0]);
+    if (n < 2) return false;
+    if (n === 2) return true;
+    if (n % 2 === 0) return false;
+    for (let i = 3; i <= Math.sqrt(n); i += 2) {
+      if (n % i === 0) return false;
+    }
+    return true;
+  },
+
+  factorial: (args) => {
+    const n = asNumber(args[0]);
+    if (n < 0) throw new RuntimeError("factorial requires a non-negative integer");
+    if (n === 0 || n === 1) return 1;
+    let result = 1;
+    for (let i = 2; i <= n; i++) {
+      result *= i;
+    }
+    return result;
+  },
+
+  fibonacci: (args) => {
+    const n = asNumber(args[0]);
+    if (n < 0) throw new RuntimeError("fibonacci requires a non-negative integer");
+    if (n === 0) return 0;
+    if (n === 1) return 1;
+    let a = 0, b = 1;
+    for (let i = 2; i <= n; i++) {
+      const temp = a + b;
+      a = b;
+      b = temp;
+    }
+    return b;
+  },
+
+  // Check if number is even
+  isEven: (args) => {
+    const n = asNumber(args[0]);
+    return n % 2 === 0;
+  },
+
+  // Check if number is odd
+  isOdd: (args) => {
+    const n = asNumber(args[0]);
+    return n % 2 !== 0;
+  },
+
+  // Modulo operation (handles negative numbers correctly)
+  mod: (args) => {
+    const a = asNumber(args[0]);
+    const b = asNumber(args[1]);
+    return ((a % b) + b) % b;
+  },
+
+  // Integer division
+  divInt: (args) => {
+    const a = asNumber(args[0]);
+    const b = asNumber(args[1]);
+    return Math.trunc(a / b);
+  },
+
   // Random number builtins
   random: () => Math.random(),
   randomInt: (args) => {
@@ -240,6 +421,230 @@ export const builtins: Record<string, BuiltinFn> = {
       }
     }
     return [truthy, falsy];
+  },
+
+  // Find first element matching predicate
+  find: (args) => {
+    const list = asList(args[0]);
+    const fn = asFunction(args[1]);
+    for (let i = 0; i < list.length; i++) {
+      if (isTruthy(fn([list[i], i]))) {
+        return list[i];
+      }
+    }
+    return null;
+  },
+
+  // Find index of first element matching predicate
+  findIndex: (args) => {
+    const list = asList(args[0]);
+    const fn = asFunction(args[1]);
+    for (let i = 0; i < list.length; i++) {
+      if (isTruthy(fn([list[i], i]))) {
+        return i;
+      }
+    }
+    return -1;
+  },
+
+  // Check if any element matches predicate
+  some: (args) => {
+    const list = asList(args[0]);
+    const fn = asFunction(args[1]);
+    for (let i = 0; i < list.length; i++) {
+      if (isTruthy(fn([list[i], i]))) {
+        return true;
+      }
+    }
+    return false;
+  },
+
+  // Check if all elements match predicate
+  every: (args) => {
+    const list = asList(args[0]);
+    const fn = asFunction(args[1]);
+    for (let i = 0; i < list.length; i++) {
+      if (!isTruthy(fn([list[i], i]))) {
+        return false;
+      }
+    }
+    return true;
+  },
+
+  // Sort list with optional comparator function
+  sort: (args) => {
+    const list = [...asList(args[0])];
+    const comparator = args[1] !== undefined ? asFunction(args[1]) : null;
+
+    if (comparator) {
+      list.sort((a, b) => {
+        const result = comparator([a, b]);
+        if (typeof result !== "number") {
+          throw new RuntimeError("sort comparator must return a number");
+        }
+        return result;
+      });
+    } else {
+      // Default sort: numbers numerically, strings lexically
+      list.sort((a, b) => {
+        if (typeof a === "number" && typeof b === "number") {
+          return a - b;
+        }
+        return String(a).localeCompare(String(b));
+      });
+    }
+    return list;
+  },
+
+  // Group elements by key function
+  groupBy: (args) => {
+    const list = asList(args[0]);
+    const fn = asFunction(args[1]);
+    const groups = new Map<string, LeaValue[]>();
+
+    for (let i = 0; i < list.length; i++) {
+      const key = fn([list[i], i]);
+      const keyStr = stringify(key);
+      if (!groups.has(keyStr)) {
+        groups.set(keyStr, []);
+      }
+      groups.get(keyStr)!.push(list[i]);
+    }
+
+    // Return as record
+    const fields = new Map<string, LeaValue>();
+    for (const [key, values] of groups) {
+      fields.set(key, values);
+    }
+    return { kind: "record", fields } as LeaRecord;
+  },
+
+  // Flatten nested lists by one level (or specified depth)
+  flatten: (args) => {
+    const list = asList(args[0]);
+    const depth = args[1] !== undefined ? asNumber(args[1]) : 1;
+
+    const flattenRec = (arr: LeaValue[], d: number): LeaValue[] => {
+      if (d <= 0) return arr;
+      const result: LeaValue[] = [];
+      for (const item of arr) {
+        if (Array.isArray(item)) {
+          result.push(...flattenRec(item, d - 1));
+        } else {
+          result.push(item);
+        }
+      }
+      return result;
+    };
+
+    return flattenRec(list, depth);
+  },
+
+  // Map then flatten by one level
+  flatMap: (args) => {
+    const list = asList(args[0]);
+    const fn = asFunction(args[1]);
+    const result: LeaValue[] = [];
+
+    for (let i = 0; i < list.length; i++) {
+      const mapped = fn([list[i], i]);
+      if (Array.isArray(mapped)) {
+        result.push(...mapped);
+      } else {
+        result.push(mapped);
+      }
+    }
+    return result;
+  },
+
+  // Get last element of list
+  last: (args) => {
+    const list = asList(args[0]);
+    if (list.length === 0) throw new RuntimeError("last of empty list");
+    return list[list.length - 1];
+  },
+
+  // Drop first n elements
+  drop: (args) => {
+    const list = asList(args[0]);
+    const n = asNumber(args[1]);
+    return list.slice(n);
+  },
+
+  // Take elements while predicate is true
+  takeWhile: (args) => {
+    const list = asList(args[0]);
+    const fn = asFunction(args[1]);
+    const result: LeaValue[] = [];
+    for (let i = 0; i < list.length; i++) {
+      if (!isTruthy(fn([list[i], i]))) break;
+      result.push(list[i]);
+    }
+    return result;
+  },
+
+  // Drop elements while predicate is true
+  dropWhile: (args) => {
+    const list = asList(args[0]);
+    const fn = asFunction(args[1]);
+    let i = 0;
+    while (i < list.length && isTruthy(fn([list[i], i]))) {
+      i++;
+    }
+    return list.slice(i);
+  },
+
+  // Count elements matching predicate
+  count: (args) => {
+    const list = asList(args[0]);
+    const fn = args[1] !== undefined ? asFunction(args[1]) : null;
+
+    if (fn) {
+      let count = 0;
+      for (let i = 0; i < list.length; i++) {
+        if (isTruthy(fn([list[i], i]))) count++;
+      }
+      return count;
+    }
+    return list.length;
+  },
+
+  // Insert element between each pair
+  intersperse: (args) => {
+    const list = asList(args[0]);
+    const separator = args[1];
+    if (list.length <= 1) return list;
+
+    const result: LeaValue[] = [list[0]];
+    for (let i = 1; i < list.length; i++) {
+      result.push(separator, list[i]);
+    }
+    return result;
+  },
+
+  // Create list of pairs [index, element]
+  enumerate: (args) => {
+    const list = asList(args[0]);
+    const start = args[1] !== undefined ? asNumber(args[1]) : 0;
+    return list.map((item, i) => [start + i, item]);
+  },
+
+  // Transpose a matrix (list of lists)
+  transpose: (args) => {
+    const matrix = asList(args[0]).map(asList);
+    if (matrix.length === 0) return [];
+    const rows = matrix.length;
+    const cols = Math.max(...matrix.map(r => r.length));
+
+    const result: LeaValue[][] = [];
+    for (let c = 0; c < cols; c++) {
+      const row: LeaValue[] = [];
+      for (let r = 0; r < rows; r++) {
+        row.push(matrix[r][c] ?? null);
+      }
+      result.push(row);
+    }
+    return result;
   },
 
   toString: (args: LeaValue[]) => {
@@ -465,6 +870,288 @@ export const builtins: Record<string, BuiltinFn> = {
       throw new RuntimeError("endsWith requires a string suffix");
     }
     return str.endsWith(suffix);
+  },
+
+  // Trim whitespace from start
+  trimStart: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("trimStart requires a string");
+    }
+    return str.trimStart();
+  },
+
+  // ===== Regex Builtins =====
+
+  // Test if string matches pattern
+  regexTest: (args: LeaValue[]) => {
+    const str = args[0];
+    const pattern = args[1];
+    const flags = args[2];
+    if (typeof str !== "string") {
+      throw new RuntimeError("regexTest requires a string as first argument");
+    }
+    if (typeof pattern !== "string") {
+      throw new RuntimeError("regexTest requires a string pattern");
+    }
+    const flagStr = flags !== undefined ? String(flags) : "";
+    try {
+      const regex = new RegExp(pattern, flagStr);
+      return regex.test(str);
+    } catch (e) {
+      throw new RuntimeError(`Invalid regex pattern: ${pattern}`);
+    }
+  },
+
+  // Match string against pattern, returns first match or null
+  regexMatch: (args: LeaValue[]) => {
+    const str = args[0];
+    const pattern = args[1];
+    const flags = args[2];
+    if (typeof str !== "string") {
+      throw new RuntimeError("regexMatch requires a string as first argument");
+    }
+    if (typeof pattern !== "string") {
+      throw new RuntimeError("regexMatch requires a string pattern");
+    }
+    const flagStr = flags !== undefined ? String(flags) : "";
+    try {
+      const regex = new RegExp(pattern, flagStr);
+      const match = str.match(regex);
+      if (!match) return null;
+
+      // Return match info as record
+      const fields = new Map<string, LeaValue>();
+      fields.set("match", match[0]);
+      fields.set("index", match.index ?? 0);
+      fields.set("groups", match.slice(1));
+      return { kind: "record", fields } as LeaRecord;
+    } catch (e) {
+      throw new RuntimeError(`Invalid regex pattern: ${pattern}`);
+    }
+  },
+
+  // Find all matches in string
+  regexMatchAll: (args: LeaValue[]) => {
+    const str = args[0];
+    const pattern = args[1];
+    const flags = args[2];
+    if (typeof str !== "string") {
+      throw new RuntimeError("regexMatchAll requires a string as first argument");
+    }
+    if (typeof pattern !== "string") {
+      throw new RuntimeError("regexMatchAll requires a string pattern");
+    }
+    // Always add global flag for matchAll
+    let flagStr = flags !== undefined ? String(flags) : "";
+    if (!flagStr.includes("g")) flagStr += "g";
+
+    try {
+      const regex = new RegExp(pattern, flagStr);
+      const matches = [...str.matchAll(regex)];
+      return matches.map(match => {
+        const fields = new Map<string, LeaValue>();
+        fields.set("match", match[0]);
+        fields.set("index", match.index ?? 0);
+        fields.set("groups", match.slice(1));
+        return { kind: "record", fields } as LeaRecord;
+      });
+    } catch (e) {
+      throw new RuntimeError(`Invalid regex pattern: ${pattern}`);
+    }
+  },
+
+  // Replace using regex pattern
+  regexReplace: (args: LeaValue[]) => {
+    const str = args[0];
+    const pattern = args[1];
+    const replacement = args[2];
+    const flags = args[3];
+    if (typeof str !== "string") {
+      throw new RuntimeError("regexReplace requires a string as first argument");
+    }
+    if (typeof pattern !== "string") {
+      throw new RuntimeError("regexReplace requires a string pattern");
+    }
+    if (typeof replacement !== "string") {
+      throw new RuntimeError("regexReplace requires a string replacement");
+    }
+    const flagStr = flags !== undefined ? String(flags) : "g";
+
+    try {
+      const regex = new RegExp(pattern, flagStr);
+      return str.replace(regex, replacement);
+    } catch (e) {
+      throw new RuntimeError(`Invalid regex pattern: ${pattern}`);
+    }
+  },
+
+  // Split string using regex pattern
+  regexSplit: (args: LeaValue[]) => {
+    const str = args[0];
+    const pattern = args[1];
+    const flags = args[2];
+    if (typeof str !== "string") {
+      throw new RuntimeError("regexSplit requires a string as first argument");
+    }
+    if (typeof pattern !== "string") {
+      throw new RuntimeError("regexSplit requires a string pattern");
+    }
+    const flagStr = flags !== undefined ? String(flags) : "";
+
+    try {
+      const regex = new RegExp(pattern, flagStr);
+      return str.split(regex);
+    } catch (e) {
+      throw new RuntimeError(`Invalid regex pattern: ${pattern}`);
+    }
+  },
+
+  // ===== Case Conversion Builtins =====
+
+  // Convert to camelCase
+  toCamelCase: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("toCamelCase requires a string");
+    }
+    return str
+      .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ""))
+      .replace(/^[A-Z]/, c => c.toLowerCase());
+  },
+
+  // Convert to PascalCase
+  toPascalCase: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("toPascalCase requires a string");
+    }
+    return str
+      .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ""))
+      .replace(/^[a-z]/, c => c.toUpperCase());
+  },
+
+  // Convert to snake_case
+  toSnakeCase: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("toSnakeCase requires a string");
+    }
+    return str
+      .replace(/([a-z])([A-Z])/g, "$1_$2")
+      .replace(/[-\s]+/g, "_")
+      .toLowerCase();
+  },
+
+  // Convert to kebab-case
+  toKebabCase: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("toKebabCase requires a string");
+    }
+    return str
+      .replace(/([a-z])([A-Z])/g, "$1-$2")
+      .replace(/[_\s]+/g, "-")
+      .toLowerCase();
+  },
+
+  // Convert to CONSTANT_CASE
+  toConstantCase: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("toConstantCase requires a string");
+    }
+    return str
+      .replace(/([a-z])([A-Z])/g, "$1_$2")
+      .replace(/[-\s]+/g, "_")
+      .toUpperCase();
+  },
+
+  // Capitalize first letter
+  capitalize: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("capitalize requires a string");
+    }
+    if (str.length === 0) return str;
+    return str[0].toUpperCase() + str.slice(1);
+  },
+
+  // Capitalize first letter of each word
+  titleCase: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("titleCase requires a string");
+    }
+    return str.replace(/\b\w/g, c => c.toUpperCase());
+  },
+
+  // ===== Encoding Builtins =====
+
+  // Base64 encode
+  base64Encode: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("base64Encode requires a string");
+    }
+    return Buffer.from(str, "utf-8").toString("base64");
+  },
+
+  // Base64 decode
+  base64Decode: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("base64Decode requires a string");
+    }
+    try {
+      return Buffer.from(str, "base64").toString("utf-8");
+    } catch (e) {
+      throw new RuntimeError(`Invalid base64 string: ${str}`);
+    }
+  },
+
+  // URL encode
+  urlEncode: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("urlEncode requires a string");
+    }
+    return encodeURIComponent(str);
+  },
+
+  // URL decode
+  urlDecode: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("urlDecode requires a string");
+    }
+    try {
+      return decodeURIComponent(str);
+    } catch (e) {
+      throw new RuntimeError(`Invalid URL-encoded string: ${str}`);
+    }
+  },
+
+  // Hex encode
+  hexEncode: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("hexEncode requires a string");
+    }
+    return Buffer.from(str, "utf-8").toString("hex");
+  },
+
+  // Hex decode
+  hexDecode: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("hexDecode requires a string");
+    }
+    try {
+      return Buffer.from(str, "hex").toString("utf-8");
+    } catch (e) {
+      throw new RuntimeError(`Invalid hex string: ${str}`);
+    }
   },
 
   // Set-like operations on lists (for graph algorithms)
@@ -1153,6 +1840,237 @@ export const builtins: Record<string, BuiltinFn> = {
       })
     );
   },
+
+  // ===== Directory Operations =====
+
+  mkdir: (args: LeaValue[]) => {
+    const dirPath = args[0];
+    const recursive = args[1] !== undefined ? isTruthy(args[1]) : true;
+    if (typeof dirPath !== "string") {
+      throw new RuntimeError("mkdir requires a string path");
+    }
+    return wrapPromise(
+      fs.mkdir(dirPath, { recursive }).then(() => true).catch((err) => {
+        throw new RuntimeError(`mkdir failed: ${err.message}`);
+      })
+    );
+  },
+
+  rmdir: (args: LeaValue[]) => {
+    const dirPath = args[0];
+    const recursive = args[1] !== undefined ? isTruthy(args[1]) : false;
+    if (typeof dirPath !== "string") {
+      throw new RuntimeError("rmdir requires a string path");
+    }
+    return wrapPromise(
+      fs.rm(dirPath, { recursive, force: false }).then(() => true).catch((err) => {
+        throw new RuntimeError(`rmdir failed: ${err.message}`);
+      })
+    );
+  },
+
+  copyFile: (args: LeaValue[]) => {
+    const src = args[0];
+    const dest = args[1];
+    if (typeof src !== "string") {
+      throw new RuntimeError("copyFile requires a string source path");
+    }
+    if (typeof dest !== "string") {
+      throw new RuntimeError("copyFile requires a string destination path");
+    }
+    return wrapPromise(
+      fs.copyFile(src, dest).then(() => true).catch((err) => {
+        throw new RuntimeError(`copyFile failed: ${err.message}`);
+      })
+    );
+  },
+
+  renameFile: (args: LeaValue[]) => {
+    const oldPath = args[0];
+    const newPath = args[1];
+    if (typeof oldPath !== "string") {
+      throw new RuntimeError("renameFile requires a string old path");
+    }
+    if (typeof newPath !== "string") {
+      throw new RuntimeError("renameFile requires a string new path");
+    }
+    return wrapPromise(
+      fs.rename(oldPath, newPath).then(() => true).catch((err) => {
+        throw new RuntimeError(`renameFile failed: ${err.message}`);
+      })
+    );
+  },
+
+  // ===== File Metadata =====
+
+  fileStats: (args: LeaValue[]) => {
+    const filePath = args[0];
+    if (typeof filePath !== "string") {
+      throw new RuntimeError("fileStats requires a string path");
+    }
+    return wrapPromise(
+      fs.stat(filePath).then((stats) => {
+        const fields = new Map<string, LeaValue>();
+        fields.set("size", stats.size);
+        fields.set("isFile", stats.isFile());
+        fields.set("isDirectory", stats.isDirectory());
+        fields.set("isSymlink", stats.isSymbolicLink());
+        fields.set("createdAt", stats.birthtimeMs);
+        fields.set("modifiedAt", stats.mtimeMs);
+        fields.set("accessedAt", stats.atimeMs);
+        fields.set("mode", stats.mode);
+        return { kind: "record", fields } as LeaRecord;
+      }).catch((err) => {
+        throw new RuntimeError(`fileStats failed: ${err.message}`);
+      })
+    );
+  },
+
+  isFile: (args: LeaValue[]) => {
+    const filePath = args[0];
+    if (typeof filePath !== "string") {
+      throw new RuntimeError("isFile requires a string path");
+    }
+    return wrapPromise(
+      fs.stat(filePath).then((stats) => stats.isFile()).catch(() => false)
+    );
+  },
+
+  isDirectory: (args: LeaValue[]) => {
+    const filePath = args[0];
+    if (typeof filePath !== "string") {
+      throw new RuntimeError("isDirectory requires a string path");
+    }
+    return wrapPromise(
+      fs.stat(filePath).then((stats) => stats.isDirectory()).catch(() => false)
+    );
+  },
+
+  // ===== Path Utilities =====
+
+  pathJoin: (args: LeaValue[]) => {
+    const parts = args.map(arg => {
+      if (typeof arg !== "string") {
+        throw new RuntimeError("pathJoin requires string arguments");
+      }
+      return arg;
+    });
+    return path.join(...parts);
+  },
+
+  pathDirname: (args: LeaValue[]) => {
+    const p = args[0];
+    if (typeof p !== "string") {
+      throw new RuntimeError("pathDirname requires a string path");
+    }
+    return path.dirname(p);
+  },
+
+  pathBasename: (args: LeaValue[]) => {
+    const p = args[0];
+    const ext = args[1];
+    if (typeof p !== "string") {
+      throw new RuntimeError("pathBasename requires a string path");
+    }
+    if (ext !== undefined && typeof ext !== "string") {
+      throw new RuntimeError("pathBasename extension must be a string");
+    }
+    return ext ? path.basename(p, ext) : path.basename(p);
+  },
+
+  pathExtname: (args: LeaValue[]) => {
+    const p = args[0];
+    if (typeof p !== "string") {
+      throw new RuntimeError("pathExtname requires a string path");
+    }
+    return path.extname(p);
+  },
+
+  pathResolve: (args: LeaValue[]) => {
+    const parts = args.map(arg => {
+      if (typeof arg !== "string") {
+        throw new RuntimeError("pathResolve requires string arguments");
+      }
+      return arg;
+    });
+    return path.resolve(...parts);
+  },
+
+  pathRelative: (args: LeaValue[]) => {
+    const from = args[0];
+    const to = args[1];
+    if (typeof from !== "string" || typeof to !== "string") {
+      throw new RuntimeError("pathRelative requires two string paths");
+    }
+    return path.relative(from, to);
+  },
+
+  pathNormalize: (args: LeaValue[]) => {
+    const p = args[0];
+    if (typeof p !== "string") {
+      throw new RuntimeError("pathNormalize requires a string path");
+    }
+    return path.normalize(p);
+  },
+
+  pathIsAbsolute: (args: LeaValue[]) => {
+    const p = args[0];
+    if (typeof p !== "string") {
+      throw new RuntimeError("pathIsAbsolute requires a string path");
+    }
+    return path.isAbsolute(p);
+  },
+
+  pathParse: (args: LeaValue[]) => {
+    const p = args[0];
+    if (typeof p !== "string") {
+      throw new RuntimeError("pathParse requires a string path");
+    }
+    const parsed = path.parse(p);
+    const fields = new Map<string, LeaValue>();
+    fields.set("root", parsed.root);
+    fields.set("dir", parsed.dir);
+    fields.set("base", parsed.base);
+    fields.set("ext", parsed.ext);
+    fields.set("name", parsed.name);
+    return { kind: "record", fields } as LeaRecord;
+  },
+
+  // ===== Environment Variables =====
+
+  getEnv: (args: LeaValue[]) => {
+    const name = args[0];
+    if (typeof name !== "string") {
+      throw new RuntimeError("getEnv requires a string name");
+    }
+    return process.env[name] ?? null;
+  },
+
+  getEnvAll: () => {
+    const fields = new Map<string, LeaValue>();
+    for (const [key, value] of Object.entries(process.env)) {
+      if (value !== undefined) {
+        fields.set(key, value);
+      }
+    }
+    return { kind: "record", fields } as LeaRecord;
+  },
+
+  // Get current working directory
+  cwd: () => process.cwd(),
+
+  // Get home directory
+  homeDir: () => {
+    return process.env.HOME || process.env.USERPROFILE || "";
+  },
+
+  // Get temp directory
+  tmpDir: () => {
+    return process.env.TMPDIR || process.env.TMP || process.env.TEMP || "/tmp";
+  },
+
+  // Get platform
+  platform: () => process.platform,
 
   // HTTP operations
   fetch: (args: LeaValue[]) => {
