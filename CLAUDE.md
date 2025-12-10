@@ -663,6 +663,66 @@ npm run format -- dir/ -w               # Format all .lea files in directory
 npm run format -- file.lea --check      # Check if file is formatted
 ```
 
+## TypeScript API
+
+Lea can be embedded in TypeScript/JavaScript projects via the `lea-lang` npm package.
+
+```bash
+npm install lea-lang
+```
+
+### Tagged Template Literal
+
+```typescript
+import { lea, leaAsync } from 'lea-lang';
+
+// Basic usage
+const result = lea`[1, 2, 3] /> map((x) -> x * 2)`;  // [2, 4, 6]
+
+// JavaScript value interpolation
+const data = [1, 2, 3, 4, 5];
+const threshold = 2;
+const filtered = lea`${data} /> filter((x) -> x > ${threshold})`;  // [3, 4, 5]
+
+// Pass JavaScript functions
+const double = (x: number) => x * 2;
+const mapped = lea`[1, 2, 3] /> map(${double})`;  // [2, 4, 6]
+
+// Async operations
+const delayed = await leaAsync`await delay(100) /> print`;
+```
+
+### Reusable Context
+
+```typescript
+import { createLea } from 'lea-lang';
+
+const ctx = createLea({
+  data: [10, 20, 30],
+  transform: (x: number) => x / 10,
+});
+
+ctx.run(`data /> map(transform)`);       // [1, 2, 3]
+await ctx.runAsync(`await delay(50)`);   // async support
+ctx.set("threshold", 15);                // update bindings
+```
+
+### Error Handling
+
+```typescript
+import { lea, RuntimeError, ParseError, LexerError } from 'lea-lang';
+
+try {
+  lea`undefinedVar /> print`;
+} catch (error) {
+  if (error instanceof RuntimeError) {
+    console.error("Runtime error:", error.message);
+  }
+}
+```
+
+See `examples/typescript/example.ts` for comprehensive examples.
+
 ## REPL Commands
 
 The interactive REPL provides extensive help and learning features:
