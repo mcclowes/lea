@@ -747,4 +747,30 @@ describe('Interpreter', () => {
       `)).toBe(10);
     });
   });
+
+  describe('RuntimeError with source location', () => {
+    it('should create RuntimeError with location info', () => {
+      const { RuntimeError, SourceLocation } = require('../src/interpreter');
+      const location: typeof SourceLocation = { line: 10, column: 5, file: 'test.lea' };
+      const error = new RuntimeError('Test error', location);
+      expect(error.message).toContain('[test.lea:10:5]');
+      expect(error.message).toContain('Test error');
+      expect(error.location).toEqual(location);
+    });
+
+    it('should create RuntimeError without location', () => {
+      const { RuntimeError } = require('../src/interpreter');
+      const error = new RuntimeError('Test error');
+      expect(error.message).toBe('Test error');
+      expect(error.location).toBeUndefined();
+    });
+
+    it('should create RuntimeError with location but no file', () => {
+      const { RuntimeError } = require('../src/interpreter');
+      const location = { line: 5, column: 3 };
+      const error = new RuntimeError('Test error', location);
+      expect(error.message).toContain('[5:3]');
+      expect(error.message).toContain('Test error');
+    });
+  });
 });

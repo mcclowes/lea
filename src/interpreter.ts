@@ -17,6 +17,8 @@ export {
   LeaPipeline,
   LeaBidirectionalPipeline,
   LeaReversibleFunction,
+  LeaReactiveValue,
+  SourceLocation,
   RuntimeError,
   ReturnValue,
   Environment,
