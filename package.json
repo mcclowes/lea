@@ -32,10 +32,16 @@
       "import": "./dist/api.js",
       "require": "./dist/api.js",
       "types": "./dist/api.d.ts"
+    },
+    "./syntax": {
+      "import": "./dist/syntax.js",
+      "require": "./dist/syntax.js",
+      "types": "./dist/syntax.d.ts"
     }
   },
   "files": [
     "dist/api.*",
+    "dist/syntax.*",
     "dist/ast.*",
     "dist/errors.*",
     "dist/lexer.*",
@@ -48,7 +54,9 @@
     "dist/repl.*",
     "dist/init.*",
     "dist/debugger.*",
-    "dist/README.md"
+    "dist/README.md",
+    "!dist/visualizer.*",
+    "!dist/lsp/"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -69,7 +77,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "vscode:package": "cd vscode-lea && npm run build && vsce package",
-    "vscode:publish": "cd vscode-lea && npm run build && vsce publish"
+    "vscode:publish": "cd vscode-lea && npm run build && vsce publish",
+    "prepare": "husky"
   },
   "jest": {
     "preset": "ts-jest",
@@ -96,13 +105,14 @@
     "verbose": true
   },
   "devDependencies": {
-    "vscode-languageserver": "^9.0.1",
-    "vscode-languageserver-textdocument": "^1.0.11",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.19.26",
+    "husky": "^9.1.7",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11"
   }
 }
