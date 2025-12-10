@@ -396,6 +396,21 @@ describe('Interpreter', () => {
       `);
       expect(result).toEqual([3, 5, 7]); // [2, 4, 6] -> [3, 5, 7]
     });
+
+    it('should handle parallel followed by spread in pipeline literal', () => {
+      const result = evaluate(`
+        let double = (x) -> x * 2
+        let addOne = (x) -> x + 1
+        let square = (x) -> x * x
+        let addHundred = (x) -> x + 100
+        let p = /> double \\> addOne \\> square />>> addHundred
+        5 /> p
+      `);
+      // 5 /> double = 10
+      // 10 \> addOne \> square = parallel with 2 branches = [11, 100]
+      // [11, 100] />>> addHundred = [111, 200]
+      expect(result).toEqual([111, 200]);
+    });
   });
 
   describe('reversible functions', () => {

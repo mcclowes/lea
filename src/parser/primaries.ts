@@ -227,27 +227,35 @@ export function parsePipelineLiteral(ctx: ParserContext): Expr {
 
     // Check for parallel pipe \> - start collecting parallel branches
     if (ctx.match(TokenType.PARALLEL_PIPE)) {
-      const parallelPipeColumn = ctx.previous().column;
+      const parallelPipeToken = ctx.previous();
+      const parallelPipeColumn = parallelPipeToken.column;
+      const parallelPipeLine = parallelPipeToken.line;
       const branches: Expr[] = [];
 
       // Parse first parallel branch (may include nested indented pipes)
       ctx.skipNewlines();
-      branches.push(parseParallelBranch(ctx, parallelPipeColumn));
+      branches.push(parseParallelBranch(ctx, parallelPipeColumn, parallelPipeLine));
 
-      // Continue collecting branches while we see more \> at the same column
+      // Continue collecting branches while we see more \> at the same column (or same line)
       while (true) {
         const branchSavedPos = ctx.current;
         ctx.skipNewlines();
 
-        // Check if we have another \> at the same indentation level
-        if (ctx.check(TokenType.PARALLEL_PIPE) && ctx.peek().column === parallelPipeColumn) {
-          ctx.advance(); // consume \>
-          ctx.skipNewlines();
-          branches.push(parseParallelBranch(ctx, parallelPipeColumn));
-        } else {
-          ctx.setCurrent(branchSavedPos);
-          break;
+        // Check if we have another \> - same column for multi-line, or same line for single-line
+        if (ctx.check(TokenType.PARALLEL_PIPE)) {
+          const nextPipe = ctx.peek();
+          const sameLine = nextPipe.line === parallelPipeLine;
+          const sameColumn = nextPipe.column === parallelPipeColumn;
+
+          if (sameLine || sameColumn) {
+            ctx.advance(); // consume \>
+            ctx.skipNewlines();
+            branches.push(parseParallelBranch(ctx, parallelPipeColumn, parallelPipeLine));
+            continue;
+          }
         }
+        ctx.setCurrent(branchSavedPos);
+        break;
       }
 
       // Add the parallel stage
@@ -308,11 +316,12 @@ export function parsePipelineLiteral(ctx: ParserContext): Expr {
  * The first expression is "filter((x) -> x < 20)"
  * The nested "/> map((x) -> x * 7)" is part of this branch (more indented)
  */
-function parseParallelBranch(ctx: ParserContext, parallelPipeColumn: number): Expr {
+function parseParallelBranch(ctx: ParserContext, parallelPipeColumn: number, parallelPipeLine: number): Expr {
   // Parse the first expression in the branch
   let branchExpr = parseStageExpr(ctx);
 
   // Collect any nested pipes that are MORE indented than the \>
+  // Only applies to multi-line code - on same line, don't consume subsequent pipes
   const nestedStages: AnyPipelineStage[] = [];
 
   while (true) {
@@ -321,10 +330,11 @@ function parseParallelBranch(ctx: ParserContext, parallelPipeColumn: number): Ex
 
     // Check if we have a /> that is more indented than the \>
     if (ctx.check(TokenType.PIPE)) {
-      const pipeColumn = ctx.peek().column;
+      const pipeToken = ctx.peek();
 
-      // Only consume if it's more indented (nested within this branch)
-      if (pipeColumn > parallelPipeColumn) {
+      // Only consume if it's on a different line AND more indented (nested within this branch)
+      // On the same line, don't consume - let the outer pipeline parser handle it
+      if (pipeToken.line !== parallelPipeLine && pipeToken.column > parallelPipeColumn) {
         ctx.advance(); // consume />
         ctx.skipNewlines();
         const stageExpr = parseStageExpr(ctx);
@@ -335,10 +345,10 @@ function parseParallelBranch(ctx: ParserContext, parallelPipeColumn: number): Ex
 
     // Check if we have a />>> that is more indented than the \>
     if (ctx.check(TokenType.SPREAD_PIPE)) {
-      const pipeColumn = ctx.peek().column;
+      const pipeToken = ctx.peek();
 
-      // Only consume if it's more indented (nested within this branch)
-      if (pipeColumn > parallelPipeColumn) {
+      // Only consume if it's on a different line AND more indented (nested within this branch)
+      if (pipeToken.line !== parallelPipeLine && pipeToken.column > parallelPipeColumn) {
         ctx.advance(); // consume />>>
         ctx.skipNewlines();
         const stageExpr = parseStageExpr(ctx);
