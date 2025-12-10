@@ -24,6 +24,9 @@
   ],
   "main": "dist/api.js",
   "types": "dist/api.d.ts",
+  "bin": {
+    "lea": "./dist/cli/lea.js"
+  },
   "exports": {
     ".": {
       "import": "./dist/api.js",
@@ -32,12 +35,20 @@
     }
   },
   "files": [
-    "dist/**/*.js",
-    "dist/**/*.d.ts",
-    "!dist/debugger.*",
-    "!dist/formatter.*",
-    "!dist/visualizer.*",
-    "!dist/lsp/"
+    "dist/api.*",
+    "dist/ast.*",
+    "dist/errors.*",
+    "dist/lexer.*",
+    "dist/parser.*",
+    "dist/parser/",
+    "dist/interpreter.*",
+    "dist/interpreter/",
+    "dist/token.*",
+    "dist/cli/",
+    "dist/repl.*",
+    "dist/init.*",
+    "dist/debugger.*",
+    "dist/README.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
