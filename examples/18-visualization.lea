@@ -1,7 +1,14 @@
 -- Visualization Example
 -- This file demonstrates various pipe patterns that can be visualized
--- Run: npm run visualize -- examples/17-visualization.lea
--- Or:  npm run visualize -- examples/17-visualization.lea --html -o flow.html
+--
+-- Generate interactive canvas (recommended):
+--   npm run visualize -- examples/18-visualization.lea --canvas -o viz.html
+--
+-- Generate static HTML:
+--   npm run visualize -- examples/18-visualization.lea --html -o flow.html
+--
+-- Generate Mermaid markdown:
+--   npm run visualize -- examples/18-visualization.lea
 
 -- Helper functions
 let double = (x) -> x * 2

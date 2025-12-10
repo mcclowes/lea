@@ -70,4 +70,6 @@ npm run lea file.lea      # Run file
 npm run repl              # Interactive REPL
 npm test                  # Unit tests
 npm run test:integration  # Integration tests
+npm run visualize -- file.lea           # Output Mermaid markdown
+npm run visualize -- file.lea --html    # Output HTML with diagram
 ```
