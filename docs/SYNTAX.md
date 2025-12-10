@@ -265,15 +265,15 @@ x > 100
 
 ```lea
 let describe = (x) -> match x
-  | 0 -> "zero"                 -- Match literal
+  | 0 -> "zero"                    -- Match literal
   | 1 -> "one"
-  | if _ < 0 -> "negative"      -- Guard with _ as matched value
-  | if _ > 100 -> "big"
-  | "default"                   -- Default case
+  | if input < 0 -> "negative"     -- Guard with 'input' as matched value
+  | if input > 100 -> "big"
+  | "default"                      -- Default case
 
--- Using _ in result body
+-- Using 'input' in result body
 let double = (x) -> match x
-  | if _ > 0 -> _ * 2
+  | if input > 0 -> input * 2
   | 0
 ```
 
@@ -284,7 +284,7 @@ let double = (x) -> match x
 ```lea
 16 /> sqrt                  -- sqrt(16) = 4
 5 /> add(3)                 -- add(5, 3) - value becomes first arg
-5 /> add(3, _)              -- add(3, 5) - placeholder controls position
+5 /> add(3, input)          -- add(3, 5) - placeholder controls position
 ```
 
 ### Pipe Chains
