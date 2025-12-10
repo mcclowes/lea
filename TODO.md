@@ -22,7 +22,7 @@
 - [x] Update CLAUDE.md with module syntax
 - [x] Add examples in `examples/modules/`
 - [x] Update VS Code syntax highlighting
-- [ ] **CRITICAL: Context system across modules** - How should `context` and `provide` work across module boundaries? Options:
+- [x] **CRITICAL: Context system across modules** - How should `context` and `provide` work across module boundaries? Options:
 - [x] Implement ternary statements
 - [x] Custom decorators
 - [x] Linting for IDEs/VSCode
