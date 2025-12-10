@@ -15,6 +15,7 @@
     "src/format.ts",
     "src/formatter.ts",
     "src/init.ts",
+    "src/lsp/**/*",
     "__tests__/**/*"
   ]
 }

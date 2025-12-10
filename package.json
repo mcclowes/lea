@@ -1,6 +1,6 @@
 {
   "name": "lea-lang",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A pipe-oriented functional programming language, embeddable in TypeScript",
   "author": "Max Clayton Clowes",
   "license": "MIT",
@@ -39,11 +39,12 @@
     "dist/parser/",
     "dist/interpreter.*",
     "dist/interpreter/",
-    "dist/token.*",
-    "dist/README.md"
+    "dist/token.*"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && cp README.npm.md dist/README.md",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "mv README.md README.repo.md && cp README.npm.md README.md",
+    "postpack": "rm README.md && mv README.repo.md README.md",
     "prepublishOnly": "npm run build",
     "repl": "ts-node src/repl.ts",
     "lea": "ts-node src/index.ts",
