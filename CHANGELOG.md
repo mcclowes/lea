@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **Pipelines can start with spread pipe**: `/>>> double /> sum` - first stage can now be a spread operation
+
 ## [1.1.3] - 2025-12-10
 
 ### Added

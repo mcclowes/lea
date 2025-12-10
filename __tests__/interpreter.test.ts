@@ -411,6 +411,27 @@ describe('Interpreter', () => {
       // [11, 100] />>> addHundred = [111, 200]
       expect(result).toEqual([111, 200]);
     });
+
+    it('should handle pipeline starting with spread', () => {
+      const result = evaluate(`
+        let double = (x) -> x * 2
+        let sum = (list) -> reduce(list, 0, (acc, x) -> acc + x)
+        let p = />>> double /> sum
+        [1, 2, 3] /> p
+      `);
+      // [1, 2, 3] />>> double = [2, 4, 6]
+      // [2, 4, 6] /> sum = 12
+      expect(result).toBe(12);
+    });
+
+    it('should handle pipeline starting with spread only', () => {
+      const result = evaluate(`
+        let double = (x) -> x * 2
+        let p = />>> double
+        [1, 2, 3] /> p
+      `);
+      expect(result).toEqual([2, 4, 6]);
+    });
   });
 
   describe('reversible functions', () => {

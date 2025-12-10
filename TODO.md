@@ -15,7 +15,8 @@
   - Regex pattern tested and matches correctly; VS Code extension version 0.2.3 ready for republishing
 - [X] Create a changelog and ensure Claude keeps it up to date
   - Added CHANGELOG.md with full project history
-- [ ] Allow pipelines to begin with />>> ?
+- [X] Allow pipelines to begin with />>> ?
+  - Pipelines can now start with `/>>>` for spread operations: `/>>> double /> sum`
 
 ## Feature Ideas
 

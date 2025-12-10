@@ -79,7 +79,13 @@ export function parsePrimary(ctx: ParserContext): Expr {
   // Pipeline literal: /> fn1 /> fn2 /> fn3
   // A pipeline starts with /> and creates a reusable chain of transformations
   if (ctx.match(TokenType.PIPE)) {
-    return parsePipelineLiteral(ctx);
+    return parsePipelineLiteral(ctx, false);
+  }
+
+  // Pipeline literal starting with spread: />>> fn /> fn2
+  // A pipeline can also start with />>> for spread operations
+  if (ctx.match(TokenType.SPREAD_PIPE)) {
+    return parsePipelineLiteral(ctx, true);
   }
 
   // Bidirectional pipeline literal: </> fn1 </> fn2 </> fn3
@@ -201,6 +207,7 @@ export function parseRecord(ctx: ParserContext): Expr {
 /**
  * Parse a pipeline literal: /> fn1 /> fn2 /> fn3
  * Can include parallel stages: /> fn1 \> branch1 \> branch2 /> combiner
+ * Can start with spread pipe: />>> fn1 /> fn2
  *
  * Parallel branches can contain nested pipes (indentation-based):
  *   \> head
@@ -208,17 +215,21 @@ export function parseRecord(ctx: ParserContext): Expr {
  *     /> transform
  *   /> combine
  */
-export function parsePipelineLiteral(ctx: ParserContext): Expr {
+export function parsePipelineLiteral(ctx: ParserContext, firstIsSpread: boolean = false): Expr {
   const stages: AnyPipelineStage[] = [];
 
   // Set inPipeOperand flag so function bodies don't consume pipes
   const wasInPipeOperand = ctx.inPipeOperand;
   ctx.setInPipeOperand(true);
 
-  // Parse the first stage (already consumed the initial />)
+  // Parse the first stage (already consumed the initial /> or />>>)
   ctx.skipNewlines();
   let stageExpr = parseStageExpr(ctx);
-  stages.push({ expr: stageExpr });
+  if (firstIsSpread) {
+    stages.push({ isSpread: true, expr: stageExpr } as SpreadPipelineStage);
+  } else {
+    stages.push({ expr: stageExpr });
+  }
 
   // Continue parsing more stages
   while (true) {
