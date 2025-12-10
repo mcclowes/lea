@@ -3,3 +3,5 @@ dist/
 *.js
 !src/**/*.js
 .DS_Store
+vscode-lea/out/
+vscode-lea/*.vsix
