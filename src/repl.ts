@@ -1,6 +1,7 @@
 import * as readline from "readline";
 import * as fs from "fs";
 import * as path from "path";
+import * as os from "os";
 import { Lexer, LexerError } from "./lexer";
 import { Parser, ParseError } from "./parser";
 import {
@@ -14,11 +15,38 @@ import {
   LeaTuple,
 } from "./interpreter";
 import { formatError } from "./errors";
+import { stringify } from "./interpreter/helpers";
+import {
+  Debugger,
+  DebugSession,
+  getDebugger,
+  DebugEvent,
+  Breakpoint,
+} from "./debugger";
 
 // Parse CLI arguments
 const args = process.argv.slice(2);
 const strictFlag = args.includes("--strict");
 const tutorialFlag = args.includes("--tutorial");
+
+// ============================================================================
+// Constants for persistence
+// ============================================================================
+
+const LEA_DIR = path.join(os.homedir(), ".lea");
+const HISTORY_FILE = path.join(LEA_DIR, "history");
+const WORKSPACE_DIR = path.join(LEA_DIR, "workspaces");
+const MAX_HISTORY_LINES = 1000;
+
+// Ensure directories exist
+function ensureDirectories(): void {
+  if (!fs.existsSync(LEA_DIR)) {
+    fs.mkdirSync(LEA_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(WORKSPACE_DIR)) {
+    fs.mkdirSync(WORKSPACE_DIR, { recursive: true });
+  }
+}
 
 // ============================================================================
 // Help Topics
@@ -32,7 +60,7 @@ const HELP_TOPICS: Record<string, string> = {
 
 COMMANDS:
   .help [topic]     Show help (topics: pipes, functions, lists, decorators,
-                    types, async, patterns, contexts, pipelines)
+                    types, async, patterns, contexts, pipelines, debug)
   .examples         Show example snippets
   .example <n>      Run example number n
   .type <expr>      Show the type of an expression
@@ -42,6 +70,21 @@ COMMANDS:
   .multiline        Toggle multi-line input mode
   .tutorial         Start interactive tutorial
   .exit             Exit the REPL
+
+DEBUGGER:
+  .debug <expr>     Debug an expression step-by-step
+  .break <line>     Set breakpoint at line number
+  .breaks           List all breakpoints
+  .delbreak <id>    Delete breakpoint by ID
+  .watch <expr>     Add a watch expression
+  .watches          List watch expressions
+
+SESSION:
+  .save [name]      Save workspace state
+  .load <name>      Load workspace state
+  .workspaces       List saved workspaces
+  .export [file]    Export session to .lea file
+  .history [n]      Show last n commands (default: 20)
 
 QUICK START:
   let x = 10                    -- immutable binding
@@ -382,6 +425,81 @@ REACTIVE PIPELINES:
   source = [1, 2, 3, 4]          -- marks r as dirty
   r.value                        -- 20 (recomputed)
 `,
+
+  debug: `
+═══════════════════════════════════════════════════════════════════════════════
+DEBUGGER
+═══════════════════════════════════════════════════════════════════════════════
+
+The Lea REPL includes an interactive debugger for stepping through pipelines
+and inspecting intermediate values.
+
+STARTING A DEBUG SESSION:
+  .debug [1, 2, 3] /> map((x) -> x * 2) /> sum
+
+DEBUG COMMANDS (while in debug mode):
+  n, next       Step to next pipeline stage
+  c, continue   Continue execution until next breakpoint
+  i, inspect    Inspect current value in detail
+  s, stages     Show all pipeline stages
+  v, vars       Show recorded values
+  b, break      List breakpoints
+  h, help       Show debug help
+  q, quit       Quit debug session
+
+BREAKPOINTS:
+  .break 10              Set breakpoint at line 10
+  .break 10 file.lea     Set breakpoint at line 10 in file.lea
+  .breaks                List all breakpoints
+  .delbreak 1            Delete breakpoint #1
+  .clearbreaks           Clear all breakpoints
+
+WATCH EXPRESSIONS:
+  .watch x               Watch variable x
+  .watch x * 2           Watch expression
+  .watches               List all watch expressions
+  .delwatch x            Remove watch expression
+
+SESSION MANAGEMENT:
+  .save mywork           Save current workspace as "mywork"
+  .load mywork           Load workspace "mywork"
+  .workspaces            List all saved workspaces
+  .export session.lea    Export session history to file
+
+TIP: Use #debug decorator on pipelines for automatic stage-by-stage logging:
+  let process = /> double /> addOne #debug
+  5 /> process           -- shows each stage's input/output
+`,
+
+  session: `
+═══════════════════════════════════════════════════════════════════════════════
+SESSION MANAGEMENT
+═══════════════════════════════════════════════════════════════════════════════
+
+Save, load, and export your REPL sessions.
+
+SAVING WORKSPACE:
+  .save                  Save with auto-generated name (timestamp)
+  .save mywork           Save as "mywork"
+
+LOADING WORKSPACE:
+  .load mywork           Load workspace "mywork"
+  .workspaces            List all saved workspaces
+
+EXPORTING SESSION:
+  .export                Export to session.lea in current directory
+  .export mycode.lea     Export to specified file
+
+HISTORY:
+  .history               Show last 20 commands
+  .history 50            Show last 50 commands
+
+History is automatically persisted across sessions in ~/.lea/history
+
+WORKSPACE FILES:
+  Workspaces are stored in ~/.lea/workspaces/
+  Each workspace contains variable bindings and can be reloaded later.
+`,
 };
 
 // ============================================================================
@@ -592,6 +710,13 @@ interface ReplState {
   inTutorial: boolean;
   history: string[];
   historyIndex: number;
+  // Session tracking for export
+  sessionCommands: string[];
+  sessionResults: Array<{ command: string; result: string }>;
+  // Debug state
+  debugger: Debugger;
+  debugSession: DebugSession | null;
+  inDebugMode: boolean;
 }
 
 const state: ReplState = {
@@ -602,7 +727,195 @@ const state: ReplState = {
   inTutorial: tutorialFlag,
   history: [],
   historyIndex: -1,
+  sessionCommands: [],
+  sessionResults: [],
+  debugger: getDebugger(),
+  debugSession: null,
+  inDebugMode: false,
 };
+
+// ============================================================================
+// History Persistence
+// ============================================================================
+
+function loadHistory(): string[] {
+  ensureDirectories();
+  try {
+    if (fs.existsSync(HISTORY_FILE)) {
+      const content = fs.readFileSync(HISTORY_FILE, "utf-8");
+      return content.split("\n").filter((line) => line.trim());
+    }
+  } catch {
+    // Ignore errors reading history
+  }
+  return [];
+}
+
+function saveHistory(history: string[]): void {
+  ensureDirectories();
+  try {
+    // Keep only the last MAX_HISTORY_LINES
+    const toSave = history.slice(-MAX_HISTORY_LINES);
+    fs.writeFileSync(HISTORY_FILE, toSave.join("\n"), "utf-8");
+  } catch {
+    // Ignore errors writing history
+  }
+}
+
+function appendToHistory(line: string): void {
+  ensureDirectories();
+  try {
+    fs.appendFileSync(HISTORY_FILE, line + "\n", "utf-8");
+  } catch {
+    // Ignore errors
+  }
+}
+
+// ============================================================================
+// Workspace Management
+// ============================================================================
+
+interface WorkspaceData {
+  name: string;
+  createdAt: string;
+  bindings: Record<string, string>;  // name -> serialized value
+  history: string[];
+}
+
+function serializeValue(val: LeaValue): string {
+  // Serialize Lea values to JSON-compatible format
+  if (val === null) return "null";
+  if (typeof val === "number") return JSON.stringify(val);
+  if (typeof val === "string") return JSON.stringify(val);
+  if (typeof val === "boolean") return JSON.stringify(val);
+  if (Array.isArray(val)) return JSON.stringify(val);
+  if (typeof val === "object" && "kind" in val) {
+    switch (val.kind) {
+      case "tuple":
+        return `(${(val as LeaTuple).elements.map((e) => serializeValue(e)).join(", ")})`;
+      case "record":
+        return `<record>`;
+      case "function":
+        return `<function>`;
+      case "builtin":
+        return `<builtin>`;
+      case "pipeline":
+        return `<pipeline:${(val as LeaPipeline).stages.length} stages>`;
+      case "bidirectional_pipeline":
+        return `<bidirectional-pipeline>`;
+      case "reversible_function":
+        return `<reversible-function>`;
+      case "reactive":
+        return `<reactive>`;
+      default:
+        return `<${val.kind}>`;
+    }
+  }
+  return String(val);
+}
+
+function saveWorkspace(name?: string): string {
+  ensureDirectories();
+  const workspaceName = name || `workspace-${Date.now()}`;
+  const workspacePath = path.join(WORKSPACE_DIR, `${workspaceName}.json`);
+
+  // Get all user-defined bindings
+  const globals = (state.interpreter as unknown as { globals: Environment }).globals;
+  const values = (globals as unknown as { values: Map<string, { value: LeaValue; mutable: boolean }> }).values;
+
+  const bindings: Record<string, string> = {};
+  if (values) {
+    for (const [bindingName, entry] of values) {
+      // Skip built-ins
+      if (bindingName === "Pipeline") continue;
+      if (typeof entry.value === "object" && entry.value !== null && "kind" in entry.value && entry.value.kind === "builtin") continue;
+      bindings[bindingName] = serializeValue(entry.value);
+    }
+  }
+
+  const data: WorkspaceData = {
+    name: workspaceName,
+    createdAt: new Date().toISOString(),
+    bindings,
+    history: state.sessionCommands.slice(-100),  // Last 100 commands
+  };
+
+  fs.writeFileSync(workspacePath, JSON.stringify(data, null, 2), "utf-8");
+  return workspaceName;
+}
+
+function loadWorkspace(name: string): boolean {
+  const workspacePath = path.join(WORKSPACE_DIR, `${name}.json`);
+  if (!fs.existsSync(workspacePath)) {
+    return false;
+  }
+
+  try {
+    const content = fs.readFileSync(workspacePath, "utf-8");
+    const data: WorkspaceData = JSON.parse(content);
+
+    // Re-execute the history to restore state
+    console.log(`\nLoading workspace "${data.name}"...`);
+    console.log(`Created: ${data.createdAt}`);
+    console.log(`Restoring ${data.history.length} commands...`);
+
+    // Reset interpreter
+    state.interpreter = new Interpreter(strictFlag);
+
+    // Re-run all historical commands (silently)
+    for (const cmd of data.history) {
+      try {
+        runCode(cmd, true);  // Silent mode
+      } catch {
+        // Skip commands that fail
+      }
+    }
+
+    console.log(`Workspace "${name}" loaded successfully.`);
+    console.log(`Use .bindings to see restored variables.\n`);
+    return true;
+  } catch (err) {
+    console.error(`Error loading workspace: ${err}`);
+    return false;
+  }
+}
+
+function listWorkspaces(): string[] {
+  ensureDirectories();
+  try {
+    const files = fs.readdirSync(WORKSPACE_DIR);
+    return files
+      .filter((f) => f.endsWith(".json"))
+      .map((f) => f.replace(".json", ""));
+  } catch {
+    return [];
+  }
+}
+
+// ============================================================================
+// Session Export
+// ============================================================================
+
+function exportSession(filename?: string): string {
+  const outputFile = filename || "session.lea";
+  const outputPath = path.resolve(outputFile);
+
+  // Build Lea source from session commands
+  const lines: string[] = [
+    "-- Lea session export",
+    `-- Exported: ${new Date().toISOString()}`,
+    "",
+  ];
+
+  for (const cmd of state.sessionCommands) {
+    // Skip REPL commands
+    if (cmd.startsWith(".")) continue;
+    lines.push(cmd);
+  }
+
+  fs.writeFileSync(outputPath, lines.join("\n"), "utf-8");
+  return outputPath;
+}
 
 // ============================================================================
 // Value Formatting
@@ -816,7 +1129,7 @@ function checkTutorialAnswer(input: string, result: LeaValue): boolean {
 // Code Execution
 // ============================================================================
 
-function runCode(source: string): LeaValue | null {
+function runCode(source: string, silent: boolean = false): LeaValue | null {
   try {
     const lexer = new Lexer(source);
     const tokens = lexer.scanTokens();
@@ -831,12 +1144,208 @@ function runCode(source: string): LeaValue | null {
     return result;
   } catch (err) {
     if (err instanceof LexerError || err instanceof ParseError || err instanceof RuntimeError) {
-      console.error(formatError(err));
+      if (!silent) {
+        console.error(formatError(err));
+      }
     } else {
       throw err;
     }
     return null;
   }
+}
+
+// ============================================================================
+// Debug Commands
+// ============================================================================
+
+async function debugExpression(expr: string): Promise<void> {
+  console.log("\n╔══════════════════════════════════════════════════════════════════════╗");
+  console.log("║                        DEBUG MODE                                     ║");
+  console.log("╚══════════════════════════════════════════════════════════════════════╝\n");
+
+  // Enable debugger
+  state.debugger.enable();
+  state.inDebugMode = true;
+
+  // Set up debug callback
+  state.debugger.setCallback(async (event: DebugEvent): Promise<boolean> => {
+    // Display event info
+    console.log("\n─────────────────────────────────────────────────────────────────────");
+
+    if (event.type === "breakpoint_hit") {
+      console.log(`🔴 Breakpoint hit at line ${event.location?.line}`);
+    } else if (event.type === "pipe_stage") {
+      console.log(`Stage ${(event.stageIndex ?? 0) + 1}/${event.totalStages}: ${event.stageName}`);
+    } else if (event.type === "pipeline_start") {
+      console.log(`Pipeline started with ${event.totalStages} stages`);
+    } else if (event.type === "pipeline_end") {
+      console.log(`Pipeline completed`);
+    }
+
+    if (event.inputValue !== undefined) {
+      console.log(`Input:  ${state.debugger.formatValue(event.inputValue)}`);
+    }
+    if (event.outputValue !== undefined) {
+      console.log(`Output: ${state.debugger.formatValue(event.outputValue)}`);
+    }
+
+    console.log("─────────────────────────────────────────────────────────────────────");
+
+    // Show watch expressions
+    const watches = state.debugger.listWatches();
+    if (watches.length > 0) {
+      console.log("\nWatch expressions:");
+      for (const watchExpr of watches) {
+        try {
+          const val = runCode(watchExpr, true);
+          console.log(`  ${watchExpr} = ${formatValue(val)}`);
+        } catch {
+          console.log(`  ${watchExpr} = <error>`);
+        }
+      }
+    }
+
+    // Interactive prompt
+    return new Promise((resolve) => {
+      const debugPrompt = (): void => {
+        const rl = readline.createInterface({
+          input: process.stdin,
+          output: process.stdout,
+        });
+
+        rl.question("debug> ", (answer) => {
+          rl.close();
+          const cmd = answer.trim().toLowerCase();
+
+          switch (cmd) {
+            case "n":
+            case "next":
+              state.debugger.step();
+              resolve(true);
+              break;
+
+            case "c":
+            case "continue":
+              state.debugger.continue();
+              resolve(true);
+              break;
+
+            case "i":
+            case "inspect":
+              const lastVal = state.debugger.getLastValue();
+              if (lastVal) {
+                console.log("\nCurrent value:");
+                console.log(stringify(lastVal.value));
+              } else {
+                console.log("\nNo value to inspect.");
+              }
+              console.log();
+              debugPrompt();
+              break;
+
+            case "v":
+            case "vars":
+              console.log("\nRecorded values:");
+              const history = state.debugger.getValueHistory();
+              if (history.length === 0) {
+                console.log("  (none)");
+              } else {
+                for (const entry of history.slice(-10)) {
+                  console.log(`  ${entry.name} = ${state.debugger.formatValue(entry.value)}`);
+                }
+              }
+              console.log();
+              debugPrompt();
+              break;
+
+            case "b":
+            case "breaks":
+              console.log("\nBreakpoints:");
+              const bps = state.debugger.listBreakpoints();
+              if (bps.length === 0) {
+                console.log("  (none)");
+              } else {
+                for (const bp of bps) {
+                  console.log(`  ${state.debugger.formatBreakpoint(bp)}`);
+                }
+              }
+              console.log();
+              debugPrompt();
+              break;
+
+            case "h":
+            case "help":
+              console.log(`
+Debug Commands:
+  n, next       Step to next pipeline stage
+  c, continue   Continue execution until next breakpoint
+  i, inspect    Inspect current value in detail
+  v, vars       Show recorded values
+  b, breaks     List breakpoints
+  h, help       Show this help
+  q, quit       Quit debug session
+
+Press Enter to step to next stage.
+`);
+              debugPrompt();
+              break;
+
+            case "q":
+            case "quit":
+              console.log("Quitting debug session.");
+              state.debugger.disable();
+              state.inDebugMode = false;
+              resolve(false);
+              break;
+
+            case "":
+              // Empty input - step
+              state.debugger.step();
+              resolve(true);
+              break;
+
+            default:
+              // Try to evaluate as expression
+              const val = runCode(cmd, true);
+              if (val !== null) {
+                console.log(formatValue(val));
+              } else {
+                console.log(`Unknown command. Type 'h' for help.`);
+              }
+              debugPrompt();
+          }
+        });
+      };
+
+      debugPrompt();
+    });
+  });
+
+  // Parse and run with debug mode
+  try {
+    console.log(`Debugging: ${expr}\n`);
+    console.log("Commands: n(ext), c(ontinue), i(nspect), v(ars), b(reaks), h(elp), q(uit)");
+    console.log("Press Enter to step.\n");
+
+    // Run the expression - the debugger callback will be triggered for pipeline stages
+    const result = runCode(expr);
+    if (result !== null) {
+      console.log(`\nResult: ${formatValue(result)}`);
+    }
+  } finally {
+    state.debugger.disable();
+    state.debugger.clearCallback();
+    state.inDebugMode = false;
+  }
+}
+
+function showHistory(count: number = 20): void {
+  const hist = state.history.slice(-count);
+  console.log(`\nLast ${hist.length} commands:`);
+  hist.forEach((cmd, i) => {
+    console.log(`  ${state.history.length - hist.length + i + 1}: ${cmd}`);
+  });
+  console.log();
 }
 
 function handleInput(line: string): void {
@@ -847,10 +1356,11 @@ function handleInput(line: string): void {
     return;
   }
 
-  // Add to history
+  // Add to history (both in-memory and persisted)
   if (trimmed && !trimmed.startsWith(".")) {
     state.history.push(trimmed);
     state.historyIndex = state.history.length;
+    appendToHistory(trimmed);  // Persist immediately
   }
 
   // Handle multiline mode
@@ -877,20 +1387,20 @@ function handleInput(line: string): void {
   if (trimmed.startsWith(".")) {
     const parts = trimmed.slice(1).split(/\s+/);
     const cmd = parts[0].toLowerCase();
-    const args = parts.slice(1);
+    const cmdArgs = parts.slice(1);
 
     switch (cmd) {
       case "help":
-        showHelp(args[0]);
+        showHelp(cmdArgs[0]);
         break;
       case "examples":
         showExamples();
         break;
       case "example":
-        runExample(parseInt(args[0], 10));
+        runExample(parseInt(cmdArgs[0], 10));
         break;
       case "type":
-        showType(args.join(" "));
+        showType(cmdArgs.join(" "));
         break;
       case "bindings":
         showBindings();
@@ -900,6 +1410,8 @@ function handleInput(line: string): void {
         break;
       case "reset":
         state.interpreter = new Interpreter(strictFlag);
+        state.sessionCommands = [];
+        state.sessionResults = [];
         console.log("Interpreter state reset.");
         break;
       case "multiline":
@@ -911,7 +1423,150 @@ function handleInput(line: string): void {
         state.tutorialStep = 0;
         showTutorialStep();
         break;
+
+      // Debug commands
+      case "debug":
+        if (cmdArgs.length === 0) {
+          console.log("Usage: .debug <expression>");
+          console.log("Example: .debug [1, 2, 3] /> map((x) -> x * 2) /> sum");
+        } else {
+          const expr = cmdArgs.join(" ");
+          debugExpression(expr);
+        }
+        break;
+      case "break":
+        if (cmdArgs.length === 0) {
+          console.log("Usage: .break <line> [file]");
+        } else {
+          const line = parseInt(cmdArgs[0], 10);
+          const file = cmdArgs[1];
+          if (isNaN(line)) {
+            console.log("Invalid line number.");
+          } else {
+            const bp = state.debugger.addBreakpoint(line, file);
+            console.log(`Breakpoint #${bp.id} set at ${file ? `${file}:` : "line "}${line}`);
+          }
+        }
+        break;
+      case "breaks":
+        const breakpoints = state.debugger.listBreakpoints();
+        if (breakpoints.length === 0) {
+          console.log("No breakpoints set.");
+        } else {
+          console.log("\nBreakpoints:");
+          for (const bp of breakpoints) {
+            console.log(`  ${state.debugger.formatBreakpoint(bp)}`);
+          }
+          console.log();
+        }
+        break;
+      case "delbreak":
+        if (cmdArgs.length === 0) {
+          console.log("Usage: .delbreak <id>");
+        } else {
+          const id = parseInt(cmdArgs[0], 10);
+          if (state.debugger.removeBreakpoint(id)) {
+            console.log(`Breakpoint #${id} deleted.`);
+          } else {
+            console.log(`Breakpoint #${id} not found.`);
+          }
+        }
+        break;
+      case "clearbreaks":
+        state.debugger.clearBreakpoints();
+        console.log("All breakpoints cleared.");
+        break;
+      case "watch":
+        if (cmdArgs.length === 0) {
+          console.log("Usage: .watch <expression>");
+        } else {
+          const watchExpr = cmdArgs.join(" ");
+          state.debugger.addWatch(watchExpr);
+          console.log(`Watching: ${watchExpr}`);
+        }
+        break;
+      case "watches":
+        const watches = state.debugger.listWatches();
+        if (watches.length === 0) {
+          console.log("No watch expressions.");
+        } else {
+          console.log("\nWatch expressions:");
+          for (const w of watches) {
+            try {
+              const val = runCode(w, true);
+              console.log(`  ${w} = ${formatValue(val)}`);
+            } catch {
+              console.log(`  ${w} = <error>`);
+            }
+          }
+          console.log();
+        }
+        break;
+      case "delwatch":
+        if (cmdArgs.length === 0) {
+          console.log("Usage: .delwatch <expression>");
+        } else {
+          const expr = cmdArgs.join(" ");
+          if (state.debugger.removeWatch(expr)) {
+            console.log(`Watch removed: ${expr}`);
+          } else {
+            console.log(`Watch not found: ${expr}`);
+          }
+        }
+        break;
+      case "clearwatches":
+        state.debugger.clearWatches();
+        console.log("All watches cleared.");
+        break;
+
+      // Session commands
+      case "save":
+        try {
+          const workspaceName = saveWorkspace(cmdArgs[0]);
+          console.log(`Workspace saved as "${workspaceName}"`);
+        } catch (err) {
+          console.error(`Error saving workspace: ${err}`);
+        }
+        break;
+      case "load":
+        if (cmdArgs.length === 0) {
+          console.log("Usage: .load <workspace-name>");
+          console.log("Use .workspaces to list available workspaces.");
+        } else {
+          if (!loadWorkspace(cmdArgs[0])) {
+            console.log(`Workspace "${cmdArgs[0]}" not found.`);
+            console.log("Use .workspaces to list available workspaces.");
+          }
+        }
+        break;
+      case "workspaces":
+        const workspaceList = listWorkspaces();
+        if (workspaceList.length === 0) {
+          console.log("No saved workspaces.");
+          console.log("Use .save [name] to save the current workspace.");
+        } else {
+          console.log("\nSaved workspaces:");
+          for (const w of workspaceList) {
+            console.log(`  ${w}`);
+          }
+          console.log();
+        }
+        break;
+      case "export":
+        try {
+          const outputPath = exportSession(cmdArgs[0]);
+          console.log(`Session exported to: ${outputPath}`);
+        } catch (err) {
+          console.error(`Error exporting session: ${err}`);
+        }
+        break;
+      case "history":
+        const count = parseInt(cmdArgs[0], 10) || 20;
+        showHistory(count);
+        break;
+
       case "exit":
+        saveHistory(state.history);
         console.log("Goodbye!");
         process.exit(0);
       default:
@@ -927,10 +1582,15 @@ function handleInput(line: string): void {
     return;
   }
 
+  // Track session commands
+  state.sessionCommands.push(line);
+
   // Execute code
   const result = runCode(line);
   if (result !== null) {
-    console.log(formatValue(result));
+    const formatted = formatValue(result);
+    console.log(formatted);
+    state.sessionResults.push({ command: line, result: formatted });
   }
 
   // Check tutorial answer
@@ -964,6 +1624,11 @@ const BUILTINS = [
 const COMMANDS = [
   ".help", ".examples", ".example", ".type", ".bindings", ".clear",
   ".reset", ".multiline", ".tutorial", ".exit",
+  // Debugger commands
+  ".debug", ".break", ".breaks", ".delbreak", ".clearbreaks",
+  ".watch", ".watches", ".delwatch", ".clearwatches",
+  // Session commands
+  ".save", ".load", ".workspaces", ".export", ".history",
 ];
 
 const HELP_TOPIC_NAMES = Object.keys(HELP_TOPICS).filter(k => k !== "main");
@@ -1061,6 +1726,21 @@ function printBanner(): void {
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 `);
 }
+
+// Initialize and load history
+ensureDirectories();
+state.history = loadHistory();
+
+// Handle graceful shutdown
+process.on("SIGINT", () => {
+  saveHistory(state.history);
+  console.log("\nGoodbye!");
+  process.exit(0);
+});
+
+process.on("exit", () => {
+  saveHistory(state.history);
+});
 
 printBanner();
 
