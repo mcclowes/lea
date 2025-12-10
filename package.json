@@ -50,14 +50,16 @@
     "lea:init": "ts-node src/init.ts",
     "visualize": "ts-node src/visualize.ts",
     "format": "ts-node src/format.ts",
+    "lsp": "ts-node src/lsp/server.ts --stdio",
+    "lsp:build": "tsc -p tsconfig.lsp.json",
     "examples": "for f in examples/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done",
     "test": "jest",
     "test:unit": "jest",
     "test:integration": "for f in tests/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "vscode:package": "cd vscode-lea && vsce package",
-    "vscode:publish": "cd vscode-lea && vsce publish"
+    "vscode:package": "cd vscode-lea && npm run build && vsce package",
+    "vscode:publish": "cd vscode-lea && npm run build && vsce publish"
   },
   "jest": {
     "preset": "ts-jest",
@@ -82,6 +84,10 @@
     ],
     "coverageDirectory": "coverage",
     "verbose": true
+  },
+  "dependencies": {
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
