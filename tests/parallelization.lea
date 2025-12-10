@@ -1,0 +1,70 @@
+-- Pipeline Parallelization Tests
+-- Tests for #parallel, #batch, #prefetch decorators and .analyze() method
+
+-- ==========================================
+-- Test 1: Basic parallel decorator
+-- ==========================================
+let double = (x) -> x * 2
+let processNumbers = /> map(double) #parallel
+let result1 = [1, 2, 3, 4, 5] /> processNumbers
+result1 /> print  -- Expected: [2, 4, 6, 8, 10]
+
+-- ==========================================
+-- Test 2: Parallel with concurrency limit
+-- ==========================================
+let slowDouble = (x) ->
+  let _ = delay(10, null)
+  x * 2
+
+let limitedPipeline = /> map(slowDouble) #parallel(2)
+-- [1, 2, 3] /> limitedPipeline /> print  -- Would process 2 at a time
+
+-- ==========================================
+-- Test 3: Batch processing
+-- ==========================================
+let addOne = (x) -> x + 1
+let batchPipeline = /> map(addOne) #batch(4)
+let result3 = [1, 2, 3, 4, 5, 6, 7, 8] /> batchPipeline
+result3 /> print  -- Expected: [2, 3, 4, 5, 6, 7, 8, 9]
+
+-- ==========================================
+-- Test 4: Pipeline analysis
+-- ==========================================
+let analysisPipeline = /> filter((x) -> x > 0) /> map((x) -> x * 2) /> map((x) -> x + 1)
+let analysis = analysisPipeline.analyze()
+analysis.suggestions /> print  -- Should suggest fusing maps
+
+-- ==========================================
+-- Test 5: Pipeline with parallel stages
+-- ==========================================
+let parallelPipeline = /> map((x) -> x * 2)
+let result5 = 5 \> ((x) -> x + 1) \> ((x) -> x * 2) /> ((a, b) -> a + b)
+result5 /> print  -- Tests parallel pipe combination
+
+-- ==========================================
+-- Test 6: Spread pipe parallelization
+-- ==========================================
+let triple = (x) -> x * 3
+let result6 = [1, 2, 3, 4, 5] />>>triple
+result6 /> print  -- Expected: [3, 6, 9, 12, 15]
+
+-- ==========================================
+-- Test 7: Prefetch decorator (async)
+-- ==========================================
+let asyncProcess = (x) -> delay(10, x * 2) #async
+let prefetchPipeline = /> map(asyncProcess) #prefetch(3)
+-- This would prefetch 3 items ahead while processing
+
+-- ==========================================
+-- Test 8: Analyze with async ops
+-- ==========================================
+let ioPipeline = /> readFile /> map((x) -> x)
+let ioAnalysis = ioPipeline.analyze()
+ioAnalysis.hasAsyncOps /> print  -- Should be true
+
+-- ==========================================
+-- Summary
+-- ==========================================
+print("Parallelization tests completed!")
+print("Available decorators: #parallel, #parallel(n), #batch(n), #prefetch(n), #autoparallel")
+print("Analysis method: pipeline.analyze()")
