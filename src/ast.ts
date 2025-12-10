@@ -210,17 +210,27 @@ export interface TupleExpr {
 export interface PipelineStage {
   expr: Expr;  // The expression to apply (function, call, identifier, or nested pipeline)
   isParallel?: false;  // Marker for type narrowing
+  isSpread?: false;    // Marker for type narrowing
 }
 
 // Parallel pipeline stage - a fan-out/fan-in stage within a pipeline
 // Syntax within pipeline: \> branch1 \> branch2 /> combiner
 export interface ParallelPipelineStage {
   isParallel: true;
+  isSpread?: false;    // Marker for type narrowing
   branches: Expr[];  // The parallel branches to execute
 }
 
+// Spread pipeline stage - maps a function over each element of a list
+// Syntax within pipeline: />>> fn
+export interface SpreadPipelineStage {
+  isParallel?: false;  // Marker for type narrowing
+  isSpread: true;
+  expr: Expr;  // The function to apply to each element
+}
+
 // Union type for pipeline stages
-export type AnyPipelineStage = PipelineStage | ParallelPipelineStage;
+export type AnyPipelineStage = PipelineStage | ParallelPipelineStage | SpreadPipelineStage;
 
 // Pipeline literal - a reusable pipeline that can be assigned to a variable
 // Syntax: /> fn1 /> fn2 /> fn3

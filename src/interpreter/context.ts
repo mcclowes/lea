@@ -48,6 +48,10 @@ export interface InterpreterContext {
   evaluatePipeWithValue(pipedValue: LeaValue, right: Expr, env: Environment, spreadIndex?: number): LeaValue;
   evaluatePipeWithValueAsync(pipedValue: LeaValue, right: Expr, env: Environment): Promise<LeaValue>;
 
+  // Spread pipe methods (sync and async)
+  evaluateSpreadPipeWithValue(leftValue: LeaValue, right: Expr, env: Environment): LeaValue;
+  evaluateSpreadPipeWithValueAsync(leftValue: LeaValue, right: Expr, env: Environment): Promise<LeaValue>;
+
   // Pipeline methods (sync and async)
   applyPipeline(pipeline: LeaPipeline, args: LeaValue[]): LeaValue;
   applyPipelineAsync(pipeline: LeaPipeline, args: LeaValue[]): Promise<LeaValue>;
@@ -65,5 +69,5 @@ export interface InterpreterContext {
   formatType(t: string | { tuple: string[]; optional?: boolean } | { list: string; optional?: boolean }): string;
 
   // Pipeline helpers
-  describeAnyStage(stage: { expr?: Expr; isParallel?: boolean; branches?: Expr[] }): string;
+  describeAnyStage(stage: { expr?: Expr; isParallel?: boolean; isSpread?: boolean; branches?: Expr[] }): string;
 }

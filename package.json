@@ -73,6 +73,7 @@
     "examples": "for f in examples/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done",
     "test": "jest",
     "test:unit": "jest",
+    "test:all": "jest && npm run test:integration",
     "test:integration": "for f in tests/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

@@ -21,6 +21,7 @@ import {
   asList,
   isPipeline,
   isParallelStage,
+  isSpreadStage,
 } from "./helpers";
 import { InterpreterContext } from "./context";
 
@@ -52,6 +53,9 @@ export function describeAnyStage(stage: AnyPipelineStage): string {
   if (isParallelStage(stage)) {
     return `parallel[${stage.branches.length}]`;
   }
+  if (isSpreadStage(stage)) {
+    return `spread(${describeStage(stage.expr)})`;
+  }
   return describeStage(stage.expr);
 }
 
@@ -65,6 +69,9 @@ export function stageToFunction(
 ): LeaValue {
   if (isParallelStage(stage)) {
     throw new RuntimeError("Cannot convert parallel stage to function");
+  }
+  if (isSpreadStage(stage)) {
+    throw new RuntimeError("Cannot convert spread stage to function");
   }
   return ctx.evaluateExpr(stage.expr, closure);
 }
@@ -610,6 +617,10 @@ export function getPipelineMember(
                 if ("isParallel" in s && s.isParallel) {
                   return { text: `${colors.parallel}parallel${colors.reset}`, decorators: [] };
                 }
+                if ("isSpread" in s && s.isSpread) {
+                  const inner = describeStageColored(s.expr);
+                  return { text: `${colors.spread}>>>${colors.reset}${inner.text}`, decorators: inner.decorators };
+                }
                 return describeStageColored(s.expr);
               });
             }
@@ -720,22 +731,28 @@ export function getPipelineMember(
               lines.push(drawConnectors("│"));
               lines.push(drawHorizontalJoin("◆", "┴", "◆", colors.parallel));
 
-            } else {
-              // Regular stage or spread pipe - show as box
+            } else if (isSpreadStage(stage)) {
+              // Spread stage - show with spread indicator
               const { text, decorators } = describeStageColored(stage.expr);
-
-              // Check if this is a spread pipe stage by examining the expression
-              const isSpread = stage.expr.kind === "SpreadPipeExpr";
 
               lines.push(`${centerPad}${colors.connector}│${colors.reset}`);
               lines.push(`${centerPad}${colors.connector}▼${colors.reset}`);
+              lines.push(`  ${colors.box}┌${colors.spread}>>>${"─".repeat(boxWidth - 4)}${colors.box}┐${colors.reset}`);
+              lines.push(`  ${boxMid(text)}`);
 
-              if (isSpread) {
-                // Spread pipe gets special treatment with spread indicator
-                lines.push(`  ${colors.box}┌${colors.spread}>>>${"─".repeat(boxWidth - 4)}${colors.box}┐${colors.reset}`);
-              } else {
-                lines.push(`  ${boxTop()}`);
+              // Show decorators if present
+              if (decorators.length > 0) {
+                lines.push(`  ${boxMid(formatDecorators(decorators))}`);
               }
+
+              lines.push(`  ${boxBot()}`);
+            } else {
+              // Regular stage - show as box
+              const { text, decorators } = describeStageColored(stage.expr);
+
+              lines.push(`${centerPad}${colors.connector}│${colors.reset}`);
+              lines.push(`${centerPad}${colors.connector}▼${colors.reset}`);
+              lines.push(`  ${boxTop()}`);
               lines.push(`  ${boxMid(text)}`);
 
               // Show decorators if present

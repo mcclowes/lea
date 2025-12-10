@@ -7,6 +7,7 @@ import {
   PipelineStage,
   AnyPipelineStage,
   ParallelPipelineStage,
+  SpreadPipelineStage,
   PipelineTypeSignature,
   MatchCase,
   numberLiteral,
@@ -210,6 +211,10 @@ export function parseRecord(ctx: ParserContext): Expr {
 export function parsePipelineLiteral(ctx: ParserContext): Expr {
   const stages: AnyPipelineStage[] = [];
 
+  // Set inPipeOperand flag so function bodies don't consume pipes
+  const wasInPipeOperand = ctx.inPipeOperand;
+  ctx.setInPipeOperand(true);
+
   // Parse the first stage (already consumed the initial />)
   ctx.skipNewlines();
   let stageExpr = parseStageExpr(ctx);
@@ -258,10 +263,21 @@ export function parsePipelineLiteral(ctx: ParserContext): Expr {
       continue;
     }
 
+    // Check for spread pipe />>> - maps function over each element
+    if (ctx.match(TokenType.SPREAD_PIPE)) {
+      ctx.skipNewlines();
+      stageExpr = parseStageExpr(ctx);
+      stages.push({ isSpread: true, expr: stageExpr } as SpreadPipelineStage);
+      continue;
+    }
+
     // No more pipes, restore position and break
     ctx.setCurrent(savedPos);
     break;
   }
+
+  // Restore inPipeOperand flag
+  ctx.setInPipeOperand(wasInPipeOperand);
 
   // Parse optional type signature: :: [Int] or :: [Int] /> [Int]
   let typeSignature: PipelineTypeSignature | undefined;
@@ -313,6 +329,20 @@ function parseParallelBranch(ctx: ParserContext, parallelPipeColumn: number): Ex
         ctx.skipNewlines();
         const stageExpr = parseStageExpr(ctx);
         nestedStages.push({ expr: stageExpr });
+        continue;
+      }
+    }
+
+    // Check if we have a />>> that is more indented than the \>
+    if (ctx.check(TokenType.SPREAD_PIPE)) {
+      const pipeColumn = ctx.peek().column;
+
+      // Only consume if it's more indented (nested within this branch)
+      if (pipeColumn > parallelPipeColumn) {
+        ctx.advance(); // consume />>>
+        ctx.skipNewlines();
+        const stageExpr = parseStageExpr(ctx);
+        nestedStages.push({ isSpread: true, expr: stageExpr } as SpreadPipelineStage);
         continue;
       }
     }

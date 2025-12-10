@@ -19,6 +19,7 @@ import {
   wrapPromise,
   unwrapPromise,
   isParallelStage,
+  isSpreadStage,
   isPipeline,
   isLeaTuple,
 } from "./helpers";
@@ -543,6 +544,10 @@ export function applyPipelineDecorator(
               return branchResult;
             });
             current = { kind: "parallel_result" as const, values: branchResults };
+          } else if (isSpreadStage(stage)) {
+            // Execute spread stage - map function over each element
+            console.log(`[log_verbose]   Spread stage: mapping over ${Array.isArray(current) ? current.length : 'non-list'} elements`);
+            current = ctx.evaluateSpreadPipeWithValue(current, stage.expr, pipeline.closure);
           } else if (stage.expr.kind === "Identifier") {
             const stageVal = ctx.evaluateExpr(stage.expr, pipeline.closure);
             if (isPipeline(stageVal)) {
@@ -640,6 +645,9 @@ export function applyPipelineDecorator(
               return ctx.evaluatePipeWithValue(current, branchExpr, pipeline.closure);
             });
             current = { kind: "parallel_result" as const, values: branchResults };
+          } else if (isSpreadStage(stage)) {
+            // Execute spread stage
+            current = ctx.evaluateSpreadPipeWithValue(current, stage.expr, pipeline.closure);
           } else if (stage.expr.kind === "Identifier") {
             const stageVal = ctx.evaluateExpr(stage.expr, pipeline.closure);
             if (isPipeline(stageVal)) {
@@ -678,6 +686,9 @@ export function applyPipelineDecorator(
               return ctx.evaluatePipeWithValue(current, branchExpr, pipeline.closure);
             });
             current = { kind: "parallel_result" as const, values: branchResults };
+          } else if (isSpreadStage(stage)) {
+            // Execute spread stage
+            current = ctx.evaluateSpreadPipeWithValue(current, stage.expr, pipeline.closure);
           } else if (stage.expr.kind === "Identifier") {
             const stageVal = ctx.evaluateExpr(stage.expr, pipeline.closure);
             if (isPipeline(stageVal)) {
@@ -946,6 +957,10 @@ export function applyPipelineDecoratorAsync(
               })
             );
             current = { kind: "parallel_result" as const, values: branchResults };
+          } else if (isSpreadStage(stage)) {
+            // Execute spread stage - map function over each element
+            console.log(`[log_verbose]   Spread stage: mapping over ${Array.isArray(current) ? current.length : 'non-list'} elements`);
+            current = await ctx.evaluateSpreadPipeWithValueAsync(current, stage.expr, pipeline.closure);
           } else if (stage.expr.kind === "Identifier") {
             const stageVal = await ctx.evaluateExprAsync(stage.expr, pipeline.closure);
             if (isPipeline(stageVal)) {
@@ -1041,6 +1056,9 @@ export function applyPipelineDecoratorAsync(
               })
             );
             current = { kind: "parallel_result" as const, values: branchResults };
+          } else if (isSpreadStage(stage)) {
+            // Execute spread stage
+            current = await ctx.evaluateSpreadPipeWithValueAsync(current, stage.expr, pipeline.closure);
           } else if (stage.expr.kind === "Identifier") {
             const stageVal = await ctx.evaluateExprAsync(stage.expr, pipeline.closure);
             if (isPipeline(stageVal)) {
@@ -1080,6 +1098,9 @@ export function applyPipelineDecoratorAsync(
               })
             );
             current = { kind: "parallel_result" as const, values: branchResults };
+          } else if (isSpreadStage(stage)) {
+            // Execute spread stage
+            current = await ctx.evaluateSpreadPipeWithValueAsync(current, stage.expr, pipeline.closure);
           } else if (stage.expr.kind === "Identifier") {
             const stageVal = await ctx.evaluateExprAsync(stage.expr, pipeline.closure);
             if (isPipeline(stageVal)) {

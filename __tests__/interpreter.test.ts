@@ -358,6 +358,44 @@ describe('Interpreter', () => {
       `);
       expect(result).toEqual([2, 4, 6]);
     });
+
+    it('should handle spread pipe in pipeline literal', () => {
+      const result = evaluate(`
+        let double = (x) -> x * 2
+        let p = /> filter((x) -> x > 2) />>> double
+        [1, 2, 3, 4, 5] /> p
+      `);
+      expect(result).toEqual([6, 8, 10]);
+    });
+
+    it('should handle spread pipe followed by regular stage in pipeline literal', () => {
+      const result = evaluate(`
+        let p = /> filter((x) -> x > 2) />>> (x) -> x * x /> reduce(0, (acc, x) -> acc + x)
+        [1, 2, 3, 4, 5] /> p
+      `);
+      expect(result).toBe(50); // 9 + 16 + 25
+    });
+
+    it('should pass index to spread pipe callback in pipeline literal', () => {
+      const result = evaluate(`
+        let addIndex = (x, i) -> x + i
+        let identity = (x) -> x
+        let p = /> identity />>> addIndex
+        [10, 20, 30] /> p
+      `);
+      expect(result).toEqual([10, 21, 32]);
+    });
+
+    it('should handle multiple spread pipes in pipeline literal', () => {
+      const result = evaluate(`
+        let identity = (x) -> x
+        let double = (x) -> x * 2
+        let addOne = (x) -> x + 1
+        let p = /> identity />>> double />>> addOne
+        [1, 2, 3] /> p
+      `);
+      expect(result).toEqual([3, 5, 7]); // [2, 4, 6] -> [3, 5, 7]
+    });
   });
 
   describe('reversible functions', () => {

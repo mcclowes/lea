@@ -72,6 +72,7 @@ import {
   isLeaPromise,
   isParallelResult,
   isParallelStage,
+  isSpreadStage,
   isOverloadSet,
   isPipeline,
   isBidirectionalPipeline,
@@ -726,7 +727,7 @@ export class Interpreter implements InterpreterContext {
     return this.evaluateSpreadPipeWithValue(leftValue, right, env);
   }
 
-  private evaluateSpreadPipeWithValue(leftValue: LeaValue, right: Expr, env: Environment): LeaValue {
+  evaluateSpreadPipeWithValue(leftValue: LeaValue, right: Expr, env: Environment): LeaValue {
     // Get the elements to spread over
     let elements: LeaValue[];
 
@@ -932,14 +933,20 @@ export class Interpreter implements InterpreterContext {
 
     for (const stage of pipeline.stages) {
       // Check if this is a parallel stage
-      if (stage.isParallel) {
-        const parallelStage = stage as ParallelPipelineStage;
+      if (isParallelStage(stage)) {
         // Execute each branch with the current value
-        const branchResults: LeaValue[] = parallelStage.branches.map((branchExpr) => {
+        const branchResults: LeaValue[] = stage.branches.map((branchExpr) => {
           return this.evaluatePipeWithValue(current, branchExpr, pipeline.closure);
         });
         // Wrap results as a parallel result for the next stage to spread
         current = { kind: "parallel_result" as const, values: branchResults };
+        continue;
+      }
+
+      // Check if this is a spread stage
+      if (isSpreadStage(stage)) {
+        // Apply spread pipe semantics: map the function over each element
+        current = this.evaluateSpreadPipeWithValue(current, stage.expr, pipeline.closure);
         continue;
       }
 
@@ -1001,6 +1008,9 @@ export class Interpreter implements InterpreterContext {
         const stage = target.stages[i];
         if (isParallelStage(stage)) {
           throw new RuntimeError("Cannot apply reverse to pipeline with parallel stages");
+        }
+        if (isSpreadStage(stage)) {
+          throw new RuntimeError("Cannot apply reverse to pipeline with spread stages");
         }
         current = this.applyReverseToStage(current, stage.expr, target.closure);
       }
@@ -1557,7 +1567,7 @@ export class Interpreter implements InterpreterContext {
     }
   }
 
-  private async evaluateSpreadPipeWithValueAsync(leftValue: LeaValue, right: Expr, env: Environment): Promise<LeaValue> {
+  async evaluateSpreadPipeWithValueAsync(leftValue: LeaValue, right: Expr, env: Environment): Promise<LeaValue> {
     // Get the elements to spread over
     let elements: LeaValue[];
 
@@ -1749,16 +1759,22 @@ export class Interpreter implements InterpreterContext {
 
     for (const stage of pipeline.stages) {
       // Check if this is a parallel stage
-      if (stage.isParallel) {
-        const parallelStage = stage as ParallelPipelineStage;
+      if (isParallelStage(stage)) {
         // Execute each branch with the current value (in parallel)
         const branchResults = await Promise.all(
-          parallelStage.branches.map((branchExpr) => {
+          stage.branches.map((branchExpr) => {
             return this.evaluatePipeWithValueAsync(current, branchExpr, pipeline.closure);
           })
         );
         // Wrap results as a parallel result for the next stage to spread
         current = { kind: "parallel_result" as const, values: branchResults };
+        continue;
+      }
+
+      // Check if this is a spread stage
+      if (isSpreadStage(stage)) {
+        // Apply spread pipe semantics: map the function over each element
+        current = await this.evaluateSpreadPipeWithValueAsync(current, stage.expr, pipeline.closure);
         continue;
       }
 
@@ -1819,6 +1835,9 @@ export class Interpreter implements InterpreterContext {
         const stage = target.stages[i];
         if (isParallelStage(stage)) {
           throw new RuntimeError("Cannot apply reverse to pipeline with parallel stages");
+        }
+        if (isSpreadStage(stage)) {
+          throw new RuntimeError("Cannot apply reverse to pipeline with spread stages");
         }
         current = await this.applyReverseToStageAsync(current, stage.expr, target.closure);
       }
