@@ -7,15 +7,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
-- **TypeScript API**: `lea` tagged template literal for embedding Lea in TypeScript with JS interop
-  - `lea\`${data} /> map((x) -> x * 2)\`` - interpolate JS values and functions
-  - `leaAsync` - async version for code with `await`
-  - `createLea({ bindings })` - create execution context with pre-defined bindings
-- Explicit pipeline type annotations (`:: [Int]` or `:: Type /> Type`)
+- **Pipelines can start with spread pipe**: `/>>> double /> sum` - first stage can now be a spread operation
+
+## [1.1.3] - 2025-12-10
+
+### Added
+- **Spread pipe in pipeline literals**: `/>>>` now works inside first-class pipeline literals
+  - `let p = /> filter((x) -> x > 0) />>> double /> sum` - spread stages preserved for visualization
+- **Comprehensive standard library**: 60+ new builtins including:
+  - Collection: `find`, `findIndex`, `some`, `every`, `sort`, `flatten`, `flatMap`, `last`, `drop`, `takeWhile`, `dropWhile`, `count`, `intersperse`, `enumerate`, `transpose`
+  - Statistics: `sum`, `product`, `mean`, `median`, `variance`, `stdDev`
+  - Number theory: `gcd`, `lcm`, `isPrime`, `factorial`, `fibonacci`, `isEven`, `isOdd`, `mod`, `divInt`
+  - Bitwise: `bitAnd`, `bitOr`, `bitXor`, `bitNot`, `bitShiftLeft`, `bitShiftRight`
+  - Regex: `regexTest`, `regexMatch`, `regexMatchAll`, `regexReplace`, `regexSplit`
+  - Case conversion: `toCamelCase`, `toPascalCase`, `toSnakeCase`, `toKebabCase`, `toConstantCase`, `capitalize`, `titleCase`
+  - Encoding: `base64Encode`, `base64Decode`, `urlEncode`, `urlDecode`, `hexEncode`, `hexDecode`
+  - Path utilities: `pathJoin`, `pathDirname`, `pathBasename`, `pathExtname`, `pathIsAbsolute`
+  - Environment: `cwd`, `platform`
 
 ### Fixed
-- **Parser**: Inline lambdas in pipe operands now correctly stop at pipe operators, allowing natural chaining like `[1,2,3] />>> (x) -> x * 2 /> print`
-- Git tracking issue with duplicate TODO.md/todo.md files on case-insensitive filesystems
+- **Parser**: Single-line parallel pipes in pipeline literals now work correctly
+  - `let p = /> double \> addOne \> square />>> fn` - parallel branches collected properly on same line
+- **Parser**: Async decorator application and parser context issues
 
 ## [1.0.0] - 2024
 

@@ -4,6 +4,9 @@
 
 A pipe-oriented functional programming language with a tree-walk interpreter written in TypeScript.
 
+[![npm version](https://img.shields.io/npm/v/lea-lang.svg)](https://www.npmjs.com/package/lea-lang)
+[![Try Lea online](https://img.shields.io/badge/try%20it-online-blue)](https://lea.mcclowes.com/)
+
 ```lea
 let numbers = [1, 2, 3, 4, 5]
 

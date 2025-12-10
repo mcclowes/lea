@@ -1,3 +1,20 @@
+-- Welcome to Lea Playground!
+-- A pipe-oriented functional programming language
+
+let numbers = [1, 2, 3, 4, 5]
+
+-- Data flows left-to-right with pipes
+let pipeline = 
+  /> filter((x) -> x > 2)
+  />>> (x) -> x * x
+  /> reduce(0, (acc, x) -> acc + x)
+
+numbers /> pipeline /> print
+
+-- Try editing the code and click Run!
+
+
+
 {-- Pipeline tests --}
 
 let foo = 
@@ -26,11 +43,11 @@ foo.visualize()
 {-- function tests --}
 let bar = (x) -> :: [Int] :> [Int]
   x
-  /> map((x) -> x + 1)
+  />>> (x) -> x + 1
   \> filter((x) -> x < 20)
-    /> map((x) -> x * 7)
+    />>> (x) -> x * 7
   \> reverse
-    /> map((x) -> x * 2)
+    />>> (x) -> x * 2
     /> filter((x) -> x > 10)
   /> concat
   #async

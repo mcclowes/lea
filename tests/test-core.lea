@@ -10,7 +10,7 @@ counter /> print
 -- Pipes with placeholder
 let subtract = (a, b) -> a - b
 10 /> subtract(3) /> print        -- 7 (10 - 3)
-10 /> subtract(3, _) /> print     -- -7 (3 - 10)
+10 /> subtract(3, input) /> print     -- -7 (3 - 10)
 
 -- Comparison operators
 let eq = 5 == 5

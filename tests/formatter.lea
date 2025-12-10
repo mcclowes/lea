@@ -88,7 +88,7 @@ clamp(-5) /> print
 clamp(50) /> print
 
 -- Placeholder syntax
-10 /> add(5, _) /> print
+10 /> add(5, input) /> print
 
 -- Pipelines as first-class values
 let pipe = /> double /> add(1)

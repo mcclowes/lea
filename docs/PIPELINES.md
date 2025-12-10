@@ -16,6 +16,15 @@ Apply a pipeline by piping into it:
 5 /> processNumbers     -- 11
 ```
 
+### Starting with Spread Pipe
+
+Pipelines can also start with `/>>>` when the first operation should map over list elements:
+
+```lea
+let doubleAll = />>> double /> sum
+[1, 2, 3] /> doubleAll  -- 12 (2+4+6)
+```
+
 ## Pipeline Properties
 
 ```lea

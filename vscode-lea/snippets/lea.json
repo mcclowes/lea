@@ -140,6 +140,11 @@
     "body": ["let ${1:name} = /> ${2:fn1} /> ${3:fn2}"],
     "description": "Define a first-class pipeline"
   },
+  "Pipeline Starting with Spread": {
+    "prefix": "pipelinespread",
+    "body": ["let ${1:name} = />>> ${2:fn1} /> ${3:fn2}"],
+    "description": "Define a pipeline starting with spread pipe"
+  },
   "Bidirectional Pipeline": {
     "prefix": "bipipe",
     "body": ["let ${1:name} = </> ${2:fn1} </> ${3:fn2}"],

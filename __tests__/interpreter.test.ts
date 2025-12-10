@@ -358,6 +358,80 @@ describe('Interpreter', () => {
       `);
       expect(result).toEqual([2, 4, 6]);
     });
+
+    it('should handle spread pipe in pipeline literal', () => {
+      const result = evaluate(`
+        let double = (x) -> x * 2
+        let p = /> filter((x) -> x > 2) />>> double
+        [1, 2, 3, 4, 5] /> p
+      `);
+      expect(result).toEqual([6, 8, 10]);
+    });
+
+    it('should handle spread pipe followed by regular stage in pipeline literal', () => {
+      const result = evaluate(`
+        let p = /> filter((x) -> x > 2) />>> (x) -> x * x /> reduce(0, (acc, x) -> acc + x)
+        [1, 2, 3, 4, 5] /> p
+      `);
+      expect(result).toBe(50); // 9 + 16 + 25
+    });
+
+    it('should pass index to spread pipe callback in pipeline literal', () => {
+      const result = evaluate(`
+        let addIndex = (x, i) -> x + i
+        let identity = (x) -> x
+        let p = /> identity />>> addIndex
+        [10, 20, 30] /> p
+      `);
+      expect(result).toEqual([10, 21, 32]);
+    });
+
+    it('should handle multiple spread pipes in pipeline literal', () => {
+      const result = evaluate(`
+        let identity = (x) -> x
+        let double = (x) -> x * 2
+        let addOne = (x) -> x + 1
+        let p = /> identity />>> double />>> addOne
+        [1, 2, 3] /> p
+      `);
+      expect(result).toEqual([3, 5, 7]); // [2, 4, 6] -> [3, 5, 7]
+    });
+
+    it('should handle parallel followed by spread in pipeline literal', () => {
+      const result = evaluate(`
+        let double = (x) -> x * 2
+        let addOne = (x) -> x + 1
+        let square = (x) -> x * x
+        let addHundred = (x) -> x + 100
+        let p = /> double \\> addOne \\> square />>> addHundred
+        5 /> p
+      `);
+      // 5 /> double = 10
+      // 10 \> addOne \> square = parallel with 2 branches = [11, 100]
+      // [11, 100] />>> addHundred = [111, 200]
+      expect(result).toEqual([111, 200]);
+    });
+
+    it('should handle pipeline starting with spread', () => {
+      const result = evaluate(`
+        let double = (x) -> x * 2
+        let sum = (list) -> reduce(list, 0, (acc, x) -> acc + x)
+        let p = />>> double /> sum
+        [1, 2, 3] /> p
+      `);
+      // [1, 2, 3] />>> double = [2, 4, 6]
+      // [2, 4, 6] /> sum = 12
+      expect(result).toBe(12);
+    });
+
+    it('should handle pipeline starting with spread only', () => {
+      const result = evaluate(`
+        let double = (x) -> x * 2
+        let p = />>> double
+        [1, 2, 3] /> p
+      `);
+      expect(result).toEqual([2, 4, 6]);
+    });
   });
 
   describe('reversible functions', () => {
@@ -660,6 +734,285 @@ describe('Interpreter', () => {
       it('should check set membership', () => {
         expect(evaluate('setHas([1, 2, 3], 2)')).toBe(true);
         expect(evaluate('setHas([1, 2, 3], 4)')).toBe(false);
+      });
+    });
+
+    describe('new collection operations', () => {
+      it('should find element matching predicate', () => {
+        expect(evaluate('[1, 2, 3, 4] /> find((x) -> x > 2)')).toBe(3);
+        expect(evaluate('[1, 2, 3] /> find((x) -> x > 10)')).toBe(null);
+      });
+
+      it('should findIndex of element matching predicate', () => {
+        expect(evaluate('[1, 2, 3, 4] /> findIndex((x) -> x > 2)')).toBe(2);
+        expect(evaluate('[1, 2, 3] /> findIndex((x) -> x > 10)')).toBe(-1);
+      });
+
+      it('should check if some elements match', () => {
+        expect(evaluate('[1, 2, 3] /> some((x) -> x > 2)')).toBe(true);
+        expect(evaluate('[1, 2, 3] /> some((x) -> x > 10)')).toBe(false);
+      });
+
+      it('should check if every element matches', () => {
+        expect(evaluate('[2, 4, 6] /> every((x) -> x > 0)')).toBe(true);
+        expect(evaluate('[2, 4, 6] /> every((x) -> x > 3)')).toBe(false);
+      });
+
+      it('should sort list', () => {
+        expect(evaluate('[3, 1, 4, 1, 5] /> sort')).toEqual([1, 1, 3, 4, 5]);
+        expect(evaluate('["b", "a", "c"] /> sort')).toEqual(['a', 'b', 'c']);
+      });
+
+      it('should sort with custom comparator', () => {
+        expect(evaluate('[3, 1, 4] /> sort((a, b) -> b - a)')).toEqual([4, 3, 1]);
+      });
+
+      it('should flatten nested lists', () => {
+        expect(evaluate('[[1, 2], [3, 4]] /> flatten')).toEqual([1, 2, 3, 4]);
+        expect(evaluate('[[[1]], [[2]]] /> flatten(2)')).toEqual([1, 2]);
+      });
+
+      it('should flatMap list', () => {
+        expect(evaluate('[1, 2, 3] /> flatMap((x) -> [x, x * 2])')).toEqual([1, 2, 2, 4, 3, 6]);
+      });
+
+      it('should get last element', () => {
+        expect(evaluate('[1, 2, 3] /> last')).toBe(3);
+      });
+
+      it('should drop elements', () => {
+        expect(evaluate('[1, 2, 3, 4] /> drop(2)')).toEqual([3, 4]);
+      });
+
+      it('should takeWhile predicate is true', () => {
+        expect(evaluate('[1, 2, 3, 4, 1] /> takeWhile((x) -> x < 4)')).toEqual([1, 2, 3]);
+      });
+
+      it('should dropWhile predicate is true', () => {
+        expect(evaluate('[1, 2, 3, 4, 1] /> dropWhile((x) -> x < 3)')).toEqual([3, 4, 1]);
+      });
+
+      it('should count elements', () => {
+        expect(evaluate('[1, 2, 3, 4] /> count')).toBe(4);
+        expect(evaluate('[1, 2, 3, 4] /> count((x) -> x > 2)')).toBe(2);
+      });
+
+      it('should intersperse separator', () => {
+        expect(evaluate('[1, 2, 3] /> intersperse(0)')).toEqual([1, 0, 2, 0, 3]);
+      });
+
+      it('should enumerate list', () => {
+        expect(evaluate('["a", "b"] /> enumerate')).toEqual([[0, 'a'], [1, 'b']]);
+        expect(evaluate('["a", "b"] /> enumerate(1)')).toEqual([[1, 'a'], [2, 'b']]);
+      });
+
+      it('should transpose matrix', () => {
+        expect(evaluate('[[1, 2], [3, 4]] /> transpose')).toEqual([[1, 3], [2, 4]]);
+      });
+    });
+
+    describe('bitwise operations', () => {
+      it('should compute bitAnd', () => {
+        expect(evaluate('bitAnd(5, 3)')).toBe(1);
+      });
+
+      it('should compute bitOr', () => {
+        expect(evaluate('bitOr(5, 3)')).toBe(7);
+      });
+
+      it('should compute bitXor', () => {
+        expect(evaluate('bitXor(5, 3)')).toBe(6);
+      });
+
+      it('should compute bitNot', () => {
+        expect(evaluate('bitNot(5)')).toBe(-6);
+      });
+
+      it('should compute bitShiftLeft', () => {
+        expect(evaluate('bitShiftLeft(1, 3)')).toBe(8);
+      });
+
+      it('should compute bitShiftRight', () => {
+        expect(evaluate('bitShiftRight(8, 2)')).toBe(2);
+      });
+    });
+
+    describe('statistics operations', () => {
+      it('should compute sum', () => {
+        expect(evaluate('[1, 2, 3, 4] /> sum')).toBe(10);
+      });
+
+      it('should compute product', () => {
+        expect(evaluate('[1, 2, 3, 4] /> product')).toBe(24);
+      });
+
+      it('should compute mean', () => {
+        expect(evaluate('[1, 2, 3, 4, 5] /> mean')).toBe(3);
+      });
+
+      it('should compute median', () => {
+        expect(evaluate('[1, 3, 5, 7, 9] /> median')).toBe(5);
+        expect(evaluate('[1, 2, 3, 4] /> median')).toBe(2.5);
+      });
+
+      it('should compute variance', () => {
+        expect(evaluate('[2, 4, 4, 4, 5, 5, 7, 9] /> variance')).toBe(4);
+      });
+
+      it('should compute stdDev', () => {
+        expect(evaluate('[2, 4, 4, 4, 5, 5, 7, 9] /> stdDev')).toBe(2);
+      });
+    });
+
+    describe('number theory operations', () => {
+      it('should compute gcd', () => {
+        expect(evaluate('gcd(48, 18)')).toBe(6);
+      });
+
+      it('should compute lcm', () => {
+        expect(evaluate('lcm(4, 6)')).toBe(12);
+      });
+
+      it('should check isPrime', () => {
+        expect(evaluate('isPrime(7)')).toBe(true);
+        expect(evaluate('isPrime(6)')).toBe(false);
+      });
+
+      it('should compute factorial', () => {
+        expect(evaluate('factorial(5)')).toBe(120);
+      });
+
+      it('should compute fibonacci', () => {
+        expect(evaluate('fibonacci(10)')).toBe(55);
+      });
+
+      it('should check isEven and isOdd', () => {
+        expect(evaluate('isEven(4)')).toBe(true);
+        expect(evaluate('isOdd(4)')).toBe(false);
+        expect(evaluate('isEven(3)')).toBe(false);
+        expect(evaluate('isOdd(3)')).toBe(true);
+      });
+
+      it('should compute mod (handles negatives correctly)', () => {
+        expect(evaluate('mod(-5, 3)')).toBe(1);
+        expect(evaluate('mod(5, 3)')).toBe(2);
+      });
+
+      it('should compute divInt', () => {
+        expect(evaluate('divInt(7, 3)')).toBe(2);
+        expect(evaluate('divInt(-7, 3)')).toBe(-2);
+      });
+    });
+
+    describe('regex operations', () => {
+      it('should test regex pattern', () => {
+        expect(evaluate('regexTest("hello123", "[0-9]+")')).toBe(true);
+        expect(evaluate('regexTest("hello", "[0-9]+")')).toBe(false);
+      });
+
+      it('should match regex pattern', () => {
+        const result = evaluate('regexMatch("hello123world", "[0-9]+")') as LeaRecord;
+        expect(result.fields.get('match')).toBe('123');
+        expect(result.fields.get('index')).toBe(5);
+      });
+
+      it('should matchAll regex pattern', () => {
+        const result = evaluate('regexMatchAll("a1b2c3", "[0-9]")') as LeaRecord[];
+        expect(result.length).toBe(3);
+      });
+
+      it('should replace with regex', () => {
+        expect(evaluate('regexReplace("hello123world456", "[0-9]+", "X")')).toBe('helloXworldX');
+      });
+
+      it('should split by regex', () => {
+        expect(evaluate('regexSplit("a1b2c3", "[0-9]")')).toEqual(['a', 'b', 'c', '']);
+      });
+    });
+
+    describe('case conversion operations', () => {
+      it('should convert to camelCase', () => {
+        expect(evaluate('toCamelCase("hello_world")')).toBe('helloWorld');
+        expect(evaluate('toCamelCase("hello-world")')).toBe('helloWorld');
+      });
+
+      it('should convert to PascalCase', () => {
+        expect(evaluate('toPascalCase("hello_world")')).toBe('HelloWorld');
+      });
+
+      it('should convert to snake_case', () => {
+        expect(evaluate('toSnakeCase("helloWorld")')).toBe('hello_world');
+        expect(evaluate('toSnakeCase("HelloWorld")')).toBe('hello_world');
+      });
+
+      it('should convert to kebab-case', () => {
+        expect(evaluate('toKebabCase("helloWorld")')).toBe('hello-world');
+      });
+
+      it('should convert to CONSTANT_CASE', () => {
+        expect(evaluate('toConstantCase("helloWorld")')).toBe('HELLO_WORLD');
+      });
+
+      it('should capitalize', () => {
+        expect(evaluate('capitalize("hello")')).toBe('Hello');
+      });
+
+      it('should titleCase', () => {
+        expect(evaluate('titleCase("hello world")')).toBe('Hello World');
+      });
+    });
+
+    describe('encoding operations', () => {
+      it('should base64 encode and decode', () => {
+        expect(evaluate('base64Encode("hello")')).toBe('aGVsbG8=');
+        expect(evaluate('base64Decode("aGVsbG8=")')).toBe('hello');
+      });
+
+      it('should url encode and decode', () => {
+        expect(evaluate('urlEncode("hello world")')).toBe('hello%20world');
+        expect(evaluate('urlDecode("hello%20world")')).toBe('hello world');
+      });
+
+      it('should hex encode and decode', () => {
+        expect(evaluate('hexEncode("AB")')).toBe('4142');
+        expect(evaluate('hexDecode("4142")')).toBe('AB');
+      });
+    });
+
+    describe('path utilities', () => {
+      it('should join paths', () => {
+        expect(evaluate('pathJoin("foo", "bar", "baz")')).toBe('foo/bar/baz');
+      });
+
+      it('should get dirname', () => {
+        expect(evaluate('pathDirname("/foo/bar/baz.txt")')).toBe('/foo/bar');
+      });
+
+      it('should get basename', () => {
+        expect(evaluate('pathBasename("/foo/bar/baz.txt")')).toBe('baz.txt');
+        expect(evaluate('pathBasename("/foo/bar/baz.txt", ".txt")')).toBe('baz');
+      });
+
+      it('should get extname', () => {
+        expect(evaluate('pathExtname("/foo/bar/baz.txt")')).toBe('.txt');
+      });
+
+      it('should check isAbsolute', () => {
+        expect(evaluate('pathIsAbsolute("/foo/bar")')).toBe(true);
+        expect(evaluate('pathIsAbsolute("foo/bar")')).toBe(false);
+      });
+    });
+
+    describe('environment utilities', () => {
+      it('should get cwd', () => {
+        const result = evaluate('cwd()');
+        expect(typeof result).toBe('string');
+        expect((result as string).length).toBeGreaterThan(0);
+      });
+
+      it('should get platform', () => {
+        const result = evaluate('platform()');
+        expect(['linux', 'darwin', 'win32']).toContain(result);
       });
     });
   });

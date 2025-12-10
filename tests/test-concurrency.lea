@@ -28,8 +28,8 @@ delay(20, 3)
 "=== Testing Parallel Pipe Operator \\> ===" /> print
 
 -- Basic parallel pipe - execute two operations concurrently
-let input = 5
-input
+let value = 5
+value
   \> (x) -> x + 1
   \> (x) -> x * 2
   /> print  -- [6, 10]

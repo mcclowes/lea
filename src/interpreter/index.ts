@@ -72,6 +72,7 @@ import {
   isLeaPromise,
   isParallelResult,
   isParallelStage,
+  isSpreadStage,
   isOverloadSet,
   isPipeline,
   isBidirectionalPipeline,
@@ -726,7 +727,7 @@ export class Interpreter implements InterpreterContext {
     return this.evaluateSpreadPipeWithValue(leftValue, right, env);
   }
 
-  private evaluateSpreadPipeWithValue(leftValue: LeaValue, right: Expr, env: Environment): LeaValue {
+  evaluateSpreadPipeWithValue(leftValue: LeaValue, right: Expr, env: Environment): LeaValue {
     // Get the elements to spread over
     let elements: LeaValue[];
 
@@ -932,14 +933,20 @@ export class Interpreter implements InterpreterContext {
 
     for (const stage of pipeline.stages) {
       // Check if this is a parallel stage
-      if (stage.isParallel) {
-        const parallelStage = stage as ParallelPipelineStage;
+      if (isParallelStage(stage)) {
         // Execute each branch with the current value
-        const branchResults: LeaValue[] = parallelStage.branches.map((branchExpr) => {
+        const branchResults: LeaValue[] = stage.branches.map((branchExpr) => {
           return this.evaluatePipeWithValue(current, branchExpr, pipeline.closure);
         });
         // Wrap results as a parallel result for the next stage to spread
         current = { kind: "parallel_result" as const, values: branchResults };
+        continue;
+      }
+
+      // Check if this is a spread stage
+      if (isSpreadStage(stage)) {
+        // Apply spread pipe semantics: map the function over each element
+        current = this.evaluateSpreadPipeWithValue(current, stage.expr, pipeline.closure);
         continue;
       }
 
@@ -1001,6 +1008,9 @@ export class Interpreter implements InterpreterContext {
         const stage = target.stages[i];
         if (isParallelStage(stage)) {
           throw new RuntimeError("Cannot apply reverse to pipeline with parallel stages");
+        }
+        if (isSpreadStage(stage)) {
+          throw new RuntimeError("Cannot apply reverse to pipeline with spread stages");
         }
         current = this.applyReverseToStage(current, stage.expr, target.closure);
       }
@@ -1557,7 +1567,7 @@ export class Interpreter implements InterpreterContext {
     }
   }
 
-  private async evaluateSpreadPipeWithValueAsync(leftValue: LeaValue, right: Expr, env: Environment): Promise<LeaValue> {
+  async evaluateSpreadPipeWithValueAsync(leftValue: LeaValue, right: Expr, env: Environment): Promise<LeaValue> {
     // Get the elements to spread over
     let elements: LeaValue[];
 
@@ -1571,15 +1581,15 @@ export class Interpreter implements InterpreterContext {
       throw new RuntimeError("Spread pipe />>> requires a list or parallel result on the left side");
     }
 
-    // Map the right side function/pipeline over each element (in parallel)
+    // Map the right side function/pipeline over each element (in parallel), passing index
     const results = await Promise.all(
-      elements.map((element) => this.evaluatePipeWithValueAsync(element, right, env))
+      elements.map((element, i) => this.evaluatePipeWithValueAsync(element, right, env, i))
     );
 
     return results;
   }
 
-  async evaluatePipeWithValueAsync(pipedValue: LeaValue, right: Expr, env: Environment): Promise<LeaValue> {
+  async evaluatePipeWithValueAsync(pipedValue: LeaValue, right: Expr, env: Environment, spreadIndex?: number): Promise<LeaValue> {
     // If piped value is a parallel result, spread it as multiple arguments
     if (isParallelResult(pipedValue)) {
       // If right is a function expression, call it with spread values
@@ -1650,25 +1660,28 @@ export class Interpreter implements InterpreterContext {
       }
       // If the identifier refers to a reversible function, call its forward
       if (isReversibleFunction(callee)) {
-        return this.callFunctionAsync(callee.forward, [pipedValue]);
+        const args = spreadIndex !== undefined ? [pipedValue, spreadIndex] : [pipedValue];
+        return this.callFunctionAsync(callee.forward, args);
       }
       // Otherwise treat as a function call
       return this.evaluateCallAsync(
         { kind: "CallExpr", callee: right, args: [] },
         env,
-        pipedValue
+        pipedValue,
+        spreadIndex
       );
     }
 
     // If right is a call expression, check for placeholder
     if (right.kind === "CallExpr") {
-      return this.evaluateCallAsync(right, env, pipedValue);
+      return this.evaluateCallAsync(right, env, pipedValue, spreadIndex);
     }
 
-    // If right is a function expression, call it with piped value
+    // If right is a function expression, call it with piped value (and index if from spread pipe)
     if (right.kind === "FunctionExpr") {
       const fn = this.createFunction(right, env);
-      return this.callFunctionAsync(fn, [pipedValue]);
+      const args = spreadIndex !== undefined ? [pipedValue, spreadIndex] : [pipedValue];
+      return this.callFunctionAsync(fn, args);
     }
 
     // If right is a pipe expression, pipe the value through the left side, then continue
@@ -1746,16 +1759,22 @@ export class Interpreter implements InterpreterContext {
 
     for (const stage of pipeline.stages) {
       // Check if this is a parallel stage
-      if (stage.isParallel) {
-        const parallelStage = stage as ParallelPipelineStage;
+      if (isParallelStage(stage)) {
         // Execute each branch with the current value (in parallel)
         const branchResults = await Promise.all(
-          parallelStage.branches.map((branchExpr) => {
+          stage.branches.map((branchExpr) => {
             return this.evaluatePipeWithValueAsync(current, branchExpr, pipeline.closure);
           })
         );
         // Wrap results as a parallel result for the next stage to spread
         current = { kind: "parallel_result" as const, values: branchResults };
+        continue;
+      }
+
+      // Check if this is a spread stage
+      if (isSpreadStage(stage)) {
+        // Apply spread pipe semantics: map the function over each element
+        current = await this.evaluateSpreadPipeWithValueAsync(current, stage.expr, pipeline.closure);
         continue;
       }
 
@@ -1816,6 +1835,9 @@ export class Interpreter implements InterpreterContext {
         const stage = target.stages[i];
         if (isParallelStage(stage)) {
           throw new RuntimeError("Cannot apply reverse to pipeline with parallel stages");
+        }
+        if (isSpreadStage(stage)) {
+          throw new RuntimeError("Cannot apply reverse to pipeline with spread stages");
         }
         current = await this.applyReverseToStageAsync(current, stage.expr, target.closure);
       }
@@ -1900,7 +1922,7 @@ export class Interpreter implements InterpreterContext {
     return { kind: "parallel_result" as const, values };
   }
 
-  async evaluateCallAsync(expr: CallExpr, env: Environment, pipedValue?: LeaValue): Promise<LeaValue> {
+  async evaluateCallAsync(expr: CallExpr, env: Environment, pipedValue?: LeaValue, spreadIndex?: number): Promise<LeaValue> {
     const callee = await this.evaluateExprAsync(expr.callee, env);
 
     // Handle piped value
@@ -1926,6 +1948,10 @@ export class Interpreter implements InterpreterContext {
           evaluatedArgs.push(await this.evaluateExprAsync(arg, env));
         }
         args = [pipedValue, ...evaluatedArgs];
+      }
+      // Append spread index if provided (for spread pipe with index access)
+      if (spreadIndex !== undefined) {
+        args.push(spreadIndex);
       }
     } else {
       const evaluatedArgs: LeaValue[] = [];
@@ -1968,73 +1994,49 @@ export class Interpreter implements InterpreterContext {
   async callFunctionAsync(fn: LeaFunction, args: LeaValue[]): Promise<LeaValue> {
     const hasValidateDecorator = fn.decorators.some((d) => d.name === "validate");
 
-    // In strict mode, validate arguments before execution for functions with type signatures
-    if (this.strictMode && fn.typeSignature && !hasValidateDecorator) {
+    // Create executor that does the actual work
+    let executor = (fnArgs: LeaValue[]): LeaValue => {
+      const localEnv = new Environment(fn.closure);
+
+      // Bind parameters, using default values if argument not provided
+      // Skip parameters named '_' (ignored/discarded parameters)
       fn.params.forEach((param, i) => {
-        const arg = args[i];
-        const expectedType = fn.typeSignature?.paramTypes[i] ?? param.typeAnnotation;
-        const isOptional = typeof expectedType === "string" && expectedType.startsWith("?") ||
-                          typeof expectedType === "object" && (expectedType as { optional?: boolean }).optional;
-
-        if ((arg === null || arg === undefined) && !isOptional) {
-          throw new RuntimeError(`[strict] Argument '${param.name}' is null/undefined`);
+        if (param.name === "_") return; // Skip ignored parameters
+        let value = fnArgs[i];
+        if ((value === undefined || value === null) && param.defaultValue) {
+          // Evaluate default value in the closure environment
+          value = this.evaluateExpr(param.defaultValue, fn.closure);
         }
-
-        if (expectedType && !this.matchesType(arg, expectedType)) {
-          throw new RuntimeError(
-            `[strict] Argument '${param.name}' expected ${this.formatType(expectedType)}, got ${this.getLeaType(arg)}`
-          );
-        }
+        localEnv.define(param.name, value ?? null, false);
       });
-    }
 
-    const localEnv = new Environment(fn.closure);
-
-    // Bind parameters, using default values if argument not provided
-    // Skip parameters named '_' (ignored/discarded parameters)
-    for (let i = 0; i < fn.params.length; i++) {
-      const param = fn.params[i];
-      if (param.name === "_") continue; // Skip ignored parameters
-      let value = args[i];
-      if ((value === undefined || value === null) && param.defaultValue) {
-        // Evaluate default value in the closure environment
-        value = await this.evaluateExprAsync(param.defaultValue, fn.closure);
+      // Inject context attachments
+      for (const attachment of fn.attachments) {
+        const ctx = this.contextRegistry.get(attachment);
+        if (!ctx) {
+          throw new RuntimeError(`Context '${attachment}' is not defined`);
+        }
+        localEnv.define(attachment, ctx.current, false);
       }
-      localEnv.define(param.name, value ?? null, false);
+
+      // Execute body - return a promise for async evaluation
+      return wrapPromise(this.evaluateBodyAsyncImpl(fn.body, localEnv));
+    };
+
+    // Wrap with decorators (applied in reverse order)
+    for (const decorator of [...fn.decorators].reverse()) {
+      executor = applyFunctionDecorator(this, decorator, executor, fn);
     }
 
-    // Inject context attachments
-    for (const attachment of fn.attachments) {
-      const ctx = this.contextRegistry.get(attachment);
-      if (!ctx) {
-        throw new RuntimeError(`Context '${attachment}' is not defined`);
-      }
-      localEnv.define(attachment, ctx.current, false);
-    }
-
-    // Execute body asynchronously
-    const result = await this.evaluateBodyAsyncImpl(fn.body, localEnv);
-
-    // In strict mode, validate return type
+    // In strict mode, auto-apply validation for functions with type signatures
+    // (unless #validate decorator is already present)
     if (this.strictMode && fn.typeSignature && !hasValidateDecorator) {
-      const expectedReturnType = fn.typeSignature.returnType ?? fn.returnType;
-      if (expectedReturnType) {
-        const isOptional = typeof expectedReturnType === "string" && expectedReturnType.startsWith("?") ||
-                          typeof expectedReturnType === "object" && (expectedReturnType as { optional?: boolean }).optional;
-
-        if ((result === null || result === undefined) && !isOptional) {
-          throw new RuntimeError(`[strict] Return value is null/undefined`);
-        }
-
-        if (!this.matchesType(result, expectedReturnType)) {
-          throw new RuntimeError(
-            `[strict] Expected return type ${this.formatType(expectedReturnType)}, got ${this.getLeaType(result)}`
-          );
-        }
-      }
+      executor = applyFunctionDecorator(this, { name: "validate", args: [] }, executor, fn);
     }
 
-    return result;
+    // Execute and unwrap the result
+    const result = executor(args);
+    return unwrapPromise(result);
   }
 
   // Type helpers for InterpreterContext interface

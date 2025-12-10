@@ -9,12 +9,12 @@
   "include": ["src/**/*"],
   "exclude": [
     "src/index.ts",
-    "src/repl.ts",
     "src/visualize.ts",
     "src/visualizer.ts",
     "src/format.ts",
     "src/formatter.ts",
     "src/init.ts",
+    "src/lsp/**/*",
     "__tests__/**/*"
   ]
 }

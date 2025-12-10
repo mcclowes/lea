@@ -2,10 +2,35 @@
 
 A pipe-oriented functional programming language, embeddable in TypeScript.
 
+[![npm version](https://img.shields.io/npm/v/lea-lang.svg)](https://www.npmjs.com/package/lea-lang)
+[![Try Lea online](https://img.shields.io/badge/try%20it-online-blue)](https://lea.mcclowes.com/)
+
 ## Installation
 
 ```bash
 npm install lea-lang
+```
+
+## CLI Usage
+
+Run Lea files directly from the command line:
+
+```bash
+# Run via npx (no installation required)
+npx lea-lang hello.lea
+
+# Or install globally
+npm install -g lea-lang
+lea hello.lea
+
+# Start interactive REPL
+lea --repl
+
+# Enable strict type checking
+lea hello.lea --strict
+
+# Initialize a new project
+lea --init my-project
 ```
 
 ## Quick Start

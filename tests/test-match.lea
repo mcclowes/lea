@@ -14,9 +14,9 @@ describe(5) /> print
 
 -- Guard patterns
 let classify = (x) -> match x
-  | if _ < 0 -> "negative"
-  | if _ == 0 -> "zero"
-  | if _ > 0 -> "positive"
+  | if input < 0 -> "negative"
+  | if input == 0 -> "zero"
+  | if input > 0 -> "positive"
   | "unknown"
 
 classify(-5) /> print
@@ -25,9 +25,9 @@ classify(10) /> print
 
 -- Mix of patterns and guards
 let fizzbuzz = (n) -> match n
-  | if _ % 15 == 0 -> "fizzbuzz"
-  | if _ % 3 == 0 -> "fizz"
-  | if _ % 5 == 0 -> "buzz"
+  | if input % 15 == 0 -> "fizzbuzz"
+  | if input % 3 == 0 -> "fizz"
+  | if input % 5 == 0 -> "buzz"
   | n
 
 fizzbuzz(15) /> print
@@ -38,7 +38,7 @@ fizzbuzz(7) /> print
 -- Match in pipeline
 let processValue = (x) -> match x
   | 0 -> "nothing"
-  | if _ > 100 -> "big"
+  | if input > 100 -> "big"
   | "small"
 
 5 /> processValue /> print
@@ -56,9 +56,9 @@ greet("en") /> print
 greet("es") /> print
 greet("de") /> print
 
--- Using _ in the body too
+-- Using input in the body too
 let doubleIfPositive = (x) -> match x
-  | if _ > 0 -> _ * 2
+  | if input > 0 -> input * 2
   | 0
 
 doubleIfPositive(5) /> print

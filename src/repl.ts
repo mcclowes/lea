@@ -24,10 +24,9 @@ import {
   Breakpoint,
 } from "./debugger";
 
-// Parse CLI arguments
-const args = process.argv.slice(2);
-const strictFlag = args.includes("--strict");
-const tutorialFlag = args.includes("--tutorial");
+// Module-level configuration (set by startRepl)
+let strictFlag = false;
+let tutorialFlag = false;
 
 // ============================================================================
 // Constants for persistence
@@ -719,20 +718,25 @@ interface ReplState {
   inDebugMode: boolean;
 }
 
-const state: ReplState = {
-  interpreter: new Interpreter(strictFlag),
-  multilineMode: false,
-  multilineBuffer: [],
-  tutorialStep: 0,
-  inTutorial: tutorialFlag,
-  history: [],
-  historyIndex: -1,
-  sessionCommands: [],
-  sessionResults: [],
-  debugger: getDebugger(),
-  debugSession: null,
-  inDebugMode: false,
-};
+// State initialized lazily by startRepl
+let state: ReplState;
+
+function initState(): void {
+  state = {
+    interpreter: new Interpreter(strictFlag),
+    multilineMode: false,
+    multilineBuffer: [],
+    tutorialStep: 0,
+    inTutorial: tutorialFlag,
+    history: [],
+    historyIndex: -1,
+    sessionCommands: [],
+    sessionResults: [],
+    debugger: getDebugger(),
+    debugSession: null,
+    inDebugMode: false,
+  };
+}
 
 // ============================================================================
 // History Persistence
@@ -1666,17 +1670,8 @@ function completer(line: string): [string[], string] {
 // Main REPL Loop
 // ============================================================================
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  completer,
-  historySize: 100,
-});
-
-// Handle up/down arrows for history
-rl.on("line", () => {
-  state.historyIndex = state.history.length;
-});
+// Readline interface (lazily initialized by startRepl)
+let rl: readline.Interface;
 
 function getPrompt(): string {
   if (state.inTutorial) {
@@ -1727,25 +1722,60 @@ function printBanner(): void {
 `);
 }
 
-// Initialize and load history
-ensureDirectories();
-state.history = loadHistory();
+/**
+ * Start the Lea REPL
+ * @param strict Enable strict type checking mode
+ * @param tutorial Start in tutorial mode
+ */
+export function startRepl(strict: boolean = false, tutorial: boolean = false): void {
+  // Set configuration
+  strictFlag = strict;
+  tutorialFlag = tutorial;
 
-// Handle graceful shutdown
-process.on("SIGINT", () => {
-  saveHistory(state.history);
-  console.log("\nGoodbye!");
-  process.exit(0);
-});
+  // Initialize state
+  initState();
 
-process.on("exit", () => {
-  saveHistory(state.history);
-});
+  // Create readline interface
+  rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    completer,
+    historySize: 100,
+  });
 
-printBanner();
+  // Handle up/down arrows for history
+  rl.on("line", () => {
+    state.historyIndex = state.history.length;
+  });
 
-if (state.inTutorial) {
-  showTutorialStep();
+  // Initialize and load history
+  ensureDirectories();
+  state.history = loadHistory();
+
+  // Handle graceful shutdown
+  process.on("SIGINT", () => {
+    saveHistory(state.history);
+    console.log("\nGoodbye!");
+    process.exit(0);
+  });
+
+  process.on("exit", () => {
+    saveHistory(state.history);
+  });
+
+  printBanner();
+
+  if (state.inTutorial) {
+    showTutorialStep();
+  }
+
+  prompt();
 }
 
-prompt();
+// Run directly if this file is the entry point
+if (require.main === module) {
+  const args = process.argv.slice(2);
+  const strict = args.includes("--strict");
+  const tutorial = args.includes("--tutorial");
+  startRepl(strict, tutorial);
+}

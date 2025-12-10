@@ -1,6 +1,6 @@
 {
   "name": "lea-lang",
-  "version": "1.0.0",
+  "version": "1.1.3",
   "description": "A pipe-oriented functional programming language, embeddable in TypeScript",
   "author": "Max Clayton Clowes",
   "license": "MIT",
@@ -9,6 +9,7 @@
     "url": "git+https://github.com/mcclowes/lea.git"
   },
   "homepage": "https://github.com/mcclowes/lea#readme",
+  "npm": "https://www.npmjs.com/package/lea-lang",
   "bugs": {
     "url": "https://github.com/mcclowes/lea/issues"
   },
@@ -23,15 +24,24 @@
   ],
   "main": "dist/api.js",
   "types": "dist/api.d.ts",
+  "bin": {
+    "lea": "./dist/cli/lea.js"
+  },
   "exports": {
     ".": {
       "import": "./dist/api.js",
       "require": "./dist/api.js",
       "types": "./dist/api.d.ts"
+    },
+    "./syntax": {
+      "import": "./dist/syntax.js",
+      "require": "./dist/syntax.js",
+      "types": "./dist/syntax.d.ts"
     }
   },
   "files": [
     "dist/api.*",
+    "dist/syntax.*",
     "dist/ast.*",
     "dist/errors.*",
     "dist/lexer.*",
@@ -40,10 +50,18 @@
     "dist/interpreter.*",
     "dist/interpreter/",
     "dist/token.*",
-    "dist/README.md"
+    "dist/cli/",
+    "dist/repl.*",
+    "dist/init.*",
+    "dist/debugger.*",
+    "dist/README.md",
+    "!dist/visualizer.*",
+    "!dist/lsp/"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && cp README.npm.md dist/README.md",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "mv README.md README.repo.md && cp README.npm.md README.md",
+    "postpack": "rm README.md && mv README.repo.md README.md",
     "prepublishOnly": "npm run build",
     "repl": "ts-node src/repl.ts",
     "lea": "ts-node src/index.ts",
@@ -55,11 +73,13 @@
     "examples": "for f in examples/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done",
     "test": "jest",
     "test:unit": "jest",
+    "test:all": "jest && npm run test:integration",
     "test:integration": "for f in tests/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "vscode:package": "cd vscode-lea && npm run build && vsce package",
-    "vscode:publish": "cd vscode-lea && npm run build && vsce publish"
+    "vscode:publish": "cd vscode-lea && npm run build && vsce publish",
+    "prepare": "husky"
   },
   "jest": {
     "preset": "ts-jest",
@@ -85,16 +105,15 @@
     "coverageDirectory": "coverage",
     "verbose": true
   },
-  "dependencies": {
-    "vscode-languageserver": "^9.0.1",
-    "vscode-languageserver-textdocument": "^1.0.11"
-  },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^20.19.26",
+    "husky": "^9.1.7",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11"
   }
 }

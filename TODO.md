@@ -15,8 +15,27 @@
   - Regex pattern tested and matches correctly; VS Code extension version 0.2.3 ready for republishing
 - [X] Create a changelog and ensure Claude keeps it up to date
   - Added CHANGELOG.md with full project history
+- [X] Allow pipelines to begin with />>> ?
+  - Pipelines can now start with `/>>>` for spread operations: `/>>> double /> sum`
 
 ## Feature Ideas
+
+### `if-then-else` Syntax
+
+Add `if-then-else` as syntactic sugar for ternary expressions:
+```lea
+let fibonacci = (n) ->
+  if n <= 1 then n
+  else fibonacci(n - 1) + fibonacci(n - 2)
+```
+Desugars to `n <= 1 ? n : fibonacci(n - 1) + fibonacci(n - 2)`
+
+### `\\\>` Parallel Spread Syntax
+
+Explore a combined parallel-spread operator for mapping over parallel branches:
+```lea
+5 \\\> double \\\> addOne  -- parallel branches that each produce a value
+```
 
 ### Refinement Types
 
@@ -167,78 +186,21 @@ Alternative: `window(n)` builtin that creates overlapping windows.
 - [x] Add `UseExpr` AST node
 - [x] Update parser to handle `use` expressions
 - [x] Add `#export` decorator support in interpreter
-
-### Phase 2: Module Loader
 - [x] Implement path resolution (relative to importing file)
 - [x] Add module cache (avoid re-evaluating same file)
 - [x] Circular dependency detection
 - [x] Module exports as LeaRecord
-
-### Phase 3: Environment Integration
 - [x] Module-scoped environments
 - [x] Export registry via `#export` decorator check
 - [x] Import linking via destructuring
-
-### Phase 4: Error Handling
 - [x] File not found errors
 - [x] Circular import errors
 - [x] Clear error messages with file paths
-
-### Phase 5: Testing & Documentation
 - [x] Integration tests for import/export (tests/modules/)
 - [x] Update CLAUDE.md with module syntax
 - [x] Add examples in `examples/modules/`
 - [x] Update VS Code syntax highlighting
-
-## Critical TODOs
-
-- [ ] **CRITICAL: Context system across modules** - How should `context` and `provide` work across module boundaries? Options:
-  - Contexts are module-scoped (isolated)
-  - Contexts can be exported/imported explicitly
-  - Global context registry with module namespacing
-  - `provide` affects only current module's imports
-
-  This needs careful design to avoid unexpected behavior.
-
-## Syntax Reference
-
-```lea
--- Exporting (in math.lea)
-let double = (x) -> x * 2 #export
-let add = (a, b) -> a + b #export
-let private = (x) -> x  -- not exported
-
-let processNumbers = /> double /> add(10) #export
-
--- Importing (in main.lea)
-let { double, add } = use "./math"
-double(5)  -- 10
-
--- Re-export
-let { double } = use "./math" #export
-
--- Decorate imported function
-let { double } = use "./math"
-let loggedDouble = double #log
-5 /> loggedDouble
-
--- Rename by rebinding
-let { double } = use "./math"
-let dbl = double
-```
-
-## Future Considerations
-
-- Namespace imports: `let math = use "./math"` then `math.double(5)`
-- Package resolution: `use "std:list"` or similar
-- Async module loading
-- URL imports
-
-
----
-
-## Done
-
+- [x] **CRITICAL: Context system across modules** - How should `context` and `provide` work across module boundaries? Options:
 - [x] Implement ternary statements
 - [x] Custom decorators
 - [x] Linting for IDEs/VSCode
@@ -264,8 +226,9 @@ let dbl = double
 - [x] Codeblocks - sticky positioning in IDE (like markdown headers)
 - [x] Review syntax highlighting against all of the more recent language additions
 - [x] Enforce types by default? Or just warn (with #validate to throw)?
-  - Implemented #strict pragma and --strict CLI flag for opt-in strict type checking
 - [x] Replace big comments with codeblocks throughout example files
 - [x] Make codeblocks appear the same colours as comments in syntax highlighting
 - [x] \`\`\`lea syntax highlighting in markdown
 - [x] Replace <- early return with `return` keyword
+- [x] Review documentation
+  - Fixed SYNTAX.md: pattern matching uses `input` not `_` for matched value

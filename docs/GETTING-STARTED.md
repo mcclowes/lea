@@ -4,6 +4,29 @@ Welcome to Lea, a pipe-oriented functional programming language! This guide will
 
 ## Installation
 
+### Quick Start (via npx)
+
+No installation required! Run Lea files directly:
+
+```bash
+npx lea-lang hello.lea
+```
+
+### Global Installation
+
+For frequent use, install globally:
+
+```bash
+npm install -g lea-lang
+
+# Now you can use 'lea' directly
+lea hello.lea
+lea --repl
+lea --help
+```
+
+### From Source (for development)
+
 ```bash
 # Clone the repository
 git clone https://github.com/mcclowes/lea.git
@@ -28,6 +51,13 @@ Create a file called `hello.lea`:
 Run it:
 
 ```bash
+# Via npx (no install)
+npx lea-lang hello.lea
+
+# Or if globally installed
+lea hello.lea
+
+# Or from source
 npm run lea hello.lea
 ```
 
@@ -38,6 +68,10 @@ Congratulations! You've written your first Lea program.
 Lea includes an interactive REPL (Read-Eval-Print Loop) for experimenting:
 
 ```bash
+# Via global install
+lea --repl
+
+# Or from source
 npm run repl
 ```
 

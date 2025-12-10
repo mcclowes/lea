@@ -5,7 +5,7 @@
  * used throughout the interpreter.
  */
 
-import { Expr, AnyPipelineStage, ParallelPipelineStage } from "../ast";
+import { Expr, AnyPipelineStage, ParallelPipelineStage, SpreadPipelineStage } from "../ast";
 import {
   LeaValue,
   LeaFunction,
@@ -36,6 +36,11 @@ export function isParallelResult(val: LeaValue): val is LeaParallelResult {
 // Type guard for parallel pipeline stages
 export function isParallelStage(stage: AnyPipelineStage): stage is ParallelPipelineStage {
   return stage.isParallel === true;
+}
+
+// Type guard for spread pipeline stages
+export function isSpreadStage(stage: AnyPipelineStage): stage is SpreadPipelineStage {
+  return stage.isSpread === true;
 }
 
 // Get the expr from a regular (non-parallel) stage

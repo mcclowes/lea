@@ -522,6 +522,50 @@ describe('Parser', () => {
         expect(expr.decorators[0].name).toBe('log');
       }
     });
+
+    it('should parse pipeline with spread stage', () => {
+      const expr = parseExpr('/> filter((x) -> x > 0) />>> (x) -> x * 2');
+      expect(expr.kind).toBe('PipelineLiteral');
+      if (expr.kind === 'PipelineLiteral') {
+        expect(expr.stages.length).toBe(2);
+        expect(expr.stages[0].isSpread).toBeFalsy();
+        expect(expr.stages[1].isSpread).toBe(true);
+      }
+    });
+
+    it('should parse pipeline with spread followed by regular stage', () => {
+      const expr = parseExpr('/> filter((x) -> x > 0) />>> (x) -> x * x /> reduce(0, (a, x) -> a + x)');
+      expect(expr.kind).toBe('PipelineLiteral');
+      if (expr.kind === 'PipelineLiteral') {
+        expect(expr.stages.length).toBe(3);
+        expect(expr.stages[0].isSpread).toBeFalsy();
+        expect(expr.stages[1].isSpread).toBe(true);
+        expect(expr.stages[2].isSpread).toBeFalsy();
+      }
+    });
+
+    it('should parse pipeline starting with spread', () => {
+      const expr = parseExpr('/>>> (x) -> x * 2 /> sum');
+      expect(expr.kind).toBe('PipelineLiteral');
+      if (expr.kind === 'PipelineLiteral') {
+        expect(expr.stages.length).toBe(2);
+        expect(expr.stages[0].isSpread).toBe(true);
+        expect(expr.stages[1].isSpread).toBeFalsy();
+      }
+    });
+
+    it('should parse pipeline starting with spread and function call', () => {
+      const expr = parseExpr('/>>> double /> sum');
+      expect(expr.kind).toBe('PipelineLiteral');
+      if (expr.kind === 'PipelineLiteral') {
+        expect(expr.stages.length).toBe(2);
+        expect(expr.stages[0].isSpread).toBe(true);
+        const firstStage = expr.stages[0] as { isSpread: boolean; expr: Expr };
+        if (firstStage.expr.kind === 'Identifier') {
+          expect(firstStage.expr.name).toBe('double');
+        }
+      }
+    });
   });
 
   describe('await expressions', () => {

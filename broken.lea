@@ -1,0 +1,15 @@
+-- #log decorator logs inputs/outputs
+let double = (x) -> x * 2 #log
+
+-- #memo caches results
+let fibonacci = (n) ->
+  n <= 1 ? n : fibonacci(n - 1) + fibonacci(n - 2)
+  #memo
+
+5 /> double /> print
+10 /> fibonacci /> print
+
+
+
+
+
