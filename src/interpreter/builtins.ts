@@ -53,6 +53,47 @@ export const builtins: Record<string, BuiltinFn> = {
   min: (args) => Math.min(...args.map(asNumber)),
   max: (args) => Math.max(...args.map(asNumber)),
 
+  // Additional math functions
+  pow: (args) => Math.pow(asNumber(args[0]), asNumber(args[1])),
+  log: (args) => {
+    const val = asNumber(args[0]);
+    const base = args[1] !== undefined ? asNumber(args[1]) : Math.E;
+    return Math.log(val) / Math.log(base);
+  },
+  log10: (args) => Math.log10(asNumber(args[0])),
+  log2: (args) => Math.log2(asNumber(args[0])),
+  exp: (args) => Math.exp(asNumber(args[0])),
+  sin: (args) => Math.sin(asNumber(args[0])),
+  cos: (args) => Math.cos(asNumber(args[0])),
+  tan: (args) => Math.tan(asNumber(args[0])),
+  asin: (args) => Math.asin(asNumber(args[0])),
+  acos: (args) => Math.acos(asNumber(args[0])),
+  atan: (args) => Math.atan(asNumber(args[0])),
+  atan2: (args) => Math.atan2(asNumber(args[0]), asNumber(args[1])),
+  sinh: (args) => Math.sinh(asNumber(args[0])),
+  cosh: (args) => Math.cosh(asNumber(args[0])),
+  tanh: (args) => Math.tanh(asNumber(args[0])),
+  sign: (args) => Math.sign(asNumber(args[0])),
+  trunc: (args) => Math.trunc(asNumber(args[0])),
+  clamp: (args) => {
+    const val = asNumber(args[0]);
+    const min = asNumber(args[1]);
+    const max = asNumber(args[2]);
+    return Math.min(Math.max(val, min), max);
+  },
+  lerp: (args) => {
+    const a = asNumber(args[0]);
+    const b = asNumber(args[1]);
+    const t = asNumber(args[2]);
+    return a + (b - a) * t;
+  },
+
+  // Math constants (as functions for consistency)
+  PI: () => Math.PI,
+  E: () => Math.E,
+  TAU: () => Math.PI * 2,
+  INFINITY: () => Infinity,
+
   // Random number builtins
   random: () => Math.random(),
   randomInt: (args) => {
@@ -352,6 +393,78 @@ export const builtins: Record<string, BuiltinFn> = {
       throw new RuntimeError("chars requires a string");
     }
     return str.split("");
+  },
+
+  toUpperCase: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("toUpperCase requires a string");
+    }
+    return str.toUpperCase();
+  },
+
+  toLowerCase: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("toLowerCase requires a string");
+    }
+    return str.toLowerCase();
+  },
+
+  replace: (args: LeaValue[]) => {
+    const str = args[0];
+    const search = args[1];
+    const replacement = args[2];
+    if (typeof str !== "string") {
+      throw new RuntimeError("replace requires a string as first argument");
+    }
+    if (typeof search !== "string") {
+      throw new RuntimeError("replace requires a string search pattern");
+    }
+    if (typeof replacement !== "string") {
+      throw new RuntimeError("replace requires a string replacement");
+    }
+    return str.split(search).join(replacement);
+  },
+
+  replaceFirst: (args: LeaValue[]) => {
+    const str = args[0];
+    const search = args[1];
+    const replacement = args[2];
+    if (typeof str !== "string") {
+      throw new RuntimeError("replaceFirst requires a string as first argument");
+    }
+    if (typeof search !== "string") {
+      throw new RuntimeError("replaceFirst requires a string search pattern");
+    }
+    if (typeof replacement !== "string") {
+      throw new RuntimeError("replaceFirst requires a string replacement");
+    }
+    return str.replace(search, replacement);
+  },
+
+  startsWith: (args: LeaValue[]) => {
+    const str = args[0];
+    const prefix = args[1];
+    if (typeof str !== "string") {
+      throw new RuntimeError("startsWith requires a string as first argument");
+    }
+    if (typeof prefix !== "string") {
+      throw new RuntimeError("startsWith requires a string prefix");
+    }
+    return str.startsWith(prefix);
+  },
+
+  endsWith: (args: LeaValue[]) => {
+    const str = args[0];
+    const suffix = args[1];
+    if (typeof str !== "string") {
+      throw new RuntimeError("endsWith requires a string as first argument");
+    }
+    if (typeof suffix !== "string") {
+      throw new RuntimeError("endsWith requires a string suffix");
+    }
+    return str.endsWith(suffix);
   },
 
   // Set-like operations on lists (for graph algorithms)
@@ -672,6 +785,294 @@ export const builtins: Record<string, BuiltinFn> = {
     return fn([promise]);
   },
 
+  // ===== JSON Builtins =====
+
+  // Parse a JSON string into a Lea value
+  parseJson: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("parseJson requires a string");
+    }
+    try {
+      const json = JSON.parse(str);
+      return convertJsonToLea(json);
+    } catch (e) {
+      throw new RuntimeError(`parseJson failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  },
+
+  // Convert a Lea value to a JSON string
+  toJson: (args: LeaValue[]) => {
+    const val = args[0];
+    const indent = args[1] !== undefined ? asNumber(args[1]) : undefined;
+    try {
+      const json = convertLeaToJson(val);
+      return JSON.stringify(json, null, indent);
+    } catch (e) {
+      throw new RuntimeError(`toJson failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  },
+
+  // Pretty-print a Lea value as JSON with 2-space indentation
+  prettyJson: (args: LeaValue[]) => {
+    const val = args[0];
+    try {
+      const json = convertLeaToJson(val);
+      return JSON.stringify(json, null, 2);
+    } catch (e) {
+      throw new RuntimeError(`prettyJson failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  },
+
+  // ===== Date/Time Builtins =====
+
+  // Get current timestamp in milliseconds
+  now: () => Date.now(),
+
+  // Get current date/time as a record
+  today: () => {
+    const d = new Date();
+    const fields = new Map<string, LeaValue>();
+    fields.set("year", d.getFullYear());
+    fields.set("month", d.getMonth() + 1);
+    fields.set("day", d.getDate());
+    fields.set("hour", d.getHours());
+    fields.set("minute", d.getMinutes());
+    fields.set("second", d.getSeconds());
+    fields.set("millisecond", d.getMilliseconds());
+    fields.set("dayOfWeek", d.getDay());
+    fields.set("timestamp", d.getTime());
+    return { kind: "record", fields } as LeaRecord;
+  },
+
+  // Create a date from components or timestamp
+  date: (args: LeaValue[]) => {
+    let d: Date;
+    if (args.length === 0) {
+      d = new Date();
+    } else if (args.length === 1) {
+      const val = args[0];
+      if (typeof val === "number") {
+        d = new Date(val);
+      } else if (typeof val === "string") {
+        d = new Date(val);
+        if (isNaN(d.getTime())) {
+          throw new RuntimeError(`Invalid date string: ${val}`);
+        }
+      } else {
+        throw new RuntimeError("date requires a timestamp, date string, or year/month/day");
+      }
+    } else {
+      // year, month, day [, hour, minute, second, ms]
+      const year = asNumber(args[0]);
+      const month = asNumber(args[1]) - 1; // JS months are 0-indexed
+      const day = args[2] !== undefined ? asNumber(args[2]) : 1;
+      const hour = args[3] !== undefined ? asNumber(args[3]) : 0;
+      const minute = args[4] !== undefined ? asNumber(args[4]) : 0;
+      const second = args[5] !== undefined ? asNumber(args[5]) : 0;
+      const ms = args[6] !== undefined ? asNumber(args[6]) : 0;
+      d = new Date(year, month, day, hour, minute, second, ms);
+    }
+
+    const fields = new Map<string, LeaValue>();
+    fields.set("year", d.getFullYear());
+    fields.set("month", d.getMonth() + 1);
+    fields.set("day", d.getDate());
+    fields.set("hour", d.getHours());
+    fields.set("minute", d.getMinutes());
+    fields.set("second", d.getSeconds());
+    fields.set("millisecond", d.getMilliseconds());
+    fields.set("dayOfWeek", d.getDay());
+    fields.set("timestamp", d.getTime());
+    return { kind: "record", fields } as LeaRecord;
+  },
+
+  // Format a date record or timestamp as a string
+  formatDate: (args: LeaValue[]) => {
+    const val = args[0];
+    const format = args[1] !== undefined ? String(args[1]) : "ISO";
+
+    let d: Date;
+    if (typeof val === "number") {
+      d = new Date(val);
+    } else if (isRecord(val)) {
+      const rec = val as LeaRecord;
+      const ts = rec.fields.get("timestamp");
+      if (typeof ts === "number") {
+        d = new Date(ts);
+      } else {
+        throw new RuntimeError("formatDate requires a date record with timestamp field");
+      }
+    } else {
+      throw new RuntimeError("formatDate requires a timestamp or date record");
+    }
+
+    if (format === "ISO") {
+      return d.toISOString();
+    } else if (format === "date") {
+      return d.toDateString();
+    } else if (format === "time") {
+      return d.toTimeString();
+    } else if (format === "locale") {
+      return d.toLocaleString();
+    } else if (format === "localeDate") {
+      return d.toLocaleDateString();
+    } else if (format === "localeTime") {
+      return d.toLocaleTimeString();
+    } else {
+      // Custom format: YYYY, MM, DD, HH, mm, ss, ms
+      return format
+        .replace("YYYY", String(d.getFullYear()))
+        .replace("MM", String(d.getMonth() + 1).padStart(2, "0"))
+        .replace("DD", String(d.getDate()).padStart(2, "0"))
+        .replace("HH", String(d.getHours()).padStart(2, "0"))
+        .replace("mm", String(d.getMinutes()).padStart(2, "0"))
+        .replace("ss", String(d.getSeconds()).padStart(2, "0"))
+        .replace("ms", String(d.getMilliseconds()).padStart(3, "0"));
+    }
+  },
+
+  // Parse a date string into a date record
+  parseDate: (args: LeaValue[]) => {
+    const str = args[0];
+    if (typeof str !== "string") {
+      throw new RuntimeError("parseDate requires a string");
+    }
+    const d = new Date(str);
+    if (isNaN(d.getTime())) {
+      throw new RuntimeError(`Invalid date string: ${str}`);
+    }
+
+    const fields = new Map<string, LeaValue>();
+    fields.set("year", d.getFullYear());
+    fields.set("month", d.getMonth() + 1);
+    fields.set("day", d.getDate());
+    fields.set("hour", d.getHours());
+    fields.set("minute", d.getMinutes());
+    fields.set("second", d.getSeconds());
+    fields.set("millisecond", d.getMilliseconds());
+    fields.set("dayOfWeek", d.getDay());
+    fields.set("timestamp", d.getTime());
+    return { kind: "record", fields } as LeaRecord;
+  },
+
+  // Add time to a date
+  addDays: (args: LeaValue[]) => {
+    const val = args[0];
+    const days = asNumber(args[1]);
+
+    let timestamp: number;
+    if (typeof val === "number") {
+      timestamp = val;
+    } else if (isRecord(val)) {
+      const rec = val as LeaRecord;
+      const ts = rec.fields.get("timestamp");
+      if (typeof ts === "number") {
+        timestamp = ts;
+      } else {
+        throw new RuntimeError("addDays requires a date record with timestamp field");
+      }
+    } else {
+      throw new RuntimeError("addDays requires a timestamp or date record");
+    }
+
+    const d = new Date(timestamp + days * 24 * 60 * 60 * 1000);
+    const fields = new Map<string, LeaValue>();
+    fields.set("year", d.getFullYear());
+    fields.set("month", d.getMonth() + 1);
+    fields.set("day", d.getDate());
+    fields.set("hour", d.getHours());
+    fields.set("minute", d.getMinutes());
+    fields.set("second", d.getSeconds());
+    fields.set("millisecond", d.getMilliseconds());
+    fields.set("dayOfWeek", d.getDay());
+    fields.set("timestamp", d.getTime());
+    return { kind: "record", fields } as LeaRecord;
+  },
+
+  addHours: (args: LeaValue[]) => {
+    const val = args[0];
+    const hours = asNumber(args[1]);
+
+    let timestamp: number;
+    if (typeof val === "number") {
+      timestamp = val;
+    } else if (isRecord(val)) {
+      const rec = val as LeaRecord;
+      const ts = rec.fields.get("timestamp");
+      if (typeof ts === "number") {
+        timestamp = ts;
+      } else {
+        throw new RuntimeError("addHours requires a date record with timestamp field");
+      }
+    } else {
+      throw new RuntimeError("addHours requires a timestamp or date record");
+    }
+
+    const d = new Date(timestamp + hours * 60 * 60 * 1000);
+    const fields = new Map<string, LeaValue>();
+    fields.set("year", d.getFullYear());
+    fields.set("month", d.getMonth() + 1);
+    fields.set("day", d.getDate());
+    fields.set("hour", d.getHours());
+    fields.set("minute", d.getMinutes());
+    fields.set("second", d.getSeconds());
+    fields.set("millisecond", d.getMilliseconds());
+    fields.set("dayOfWeek", d.getDay());
+    fields.set("timestamp", d.getTime());
+    return { kind: "record", fields } as LeaRecord;
+  },
+
+  addMinutes: (args: LeaValue[]) => {
+    const val = args[0];
+    const minutes = asNumber(args[1]);
+
+    let timestamp: number;
+    if (typeof val === "number") {
+      timestamp = val;
+    } else if (isRecord(val)) {
+      const rec = val as LeaRecord;
+      const ts = rec.fields.get("timestamp");
+      if (typeof ts === "number") {
+        timestamp = ts;
+      } else {
+        throw new RuntimeError("addMinutes requires a date record with timestamp field");
+      }
+    } else {
+      throw new RuntimeError("addMinutes requires a timestamp or date record");
+    }
+
+    const d = new Date(timestamp + minutes * 60 * 1000);
+    const fields = new Map<string, LeaValue>();
+    fields.set("year", d.getFullYear());
+    fields.set("month", d.getMonth() + 1);
+    fields.set("day", d.getDate());
+    fields.set("hour", d.getHours());
+    fields.set("minute", d.getMinutes());
+    fields.set("second", d.getSeconds());
+    fields.set("millisecond", d.getMilliseconds());
+    fields.set("dayOfWeek", d.getDay());
+    fields.set("timestamp", d.getTime());
+    return { kind: "record", fields } as LeaRecord;
+  },
+
+  // Difference between two dates in milliseconds
+  diffDates: (args: LeaValue[]) => {
+    const getTimestamp = (val: LeaValue): number => {
+      if (typeof val === "number") return val;
+      if (isRecord(val)) {
+        const rec = val as LeaRecord;
+        const ts = rec.fields.get("timestamp");
+        if (typeof ts === "number") return ts;
+      }
+      throw new RuntimeError("diffDates requires timestamps or date records");
+    };
+
+    const ts1 = getTimestamp(args[0]);
+    const ts2 = getTimestamp(args[1]);
+    return ts1 - ts2;
+  },
+
   // ===== I/O Builtins =====
 
   // File operations
@@ -864,6 +1265,34 @@ function convertJsonToLea(json: unknown): LeaValue {
       fields.set(key, convertJsonToLea(value));
     }
     return { kind: "record", fields } as LeaRecord;
+  }
+  return null;
+}
+
+// Helper to convert Lea values to JSON-compatible values
+function convertLeaToJson(value: LeaValue): unknown {
+  if (value === null) return null;
+  if (typeof value === "number") return value;
+  if (typeof value === "string") return value;
+  if (typeof value === "boolean") return value;
+  if (Array.isArray(value)) {
+    return value.map(convertLeaToJson);
+  }
+  if (value && typeof value === "object" && "kind" in value) {
+    if (value.kind === "record") {
+      const rec = value as LeaRecord;
+      const obj: Record<string, unknown> = {};
+      for (const [key, val] of rec.fields) {
+        obj[key] = convertLeaToJson(val);
+      }
+      return obj;
+    }
+    if (value.kind === "tuple") {
+      const tuple = value as LeaTuple;
+      return tuple.elements.map(convertLeaToJson);
+    }
+    // Functions, pipelines, etc. cannot be serialized to JSON
+    throw new RuntimeError(`Cannot convert ${value.kind} to JSON`);
   }
   return null;
 }

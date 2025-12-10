@@ -93,6 +93,152 @@ export const BUILTIN_DOCS: Record<string, BuiltinDoc> = {
     examples: ["max(3, 1, 4)  -- 4", "5 /> max(3)   -- 5"],
   },
 
+  // Advanced math functions
+  pow: {
+    name: "pow",
+    signature: "pow(base, exponent) -> Number",
+    description: "Returns base raised to the power of exponent.",
+    params: [
+      { name: "base", type: "Number", description: "The base" },
+      { name: "exponent", type: "Number", description: "The exponent" },
+    ],
+    returns: { type: "Number", description: "base^exponent" },
+    examples: ["pow(2, 10)  -- 1024", "pow(3, 2)   -- 9"],
+  },
+  log: {
+    name: "log",
+    signature: "log(x) -> Number | log(x, base) -> Number",
+    description: "Returns the logarithm. Natural log with one arg, or log with specified base.",
+    params: [
+      { name: "x", type: "Number", description: "The number" },
+      { name: "base", type: "Number", description: "The base (default: e)" },
+    ],
+    returns: { type: "Number", description: "The logarithm" },
+    examples: ["log(E())     -- 1", "log(8, 2)   -- 3"],
+  },
+  log10: {
+    name: "log10",
+    signature: "log10(x) -> Number",
+    description: "Returns the base-10 logarithm.",
+    params: [{ name: "x", type: "Number", description: "The number" }],
+    returns: { type: "Number", description: "The base-10 logarithm" },
+    examples: ["log10(100)  -- 2", "log10(1000) -- 3"],
+  },
+  log2: {
+    name: "log2",
+    signature: "log2(x) -> Number",
+    description: "Returns the base-2 logarithm.",
+    params: [{ name: "x", type: "Number", description: "The number" }],
+    returns: { type: "Number", description: "The base-2 logarithm" },
+    examples: ["log2(8)   -- 3", "log2(256) -- 8"],
+  },
+  exp: {
+    name: "exp",
+    signature: "exp(x) -> Number",
+    description: "Returns e raised to the power of x.",
+    params: [{ name: "x", type: "Number", description: "The exponent" }],
+    returns: { type: "Number", description: "e^x" },
+    examples: ["exp(0)  -- 1", "exp(1)  -- 2.718..."],
+  },
+  sin: {
+    name: "sin",
+    signature: "sin(x) -> Number",
+    description: "Returns the sine of x (in radians).",
+    params: [{ name: "x", type: "Number", description: "Angle in radians" }],
+    returns: { type: "Number", description: "The sine" },
+    examples: ["sin(0)         -- 0", "sin(PI() / 2)  -- 1"],
+  },
+  cos: {
+    name: "cos",
+    signature: "cos(x) -> Number",
+    description: "Returns the cosine of x (in radians).",
+    params: [{ name: "x", type: "Number", description: "Angle in radians" }],
+    returns: { type: "Number", description: "The cosine" },
+    examples: ["cos(0)    -- 1", "cos(PI()) -- -1"],
+  },
+  tan: {
+    name: "tan",
+    signature: "tan(x) -> Number",
+    description: "Returns the tangent of x (in radians).",
+    params: [{ name: "x", type: "Number", description: "Angle in radians" }],
+    returns: { type: "Number", description: "The tangent" },
+    examples: ["tan(0)         -- 0", "tan(PI() / 4)  -- 1"],
+  },
+  sign: {
+    name: "sign",
+    signature: "sign(x) -> Int",
+    description: "Returns the sign of x: -1, 0, or 1.",
+    params: [{ name: "x", type: "Number", description: "The number" }],
+    returns: { type: "Int", description: "-1, 0, or 1" },
+    examples: ["sign(-5)  -- -1", "sign(0)   -- 0", "sign(5)   -- 1"],
+  },
+  trunc: {
+    name: "trunc",
+    signature: "trunc(x) -> Int",
+    description: "Truncates the decimal part of a number.",
+    params: [{ name: "x", type: "Number", description: "The number" }],
+    returns: { type: "Int", description: "The integer part" },
+    examples: ["trunc(3.9)   -- 3", "trunc(-3.9)  -- -3"],
+  },
+  clamp: {
+    name: "clamp",
+    signature: "clamp(x, min, max) -> Number",
+    description: "Clamps x to the range [min, max].",
+    params: [
+      { name: "x", type: "Number", description: "The value to clamp" },
+      { name: "min", type: "Number", description: "Minimum value" },
+      { name: "max", type: "Number", description: "Maximum value" },
+    ],
+    returns: { type: "Number", description: "The clamped value" },
+    examples: ["clamp(15, 0, 10)  -- 10", "clamp(-5, 0, 10)  -- 0", "clamp(5, 0, 10)   -- 5"],
+  },
+  lerp: {
+    name: "lerp",
+    signature: "lerp(a, b, t) -> Number",
+    description: "Linear interpolation between a and b by factor t.",
+    params: [
+      { name: "a", type: "Number", description: "Start value" },
+      { name: "b", type: "Number", description: "End value" },
+      { name: "t", type: "Number", description: "Interpolation factor (0-1)" },
+    ],
+    returns: { type: "Number", description: "Interpolated value" },
+    examples: ["lerp(0, 10, 0.5)   -- 5", "lerp(0, 100, 0.25) -- 25"],
+  },
+
+  // Math constants
+  PI: {
+    name: "PI",
+    signature: "PI() -> Number",
+    description: "Returns the mathematical constant pi (3.14159...).",
+    params: [],
+    returns: { type: "Number", description: "Pi" },
+    examples: ["PI()  -- 3.14159..."],
+  },
+  E: {
+    name: "E",
+    signature: "E() -> Number",
+    description: "Returns Euler's number e (2.71828...).",
+    params: [],
+    returns: { type: "Number", description: "e" },
+    examples: ["E()  -- 2.71828..."],
+  },
+  TAU: {
+    name: "TAU",
+    signature: "TAU() -> Number",
+    description: "Returns tau (2*pi, 6.28318...).",
+    params: [],
+    returns: { type: "Number", description: "Tau" },
+    examples: ["TAU()  -- 6.28318..."],
+  },
+  INFINITY: {
+    name: "INFINITY",
+    signature: "INFINITY() -> Number",
+    description: "Returns positive infinity.",
+    params: [],
+    returns: { type: "Number", description: "Infinity" },
+    examples: ["INFINITY()  -- Infinity"],
+  },
+
   // Random functions
   random: {
     name: "random",
@@ -469,6 +615,68 @@ export const BUILTIN_DOCS: Record<string, BuiltinDoc> = {
     returns: { type: "[String]", description: "List of characters" },
     examples: ['"abc" /> chars  -- ["a", "b", "c"]'],
   },
+  toUpperCase: {
+    name: "toUpperCase",
+    signature: "toUpperCase(string) -> String",
+    description: "Converts a string to uppercase.",
+    params: [{ name: "string", type: "String", description: "The string to convert" }],
+    returns: { type: "String", description: "The uppercase string" },
+    examples: ['"hello" /> toUpperCase  -- "HELLO"'],
+  },
+  toLowerCase: {
+    name: "toLowerCase",
+    signature: "toLowerCase(string) -> String",
+    description: "Converts a string to lowercase.",
+    params: [{ name: "string", type: "String", description: "The string to convert" }],
+    returns: { type: "String", description: "The lowercase string" },
+    examples: ['"HELLO" /> toLowerCase  -- "hello"'],
+  },
+  replace: {
+    name: "replace",
+    signature: "replace(string, search, replacement) -> String",
+    description: "Replaces all occurrences of search with replacement.",
+    params: [
+      { name: "string", type: "String", description: "The string to modify" },
+      { name: "search", type: "String", description: "The substring to find" },
+      { name: "replacement", type: "String", description: "The replacement string" },
+    ],
+    returns: { type: "String", description: "The modified string" },
+    examples: ['"a-b-c" /> replace("-", "_")  -- "a_b_c"'],
+  },
+  replaceFirst: {
+    name: "replaceFirst",
+    signature: "replaceFirst(string, search, replacement) -> String",
+    description: "Replaces the first occurrence of search with replacement.",
+    params: [
+      { name: "string", type: "String", description: "The string to modify" },
+      { name: "search", type: "String", description: "The substring to find" },
+      { name: "replacement", type: "String", description: "The replacement string" },
+    ],
+    returns: { type: "String", description: "The modified string" },
+    examples: ['"a-b-c" /> replaceFirst("-", "_")  -- "a_b-c"'],
+  },
+  startsWith: {
+    name: "startsWith",
+    signature: "startsWith(string, prefix) -> Bool",
+    description: "Checks if a string starts with the given prefix.",
+    params: [
+      { name: "string", type: "String", description: "The string to check" },
+      { name: "prefix", type: "String", description: "The prefix to look for" },
+    ],
+    returns: { type: "Bool", description: "True if string starts with prefix" },
+    examples: ['"hello" /> startsWith("he")  -- true', '"hello" /> startsWith("lo")  -- false'],
+  },
+  endsWith: {
+    name: "endsWith",
+    signature: "endsWith(string, suffix) -> Bool",
+    description: "Checks if a string ends with the given suffix.",
+    params: [
+      { name: "string", type: "String", description: "The string to check" },
+      { name: "suffix", type: "String", description: "The suffix to look for" },
+    ],
+    returns: { type: "Bool", description: "True if string ends with suffix" },
+    examples: ['"hello" /> endsWith("lo")  -- true', '"hello" /> endsWith("he")  -- false'],
+  },
 
   // Set operations
   listSet: {
@@ -627,6 +835,145 @@ export const BUILTIN_DOCS: Record<string, BuiltinDoc> = {
     params: [{ name: "shape", type: "String", description: "ASCII art diagram" }],
     returns: { type: "[String]", description: "List of individual pieces" },
     examples: ["breakPieces(\"+--+\\n|  |\\n+--+\")"],
+  },
+
+  // JSON functions
+  parseJson: {
+    name: "parseJson",
+    signature: "parseJson(string) -> any",
+    description: "Parses a JSON string into a Lea value.",
+    params: [{ name: "string", type: "String", description: "The JSON string to parse" }],
+    returns: { type: "any", description: "The parsed value (record, list, string, number, boolean, or null)" },
+    examples: [
+      '{ name: "Bob" } /> toJson /> parseJson  -- { name: "Bob" }',
+      "[1, 2, 3] /> toJson /> parseJson  -- [1, 2, 3]",
+    ],
+  },
+  toJson: {
+    name: "toJson",
+    signature: "toJson(value, indent?) -> String",
+    description: "Converts a Lea value to a JSON string.",
+    params: [
+      { name: "value", type: "any", description: "The value to convert" },
+      { name: "indent", type: "Int", description: "Optional indentation spaces" },
+    ],
+    returns: { type: "String", description: "The JSON string" },
+    examples: [
+      '{ name: "Bob" } /> toJson  -- \'{"name":"Bob"}\'',
+      "{ a: 1 } /> toJson(2)  -- formatted with 2 spaces",
+    ],
+  },
+  prettyJson: {
+    name: "prettyJson",
+    signature: "prettyJson(value) -> String",
+    description: "Converts a Lea value to a pretty-printed JSON string (2-space indent).",
+    params: [{ name: "value", type: "any", description: "The value to convert" }],
+    returns: { type: "String", description: "The formatted JSON string" },
+    examples: ["{ name: \"Bob\", age: 30 } /> prettyJson"],
+  },
+
+  // Date/time functions
+  now: {
+    name: "now",
+    signature: "now() -> Int",
+    description: "Returns the current timestamp in milliseconds since Unix epoch.",
+    params: [],
+    returns: { type: "Int", description: "Current timestamp in milliseconds" },
+    examples: ["now()  -- 1702500000000"],
+  },
+  today: {
+    name: "today",
+    signature: "today() -> Record",
+    description: "Returns the current date/time as a record with year, month, day, etc.",
+    params: [],
+    returns: { type: "Record", description: "Date record with year, month, day, hour, minute, second, millisecond, dayOfWeek, timestamp" },
+    examples: ["today()  -- { year: 2024, month: 12, day: 10, ... }"],
+  },
+  date: {
+    name: "date",
+    signature: "date(timestamp) | date(string) | date(year, month, day, ...) -> Record",
+    description: "Creates a date record from a timestamp, date string, or components.",
+    params: [
+      { name: "timestamp", type: "Int", description: "Unix timestamp in milliseconds" },
+      { name: "string", type: "String", description: "Date string (e.g., \"2024-01-15\")" },
+      { name: "year, month, day, ...", type: "Int", description: "Date components (hour, minute, second, ms optional)" },
+    ],
+    returns: { type: "Record", description: "Date record" },
+    examples: [
+      "date(1702500000000)  -- date from timestamp",
+      'date("2024-01-15")   -- date from string',
+      "date(2024, 6, 15)    -- June 15, 2024",
+    ],
+  },
+  formatDate: {
+    name: "formatDate",
+    signature: "formatDate(date, format?) -> String",
+    description: "Formats a date record or timestamp as a string.",
+    params: [
+      { name: "date", type: "Record | Int", description: "Date record or timestamp" },
+      { name: "format", type: "String", description: "Format string: \"ISO\", \"date\", \"time\", \"locale\", or custom (YYYY, MM, DD, HH, mm, ss)" },
+    ],
+    returns: { type: "String", description: "Formatted date string" },
+    examples: [
+      'today() /> formatDate("ISO")        -- "2024-12-10T..."',
+      'today() /> formatDate("YYYY-MM-DD") -- "2024-12-10"',
+    ],
+  },
+  parseDate: {
+    name: "parseDate",
+    signature: "parseDate(string) -> Record",
+    description: "Parses a date string into a date record.",
+    params: [{ name: "string", type: "String", description: "Date string to parse" }],
+    returns: { type: "Record", description: "Date record" },
+    examples: ['parseDate("2024-01-15")  -- { year: 2024, month: 1, day: 15, ... }'],
+  },
+  addDays: {
+    name: "addDays",
+    signature: "addDays(date, days) -> Record",
+    description: "Adds days to a date and returns a new date record.",
+    params: [
+      { name: "date", type: "Record | Int", description: "Date record or timestamp" },
+      { name: "days", type: "Int", description: "Number of days to add (can be negative)" },
+    ],
+    returns: { type: "Record", description: "New date record" },
+    examples: ["date(2024, 1, 15) /> addDays(10)  -- { year: 2024, month: 1, day: 25, ... }"],
+  },
+  addHours: {
+    name: "addHours",
+    signature: "addHours(date, hours) -> Record",
+    description: "Adds hours to a date and returns a new date record.",
+    params: [
+      { name: "date", type: "Record | Int", description: "Date record or timestamp" },
+      { name: "hours", type: "Int", description: "Number of hours to add (can be negative)" },
+    ],
+    returns: { type: "Record", description: "New date record" },
+    examples: ["date(2024, 1, 15, 10, 0) /> addHours(5)  -- hour becomes 15"],
+  },
+  addMinutes: {
+    name: "addMinutes",
+    signature: "addMinutes(date, minutes) -> Record",
+    description: "Adds minutes to a date and returns a new date record.",
+    params: [
+      { name: "date", type: "Record | Int", description: "Date record or timestamp" },
+      { name: "minutes", type: "Int", description: "Number of minutes to add (can be negative)" },
+    ],
+    returns: { type: "Record", description: "New date record" },
+    examples: ["date(2024, 1, 15, 10, 30) /> addMinutes(45)  -- minute becomes 15 (next hour)"],
+  },
+  diffDates: {
+    name: "diffDates",
+    signature: "diffDates(date1, date2) -> Int",
+    description: "Returns the difference between two dates in milliseconds.",
+    params: [
+      { name: "date1", type: "Record | Int", description: "First date" },
+      { name: "date2", type: "Record | Int", description: "Second date" },
+    ],
+    returns: { type: "Int", description: "Difference in milliseconds (date1 - date2)" },
+    examples: [
+      "let d1 = date(2024, 1, 15)",
+      "let d2 = date(2024, 1, 10)",
+      "diffDates(d1, d2) / (24 * 60 * 60 * 1000)  -- 5 (days)",
+    ],
   },
 };
 

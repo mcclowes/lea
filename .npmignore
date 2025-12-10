@@ -1,0 +1,25 @@
+# Source maps
+*.map
+
+# Development files
+src/
+__tests__/
+tests/
+examples/
+docs/
+coverage/
+.github/
+
+# Config files
+tsconfig*.json
+jest.config.*
+.eslintrc*
+.prettierrc*
+CLAUDE.md
+
+# VSCode extension (separate package)
+vscode-lea/
+
+# Misc
+*.log
+.DS_Store

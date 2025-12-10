@@ -2,6 +2,9 @@
 
 A pipe-oriented functional programming language, embeddable in TypeScript.
 
+[![npm version](https://img.shields.io/npm/v/lea-lang.svg)](https://www.npmjs.com/package/lea-lang)
+[![Try Lea online](https://img.shields.io/badge/try%20it-online-blue)](https://lea.mcclowes.com/)
+
 ## Installation
 
 ```bash
