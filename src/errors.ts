@@ -225,9 +225,35 @@ const ERROR_PATTERNS: ErrorPattern[] = [
 /**
  * Format an error message with helpful suggestions
  */
-export function formatError(error: Error): string {
+export function formatError(error: Error, sourceCode?: string): string {
   const message = error.message;
   const lines: string[] = [`Error: ${message}`];
+
+  // If error has location information, show context from source code
+  if ("location" in error && error.location && sourceCode) {
+    const loc = error.location as { line: number; column: number; file?: string };
+    const sourceLines = sourceCode.split("\n");
+    const lineIndex = loc.line - 1;
+
+    lines.push("");
+    lines.push("Location:");
+
+    // Show a few lines of context around the error
+    const startLine = Math.max(0, lineIndex - 1);
+    const endLine = Math.min(sourceLines.length - 1, lineIndex + 1);
+
+    for (let i = startLine; i <= endLine; i++) {
+      const lineNum = String(i + 1).padStart(4, " ");
+      const marker = i === lineIndex ? " >" : "  ";
+      lines.push(`${marker}${lineNum} | ${sourceLines[i]}`);
+
+      // Add caret pointing to the column on the error line
+      if (i === lineIndex && loc.column > 0) {
+        const caretPad = " ".repeat(8 + loc.column);
+        lines.push(`${caretPad}^`);
+      }
+    }
+  }
 
   // Try to match error patterns
   for (const { pattern, getSuggestion } of ERROR_PATTERNS) {

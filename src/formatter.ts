@@ -34,9 +34,12 @@ import {
   ReversePipeExpr,
   BidirectionalPipelineLiteral,
   MatchExpr,
+  ReactivePipeExpr,
+  UseExpr,
   BlockBody,
   LetStmt,
   AndStmt,
+  AssignStmt,
   ExprStmt,
   ContextDefStmt,
   ProvideStmt,
@@ -143,6 +146,8 @@ export class Formatter {
         return this.formatDecoratorDefStmt(stmt, ctx);
       case "CodeblockStmt":
         return this.formatCodeblockStmt(stmt, ctx);
+      case "AssignStmt":
+        return this.formatAssignStmt(stmt, ctx);
       default:
         throw new Error(`Unknown statement kind: ${(stmt as Stmt).kind}`);
     }
@@ -202,6 +207,12 @@ export class Formatter {
     return lines.join("\n");
   }
 
+  private formatAssignStmt(stmt: AssignStmt, ctx: FormatContext): string {
+    const indent = this.indent(ctx);
+    const value = this.formatExpr(stmt.value, ctx);
+    return `${indent}${stmt.name} = ${value}`;
+  }
+
   /**
    * Format an expression
    */
@@ -257,6 +268,10 @@ export class Formatter {
         return this.formatBidirectionalPipelineLiteral(expr, ctx);
       case "MatchExpr":
         return this.formatMatchExpr(expr, ctx);
+      case "UseExpr":
+        return this.formatUseExpr(expr, ctx);
+      case "ReactivePipeExpr":
+        return this.formatReactivePipeExpr(expr, ctx);
       default:
         throw new Error(`Unknown expression kind: ${(expr as Expr).kind}`);
     }
@@ -773,6 +788,18 @@ export class Formatter {
       // Default case: | body
       return `| ${body}`;
     }
+  }
+
+  private formatUseExpr(expr: UseExpr, ctx: FormatContext): string {
+    return `use "${expr.path}"`;
+  }
+
+  private formatReactivePipeExpr(expr: ReactivePipeExpr, ctx: FormatContext): string {
+    const source = this.formatExpr(expr.source, ctx);
+    const stages = expr.stages.map(s => this.formatPipelineStage(s, ctx)).join(" ");
+    // Replace first /> with @> for the reactive pipe syntax
+    const formattedStages = stages.replace(/^\/> /, "");
+    return `${source} @> ${formattedStages}`;
   }
 
   /**

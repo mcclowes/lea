@@ -113,10 +113,25 @@ export type LeaValue =
   | LeaReactiveValue
   | null;
 
+/**
+ * Source location information for error reporting
+ */
+export interface SourceLocation {
+  line: number;
+  column: number;
+  file?: string;
+}
+
 export class RuntimeError extends Error {
-  constructor(message: string) {
-    super(message);
+  location?: SourceLocation;
+
+  constructor(message: string, location?: SourceLocation) {
+    const locationPrefix = location
+      ? `[${location.file ? location.file + ":" : ""}${location.line}:${location.column}] `
+      : "";
+    super(`${locationPrefix}${message}`);
     this.name = "RuntimeError";
+    this.location = location;
   }
 }
 

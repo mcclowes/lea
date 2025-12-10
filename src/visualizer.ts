@@ -14,6 +14,7 @@ import {
   ExprStmt,
   PipeExpr,
   ParallelPipeExpr,
+  SpreadPipeExpr,
   CallExpr,
   FunctionExpr,
   Identifier,
@@ -35,6 +36,8 @@ import {
   BidirectionalPipelineLiteral,
   MatchExpr,
   TemplateStringExpr,
+  ReactivePipeExpr,
+  UseExpr,
   BlockBody,
   CodeblockStmt,
   AnyPipelineStage,
@@ -296,6 +299,12 @@ export class ASTVisualizer {
         return this.visualizeTemplate(expr);
       case "PlaceholderExpr":
         return this.visualizePlaceholder();
+      case "SpreadPipeExpr":
+        return this.visualizeSpreadPipe(expr);
+      case "UseExpr":
+        return this.visualizeUseExpr(expr);
+      case "ReactivePipeExpr":
+        return this.visualizeReactivePipe(expr);
       default:
         // Generic fallback
         const id = this.genId();
@@ -899,6 +908,125 @@ export class ASTVisualizer {
       subgraphs: [],
       entryNode: id,
       exitNode: id,
+    };
+  }
+
+  private visualizeSpreadPipe(expr: SpreadPipeExpr): VisualizationResult {
+    const nodes: MermaidNode[] = [];
+    const edges: MermaidEdge[] = [];
+    const subgraphs: MermaidSubgraph[] = [];
+
+    // Visualize the left side (list/parallel result)
+    const leftResult = this.visualizeExpr(expr.left);
+    nodes.push(...leftResult.nodes);
+    edges.push(...leftResult.edges);
+    subgraphs.push(...leftResult.subgraphs);
+
+    // Spread indicator node
+    const spreadId = this.genId("spread");
+    nodes.push({ id: spreadId, label: "/>>> (spread)", type: "fanout" });
+    if (leftResult.exitNode) {
+      edges.push({ from: leftResult.exitNode, to: spreadId });
+    }
+
+    // Visualize the right side (function to apply)
+    const rightResult = this.visualizeExpr(expr.right);
+    nodes.push(...rightResult.nodes);
+    edges.push(...rightResult.edges);
+    subgraphs.push(...rightResult.subgraphs);
+
+    if (rightResult.entryNode) {
+      edges.push({ from: spreadId, to: rightResult.entryNode, label: "each" });
+    }
+
+    // Collect node to gather results
+    const collectId = this.genId("collect");
+    nodes.push({ id: collectId, label: "collect", type: "fanin" });
+    if (rightResult.exitNode) {
+      edges.push({ from: rightResult.exitNode, to: collectId });
+    }
+
+    return {
+      nodes,
+      edges,
+      subgraphs,
+      entryNode: leftResult.entryNode || spreadId,
+      exitNode: collectId,
+    };
+  }
+
+  private visualizeUseExpr(expr: UseExpr): VisualizationResult {
+    const id = this.genId("use");
+    return {
+      nodes: [{ id, label: `use "${expr.path}"`, type: "operation" }],
+      edges: [],
+      subgraphs: [],
+      entryNode: id,
+      exitNode: id,
+    };
+  }
+
+  private visualizeReactivePipe(expr: ReactivePipeExpr): VisualizationResult {
+    const nodes: MermaidNode[] = [];
+    const edges: MermaidEdge[] = [];
+    const subgraphs: MermaidSubgraph[] = [];
+
+    // Reactive source node
+    const sourceId = this.genId("reactive_src");
+    nodes.push({ id: sourceId, label: `@> ${expr.sourceName}`, type: "data" });
+
+    // Process stages
+    let prevExit = sourceId;
+    for (const stage of expr.stages) {
+      if ("isParallel" in stage && stage.isParallel) {
+        // Parallel stage
+        const fanoutId = this.genId("fanout");
+        nodes.push({ id: fanoutId, label: "fan-out", type: "fanout" });
+        edges.push({ from: prevExit, to: fanoutId });
+
+        const branchExits: string[] = [];
+        for (let i = 0; i < stage.branches.length; i++) {
+          const branchResult = this.visualizeExpr(stage.branches[i]);
+          nodes.push(...branchResult.nodes);
+          edges.push(...branchResult.edges);
+          subgraphs.push(...branchResult.subgraphs);
+
+          if (branchResult.entryNode) {
+            edges.push({ from: fanoutId, to: branchResult.entryNode });
+          }
+          if (branchResult.exitNode) {
+            branchExits.push(branchResult.exitNode);
+          }
+        }
+
+        const faninId = this.genId("fanin");
+        nodes.push({ id: faninId, label: "fan-in", type: "fanin" });
+        for (const exit of branchExits) {
+          edges.push({ from: exit, to: faninId });
+        }
+        prevExit = faninId;
+      } else {
+        // Regular stage
+        const stageResult = this.visualizeExpr(stage.expr);
+        nodes.push(...stageResult.nodes);
+        edges.push(...stageResult.edges);
+        subgraphs.push(...stageResult.subgraphs);
+
+        if (stageResult.entryNode) {
+          edges.push({ from: prevExit, to: stageResult.entryNode });
+        }
+        if (stageResult.exitNode) {
+          prevExit = stageResult.exitNode;
+        }
+      }
+    }
+
+    return {
+      nodes,
+      edges,
+      subgraphs,
+      entryNode: sourceId,
+      exitNode: prevExit,
     };
   }
 
