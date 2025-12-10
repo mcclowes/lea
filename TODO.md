@@ -229,4 +229,5 @@ Alternative: `window(n)` builtin that creates overlapping windows.
 - [x] Make codeblocks appear the same colours as comments in syntax highlighting
 - [x] \`\`\`lea syntax highlighting in markdown
 - [x] Replace <- early return with `return` keyword
-- [ ] Review documentation
+- [x] Review documentation
+  - Fixed SYNTAX.md: pattern matching uses `input` not `_` for matched value
