@@ -271,22 +271,30 @@ export function applyFunctionDecorator(
         // Validate return type - support both old style and new typeSignature
         const expectedReturnType = fn.typeSignature?.returnType ?? fn.returnType;
 
-        if (expectedReturnType) {
-          const isOptional = typeof expectedReturnType === "string" && expectedReturnType.startsWith("?") ||
-                            typeof expectedReturnType === "object" && (expectedReturnType as { optional?: boolean }).optional;
+        const validateReturnValue = (value: LeaValue) => {
+          if (expectedReturnType) {
+            const isOptional = typeof expectedReturnType === "string" && expectedReturnType.startsWith("?") ||
+                              typeof expectedReturnType === "object" && (expectedReturnType as { optional?: boolean }).optional;
 
-          if ((result === null || result === undefined) && !isOptional) {
-            throw new RuntimeError(`[validate] Return value is null/undefined`);
-          }
+            if ((value === null || value === undefined) && !isOptional) {
+              throw new RuntimeError(`[validate] Return value is null/undefined`);
+            }
 
-          if (!ctx.matchesType(result, expectedReturnType)) {
-            throw new RuntimeError(
-              `[validate] Expected return type ${ctx.formatType(expectedReturnType)}, got ${ctx.getLeaType(result)}`
-            );
+            if (!ctx.matchesType(value, expectedReturnType)) {
+              throw new RuntimeError(
+                `[validate] Expected return type ${ctx.formatType(expectedReturnType)}, got ${ctx.getLeaType(value)}`
+              );
+            }
           }
+          return value;
+        };
+
+        // Handle promises - validate after resolution
+        if (isLeaPromise(result)) {
+          return wrapPromise(result.promise.then(validateReturnValue));
         }
 
-        return result;
+        return validateReturnValue(result);
       };
 
     case "pure": {

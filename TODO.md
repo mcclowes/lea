@@ -1,9 +1,169 @@
-- [x] Leveraging Lea functionality within TypeScript?
-- [x] Ambiguity with ignored and templated params? - `let ignoreSecond = (x, _) -> x`
-- [x] Explicit Pipeline Types
-- [x] I think we should prefer/encourage />>> over map (less verbose) - remember this, and also update examples/documentation
-- [x] Bug in syntax highlighting - :: [Int] /> [Int]   - the second [Int] doesn't show in the same colour as a type def
-- [x] Create a changelog and ensure Claude keeps it up to date
+# Lea TODO
+
+## Active Tasks
+
+- [X] Leveraging Lea functionality within TypeScript?
+  - Added `lea` tagged template literal for embedding Lea in TypeScript
+  - Supports JS value and function interpolation via `${...}`
+  - Added `createLea()` for context-based execution with bindings
+- [X] Ambiguity with ignored and templated params? - `let ignoreSecond = (x, _) -> x`
+- [X] Explicit Pipeline Types
+- [X] I think we should prefer/encourage />>> over map (less verbose) - remember this, and also update examples/documentation
+  - Fixed parser to allow `/>>>` to chain naturally without parentheses
+  - Updated examples/03-lists.lea to use `/>>>`
+- [X] Bug in syntax highlighting - :: [Int] /> [Int]   - the second [Int] doesn't show in the same colour as a type def
+  - Regex pattern tested and matches correctly; VS Code extension version 0.2.3 ready for republishing
+- [X] Create a changelog and ensure Claude keeps it up to date
+  - Added CHANGELOG.md with full project history
+- [ ] Allow pipelines to begin with />>> ?
+
+## Feature Ideas
+
+### Refinement Types
+
+Types with predicates (like Liquid Haskell, F*):
+```lea
+let clamp = (x) -> x :: Int where x > 0 && x < 100 :> Int
+```
+
+### Canvas Visualization
+
+Visual/graphical pipeline visualization (beyond ASCII `.visualize()`). Mermaid?
+
+### Structured Concurrency (`concurrent` blocks)
+
+Run all awaits in parallel with a clean syntax:
+
+```lea
+let userData = concurrent
+  let user = await fetchUser(id)
+  let posts = await fetchPosts(id)
+  let friends = await fetchFriends(id)
+in
+  { user: user, posts: posts, friends: friends }
+```
+
+### Channels (CSP-Style)
+
+For complex coordination patterns:
+
+```lea
+let ch = channel()
+
+let producer = () ->
+  range(1, 10) /> each((x) -> ch /> send(x))
+  ch /> close
+#async
+
+let consumer = () ->
+  ch /> receive /> each((x) -> x /> print)
+#async
+
+[producer, consumer] /> parallel
+```
+
+### `#spawn` Decorator
+
+Fire-and-forget execution:
+
+```lea
+let logEvent = (event) ->
+  sendToAnalytics(event)
+#spawn
+
+-- Returns immediately, doesn't block
+logEvent({ type: "click" })
+```
+
+### `#parallel` Decorator
+
+Automatic parallelization of map operations within a function:
+
+```lea
+let processItems = (items) ->
+  items /> map((x) -> expensiveTransform(x))
+#parallel
+
+-- With concurrency limit
+let processItems = (items) ->
+  items /> map((x) -> expensiveTransform(x))
+#parallel(4)
+```
+
+---
+
+## Future Pipe Operators
+
+### Unfold/Generate Pipe `/<>`
+
+Expands a seed value into a list (opposite of reduce):
+
+```lea
+1 /<> ((x) -> x > 100 ? null : x * 2)    -- [1, 2, 4, 8, 16, 32, 64]
+
+-- Collatz sequence
+7 /<> ((x) -> match x
+  | 1 -> null
+  | if _ % 2 == 0 -> x / 2
+  | x * 3 + 1
+)
+```
+
+### Gate Pipe `/?>`
+
+Short-circuit pipeline on predicate failure:
+
+```lea
+value /?> isValid /> process              -- null if invalid
+value /?> isPositive : 0 /> double        -- 0 if not positive
+```
+
+### Scan Pipe `/~>`
+
+Reduce that emits all intermediate values:
+
+```lea
+[1, 2, 3, 4] /~> 0, (acc, x) -> acc + x   -- [1, 3, 6, 10]
+```
+
+### Until Pipe `/*>`
+
+Iterate until condition met:
+
+```lea
+1 /*> (x) -> x * 2, (x) -> x > 100        -- 128
+```
+
+### Window Pipe `/[n]>`
+
+Sliding window operations:
+
+```lea
+[1, 2, 3, 4, 5] /[3]> (x, i, window) -> avg(window)
+```
+
+Alternative: `window(n)` builtin that creates overlapping windows.
+
+---
+
+# Module System Implementation
+
+## Design Decisions
+
+- **Export syntax**: `#export` decorator on let bindings
+- **Import syntax**: `let { a, b } = use "./path"` (destructuring required)
+- **No namespace imports**: No `let math = use "./math"` for now (can add later)
+- **Resolution**: Relative paths only, resolved from the importing file's location
+- **Implicit extension**: `use "./math"` resolves to `./math.lea`
+- **Named exports only**: No default exports
+- **Re-exports allowed**: `let { foo } = use "./a" #export`
+- **No `as` syntax**: Rename by rebinding manually
+- **Pipelines**: Export/import like any value (closures preserved)
+- **Decorators**: Can decorate imported values
+
+## Implementation Checklist
+
+### Phase 1: Core Infrastructure
 - [x] Add `USE` token to lexer (`use` keyword)
 - [x] Add `UseExpr` AST node
 - [x] Update parser to handle `use` expressions

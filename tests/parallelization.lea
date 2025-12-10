@@ -4,24 +4,28 @@
 -- ==========================================
 -- Test 1: Basic parallel decorator
 -- ==========================================
+-- Note: #parallel processes each list element through the pipeline concurrently
+-- The pipeline should process individual items, not use map (which already operates on lists)
 let double = (x) -> x * 2
-let processNumbers = /> map(double) #parallel
-let result1 = [1, 2, 3, 4, 5] /> processNumbers
+let processItem = /> double #parallel  -- Pipeline with parallel decorator
+let result1 = [1, 2, 3, 4, 5] /> processItem
 result1 /> print  -- Expected: [2, 4, 6, 8, 10]
 
 -- ==========================================
 -- Test 2: Parallel with concurrency limit
 -- ==========================================
 let slowDouble = (x) ->
-  let _ = delay(10, null)
+  let ignored = delay(10, null)
   x * 2
 
-let limitedPipeline = /> map(slowDouble) #parallel(2)
+let limitedPipeline = /> slowDouble #parallel(2)
 -- [1, 2, 3] /> limitedPipeline /> print  -- Would process 2 at a time
 
 -- ==========================================
 -- Test 3: Batch processing
 -- ==========================================
+-- Note: #batch splits the list into batches and processes each batch through the pipeline
+-- The pipeline receives a sublist and should use map to process it
 let addOne = (x) -> x + 1
 let batchPipeline = /> map(addOne) #batch(4)
 let result3 = [1, 2, 3, 4, 5, 6, 7, 8] /> batchPipeline

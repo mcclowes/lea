@@ -343,6 +343,11 @@ export function parseCall(ctx: ParserContext): Expr {
 export function finishCall(ctx: ParserContext, callee: Expr): Expr {
   const args: Expr[] = [];
 
+  // Reset pipe operand flag when parsing call arguments
+  // Arguments inside parentheses are a new expression context
+  const wasInPipeOperand = ctx.inPipeOperand;
+  ctx.setInPipeOperand(false);
+
   if (!ctx.check(TokenType.RPAREN)) {
     do {
       args.push(parseExpression(ctx));
@@ -350,6 +355,7 @@ export function finishCall(ctx: ParserContext, callee: Expr): Expr {
   }
 
   ctx.consume(TokenType.RPAREN, "Expected ')' after arguments");
+  ctx.setInPipeOperand(wasInPipeOperand);
   return callExpr(callee, args);
 }
 
