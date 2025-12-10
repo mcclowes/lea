@@ -675,6 +675,31 @@ Callback receives `(element, index)` as arguments, similar to map/filter/reduce.
 
 ## Usage
 
+### Via npx (no installation required)
+
+```bash
+npx lea-lang file.lea           # Run a file
+npx lea-lang --repl             # Interactive REPL
+npx lea-lang --init my-project  # Initialize new project
+```
+
+### Via global install
+
+```bash
+npm install -g lea-lang
+lea file.lea                    # Run a file
+lea file.lea --strict           # Run with strict type checking
+lea --repl                      # Interactive REPL
+lea --repl --strict             # REPL with strict type checking
+lea --repl --tutorial           # Start interactive tutorial
+lea --init                      # Initialize new project (interactive)
+lea --init my-project           # Create project in new directory
+lea --help                      # Show help
+lea --version                   # Show version
+```
+
+### Development (from source)
+
 ```bash
 npm run repl              # Interactive REPL
 npm run repl -- --strict  # REPL with strict type checking

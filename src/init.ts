@@ -459,7 +459,25 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
-  console.error("Error:", err.message);
-  process.exit(1);
-});
+/**
+ * Run the init command programmatically
+ * @param projectName Optional project name/directory
+ * @param template Optional template name
+ */
+export async function runInit(projectName?: string, template: string = "default"): Promise<void> {
+  printBanner();
+
+  if (projectName) {
+    initProject(projectName, template);
+  } else {
+    await interactiveInit();
+  }
+}
+
+// Run directly if this file is the entry point
+if (require.main === module) {
+  main().catch((err) => {
+    console.error("Error:", err.message);
+    process.exit(1);
+  });
+}

@@ -23,6 +23,9 @@
   ],
   "main": "dist/api.js",
   "types": "dist/api.d.ts",
+  "bin": {
+    "lea": "./dist/cli/lea.js"
+  },
   "exports": {
     ".": {
       "import": "./dist/api.js",
@@ -40,6 +43,10 @@
     "dist/interpreter.*",
     "dist/interpreter/",
     "dist/token.*",
+    "dist/cli/",
+    "dist/repl.*",
+    "dist/init.*",
+    "dist/debugger.*",
     "dist/README.md"
   ],
   "scripts": {
