@@ -41,7 +41,14 @@ import {
   BlockBody,
   CodeblockStmt,
   AnyPipelineStage,
+  PipelineStage,
+  ParallelPipelineStage,
 } from "./ast";
+
+// Type guard for parallel pipeline stages
+function isParallelStage(stage: AnyPipelineStage): stage is ParallelPipelineStage {
+  return "isParallel" in stage && stage.isParallel === true;
+}
 
 // Node types for styling
 type NodeType =
@@ -507,7 +514,12 @@ export class ASTVisualizer {
   private visualizeList(expr: ListExpr): VisualizationResult {
     const id = this.genId("list");
     const items = expr.elements.length <= 3
-      ? expr.elements.map(e => this.describeExpr(e)).join(", ")
+      ? expr.elements.map(e => {
+          if (e.spread) {
+            return `...${this.describeExpr(e.value)}`;
+          }
+          return this.describeExpr(e.value);
+        }).join(", ")
       : `${expr.elements.length} items`;
     return {
       nodes: [{ id, label: `[${items}]`, type: "data" }],
@@ -521,7 +533,12 @@ export class ASTVisualizer {
   private visualizeRecord(expr: RecordExpr): VisualizationResult {
     const id = this.genId("rec");
     const fields = expr.fields.length <= 3
-      ? expr.fields.map(f => f.key).join(", ")
+      ? expr.fields.map(f => {
+          if (f.spread) {
+            return `...${this.describeExpr(f.value)}`;
+          }
+          return f.key;
+        }).join(", ")
       : `${expr.fields.length} fields`;
     return {
       nodes: [{ id, label: `{${fields}}`, type: "data" }],
@@ -705,7 +722,7 @@ export class ASTVisualizer {
     let prevExit = entryId;
 
     for (const stage of expr.stages) {
-      if ("isParallel" in stage && stage.isParallel) {
+      if (isParallelStage(stage)) {
         // Parallel stage within pipeline
         const fanoutId = this.genId("fanout");
         nodes.push({ id: fanoutId, label: "fan-out", type: "fanout" });
@@ -978,7 +995,7 @@ export class ASTVisualizer {
     // Process stages
     let prevExit = sourceId;
     for (const stage of expr.stages) {
-      if ("isParallel" in stage && stage.isParallel) {
+      if (isParallelStage(stage)) {
         // Parallel stage
         const fanoutId = this.genId("fanout");
         nodes.push({ id: fanoutId, label: "fan-out", type: "fanout" });
@@ -1219,7 +1236,7 @@ export class ASTVisualizer {
                this.containsPipes(expr.thenBranch) ||
                this.containsPipes(expr.elseBranch);
       case "ListExpr":
-        return expr.elements.some(e => this.containsPipes(e));
+        return expr.elements.some(e => this.containsPipes(e.value));
       case "RecordExpr":
         return expr.fields.some(f => this.containsPipes(f.value));
       case "TupleExpr":

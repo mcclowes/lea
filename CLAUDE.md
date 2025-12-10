@@ -905,14 +905,34 @@ npm run format -- file.lea --indent 4 --print-width 100
 
 ## Visualization
 
-The visualizer generates Mermaid flowchart diagrams from Lea source code, showing data flow through pipe chains.
+The visualizer generates flowchart diagrams from Lea source code, showing data flow through pipe chains.
 
 ### Features
 
 - **Pipe chain visualization** — Shows data flowing through operations
 - **Parallel pipe fan-out/fan-in** — Diamond nodes show branching
 - **Named binding subgraphs** — Groups related pipe chains
-- **Multiple output formats** — Mermaid markdown or self-contained HTML
+- **Multiple output formats** — Mermaid markdown, HTML, or interactive canvas
+
+### Output Modes
+
+| Mode | Description |
+|------|-------------|
+| Default | Mermaid markdown output |
+| `--html` | Static HTML with embedded Mermaid.js |
+| `--canvas` | **Interactive canvas (recommended)** with zoom, pan, node inspection |
+
+### Interactive Canvas Features
+
+The `--canvas` mode provides a full visualization canvas:
+
+- **Pan & Zoom** — Mouse wheel to zoom, drag to pan
+- **Node Inspection** — Click nodes to view details in the inspector panel
+- **Data Flow Animation** — Toggle animated flow visualization
+- **SVG Export** — Download the diagram as SVG
+- **Light/Dark Themes** — Use `--light` or `--dark` flags
+- **Source Code Panel** — View original source alongside the diagram
+- **Legend** — Color-coded node type reference
 
 ### Node Types (Color-coded)
 
@@ -921,25 +941,46 @@ The visualizer generates Mermaid flowchart diagrams from Lea source code, showin
 - **Orange (diamond)** — Fan-out/Fan-in (parallel pipes)
 - **Green (subroutine)** — Await/Return
 - **Yellow (diamond)** — Conditionals
+- **Cyan (stadium)** — Reactive sources
 
 ### CLI Options
 
 ```bash
+# Output modes
 --html, -h          Output HTML with embedded Mermaid diagram
+--canvas, -c        Output interactive canvas HTML (recommended)
+
+# Layout options
 -o, --output FILE   Write output to FILE instead of stdout
 --tb, --top-bottom  Use top-to-bottom layout (default: left-to-right)
 --lr, --left-right  Use left-to-right layout (default)
 --types             Show type annotations in diagram
 --no-decorators     Hide decorators in diagram
+
+# Canvas-specific options
+--light             Use light theme (canvas mode only)
+--dark              Use dark theme (default, canvas mode only)
+--no-animate        Disable animations (canvas mode only)
 --help              Show help message
 ```
 
-### Example
+### Examples
 
 ```bash
-# Generate and view a flow diagram
+# Generate Mermaid markdown
+npm run visualize -- examples/09-pipeline.lea
+
+# Generate static HTML with Mermaid
 npm run visualize -- examples/09-pipeline.lea --html -o flow.html
-open flow.html
+
+# Generate interactive canvas (recommended)
+npm run visualize -- examples/09-pipeline.lea --canvas -o canvas.html
+
+# Canvas with light theme and top-to-bottom layout
+npm run visualize -- examples/09-pipeline.lea --canvas --light --tb -o canvas.html
+
+# Open the generated visualization
+open canvas.html
 ```
 
 ## Example Program
