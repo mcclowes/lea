@@ -728,9 +728,10 @@ See `examples/typescript/example.ts` for comprehensive examples.
 The interactive REPL provides extensive help and learning features:
 
 ```bash
+# Help & Learning
 .help              # Show main help
 .help <topic>      # Topic help: pipes, functions, lists, decorators,
-                   # types, async, patterns, contexts, pipelines
+                   # types, async, patterns, contexts, pipelines, debug, session
 .examples          # Show example snippets
 .example <n>       # Run example number n
 .type <expr>       # Show the type of an expression
@@ -740,14 +741,35 @@ The interactive REPL provides extensive help and learning features:
 .clear             # Clear the screen
 .reset             # Reset interpreter state
 .exit              # Exit the REPL
+
+# Debugger Commands
+.debug <expr>      # Debug an expression step-by-step
+.break <line>      # Set breakpoint at line number
+.breaks            # List all breakpoints
+.delbreak <id>     # Delete breakpoint by ID
+.clearbreaks       # Clear all breakpoints
+.watch <expr>      # Add a watch expression
+.watches           # List watch expressions
+.delwatch <expr>   # Remove a watch expression
+.clearwatches      # Clear all watches
+
+# Session Management
+.save [name]       # Save workspace state to ~/.lea/workspaces/
+.load <name>       # Load workspace state
+.workspaces        # List saved workspaces
+.export [file]     # Export session to .lea file
+.history [n]       # Show last n commands (default: 20)
 ```
 
 Features:
 - **Tab completion** for keywords and builtins
-- **Command history** (up/down arrows)
+- **Command history** (up/down arrows) - persisted across sessions in ~/.lea/history
 - **Multi-line input** mode for complex expressions
 - **Interactive tutorial** for learning Lea step-by-step
 - **Helpful error messages** with suggestions and "did you mean?" hints
+- **Interactive debugger** for stepping through pipelines
+- **Workspace save/load** for persisting session state
+- **Session export** to .lea files
 
 ## Project Templates
 
