@@ -1,0 +1,132 @@
+-- Test new builtins added in language improvements
+
+{-- String Functions --}
+
+"=== String Functions ===" /> print
+
+-- toUpperCase / toLowerCase
+"hello" /> toUpperCase /> print  -- HELLO
+"WORLD" /> toLowerCase /> print  -- world
+
+-- replace / replaceFirst
+"a-b-c" /> replace("-", "_") /> print       -- a_b_c
+"a-b-c" /> replaceFirst("-", "_") /> print  -- a_b-c
+
+-- startsWith / endsWith
+"hello world" /> startsWith("hello") /> print  -- true
+"hello world" /> startsWith("world") /> print  -- false
+"hello world" /> endsWith("world") /> print    -- true
+"hello world" /> endsWith("hello") /> print    -- false
+
+{/--}
+
+{-- Math Functions --}
+
+"=== Math Functions ===" /> print
+
+-- Powers and logs
+pow(2, 10) /> print        -- 1024
+log(E()) /> print          -- 1 (natural log of e)
+log(8, 2) /> print         -- 3 (log base 2 of 8)
+log10(100) /> print        -- 2
+log2(8) /> print           -- 3
+exp(0) /> print            -- 1
+
+-- Trigonometry
+sin(0) /> print            -- 0
+cos(0) /> print            -- 1
+tan(0) /> print            -- 0
+
+-- Constants
+PI() /> print              -- 3.14159...
+E() /> print               -- 2.71828...
+TAU() /> print             -- 6.28318...
+
+-- Utility functions
+sign(-5) /> print          -- -1
+sign(5) /> print           -- 1
+trunc(3.9) /> print        -- 3
+clamp(15, 0, 10) /> print  -- 10
+clamp(-5, 0, 10) /> print  -- 0
+clamp(5, 0, 10) /> print   -- 5
+lerp(0, 10, 0.5) /> print  -- 5
+lerp(0, 100, 0.25) /> print -- 25
+
+{/--}
+
+{-- JSON Functions --}
+
+"=== JSON Functions ===" /> print
+
+-- toJson first, then parseJson to test round trip
+let user = { name: "Bob", active: true }
+let jsonString = user /> toJson
+jsonString /> print
+
+-- Parse back
+let parsedUser = parseJson(jsonString)
+parsedUser.name /> print       -- Bob
+parsedUser.active /> print     -- true
+
+-- Parse array
+let arrJson = [1, 2, 3] /> toJson
+let arr = parseJson(arrJson)
+arr /> length /> print     -- 3
+
+-- prettyJson
+user /> prettyJson /> print
+
+-- Round trip with nested data
+let original = { items: [1, 2, 3], nested: { x: 10 } }
+let roundTripped = original /> toJson /> parseJson
+roundTripped.items /> head /> print      -- 1
+roundTripped.nested.x /> print           -- 10
+
+{/--}
+
+{-- Date/Time Functions --}
+
+"=== Date/Time Functions ===" /> print
+
+-- now returns a timestamp
+let ts = now()
+ts > 0 /> print  -- true
+
+-- today returns a record
+let t = today()
+t.year >= 2024 /> print  -- true
+
+-- date from components
+let d = date(2024, 6, 15, 10, 30)
+d.year /> print   -- 2024
+d.month /> print  -- 6
+d.day /> print    -- 15
+d.hour /> print   -- 10
+
+-- formatDate
+d /> formatDate("YYYY-MM-DD") /> print  -- 2024-06-15
+d /> formatDate("ISO") /> print  -- ISO format
+
+-- parseDate
+let pd = parseDate("2024-01-15")
+pd.year /> print   -- 2024
+pd.month /> print  -- 1
+pd.day /> print    -- 15
+
+-- addDays
+let future = d /> addDays(10)
+future.day /> print  -- 25
+
+-- addHours
+let later = d /> addHours(5)
+later.hour /> print  -- 15
+
+-- diffDates
+let d1 = date(2024, 1, 15)
+let d2 = date(2024, 1, 10)
+let diff = diffDates(d1, d2)
+diff / (24 * 60 * 60 * 1000) /> print  -- 5 (days)
+
+{/--}
+
+"All tests completed!" /> print
