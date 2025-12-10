@@ -490,19 +490,65 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 **Builtins:**
 - `print` (returns first arg for chaining)
 - `sqrt`, `abs`, `floor`, `ceil`, `round`, `min`, `max`
-- `length`, `head`, `tail`, `push`, `concat`, `reverse`, `zip`, `isEmpty`
+- `length`, `head`, `tail`, `last`, `push`, `concat`, `reverse`, `zip`, `isEmpty`
 - `map(list, fn)` — transform each element; callback receives `(element, index)`
 - `filter(list, fn)` — keep elements matching predicate; callback receives `(element, index)`
 - `reduce(list, initial, fn)` — fold into single value; callback receives `(acc, element, index)`
-- `partition`
+- `find(list, fn)` — find first element matching predicate; returns null if not found
+- `findIndex(list, fn)` — find index of first matching element; returns -1 if not found
+- `some(list, fn)` — check if any element matches predicate
+- `every(list, fn)` — check if all elements match predicate
+- `sort(list, comparator?)` — sort list with optional comparator function
+- `groupBy(list, fn)` — group elements by key function; returns record
+- `flatten(list, depth?)` — flatten nested lists (default depth: 1)
+- `flatMap(list, fn)` — map then flatten by one level
+- `partition(list, fn)` — split into [matching, non-matching]
 - `range`, `iterations`
 - `fst`, `snd` — first/second element of tuple or list
-- `take(list, n)`, `at(list, index)` — list access
+- `take(list, n)`, `drop(list, n)`, `at(list, index)` — list access
+- `takeWhile(list, fn)`, `dropWhile(list, fn)` — take/drop while predicate is true
+- `count(list, fn?)` — count elements (optionally matching predicate)
+- `intersperse(list, sep)` — insert separator between elements
+- `enumerate(list, start?)` — create list of [index, element] pairs
+- `transpose(matrix)` — transpose a matrix (list of lists)
 - `toString` — convert value to string
 - `delay(ms, value)` — returns promise that resolves after ms
 - `parallel(list, fn, opts?)` — concurrent map with optional `{ limit: n }`; callback receives `(element, index)`
 - `race(fns)` — returns first promise to resolve
 - `then(promise, fn)` — chain promise transformations
+
+**Math Builtins:**
+- Basic: `sqrt`, `abs`, `floor`, `ceil`, `round`, `min`, `max`, `pow`, `sign`, `trunc`, `clamp`, `lerp`
+- Logarithmic: `log`, `log10`, `log2`, `exp`
+- Trigonometric: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`
+- Constants: `PI`, `E`, `TAU`, `INFINITY`
+
+**Bitwise Builtins:**
+- `bitAnd(a, b)` — bitwise AND
+- `bitOr(a, b)` — bitwise OR
+- `bitXor(a, b)` — bitwise XOR
+- `bitNot(a)` — bitwise NOT
+- `bitShiftLeft(a, b)` — left shift
+- `bitShiftRight(a, b)` — signed right shift
+- `bitShiftRightUnsigned(a, b)` — unsigned right shift
+
+**Statistics Builtins:**
+- `sum(list)` — sum of list elements
+- `product(list)` — product of list elements
+- `mean(list)` — arithmetic mean
+- `median(list)` — median value
+- `variance(list)` — population variance
+- `stdDev(list)` — population standard deviation
+
+**Number Theory Builtins:**
+- `gcd(a, b)` — greatest common divisor
+- `lcm(a, b)` — least common multiple
+- `isPrime(n)` — check if prime
+- `factorial(n)` — factorial of n
+- `fibonacci(n)` — nth Fibonacci number
+- `isEven(n)`, `isOdd(n)` — parity checks
+- `mod(a, b)` — modulo (handles negatives correctly)
+- `divInt(a, b)` — integer division
 
 **Random Builtins:**
 - `random()` — random float in [0, 1)
@@ -517,12 +563,36 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 - `charAt(str, index)` — get character at index
 - `join(list, delimiter?)` — join list into string
 - `padEnd(str, len, char?)`, `padStart(str, len, char?)` — pad string
-- `trim(str)`, `trimEnd(str)` — remove whitespace
+- `trim(str)`, `trimStart(str)`, `trimEnd(str)` — remove whitespace
 - `indexOf(str, search)` — find index of substring
 - `includes(str/list, item)` — check if contains item
 - `repeat(str, count)` — repeat string n times
 - `slice(str/list, start, end?)` — extract substring/sublist
 - `chars(str)` — split string into character list
+- `capitalize(str)` — capitalize first letter
+- `titleCase(str)` — capitalize first letter of each word
+
+**Regex Builtins:**
+- `regexTest(str, pattern, flags?)` — test if string matches pattern
+- `regexMatch(str, pattern, flags?)` — find first match; returns `{ match, index, groups }` or null
+- `regexMatchAll(str, pattern, flags?)` — find all matches; returns list of match records
+- `regexReplace(str, pattern, replacement, flags?)` — replace matches (default: global)
+- `regexSplit(str, pattern, flags?)` — split by regex pattern
+
+**Case Conversion Builtins:**
+- `toCamelCase(str)` — convert to camelCase
+- `toPascalCase(str)` — convert to PascalCase
+- `toSnakeCase(str)` — convert to snake_case
+- `toKebabCase(str)` — convert to kebab-case
+- `toConstantCase(str)` — convert to CONSTANT_CASE
+
+**Encoding Builtins:**
+- `base64Encode(str)` — encode string to base64
+- `base64Decode(str)` — decode base64 to string
+- `urlEncode(str)` — URL encode string
+- `urlDecode(str)` — URL decode string
+- `hexEncode(str)` — encode string to hex
+- `hexDecode(str)` — decode hex to string
 
 **Set Operations (on lists):**
 - `listSet(list)` — create list with unique elements
@@ -540,6 +610,36 @@ Note: Pipe operators bind tighter than arithmetic, so `a /> b ++ c` parses as `(
 - `deleteFile(path)` — async delete file, returns true on success
 - `readDir(path)` — async read directory, returns list of filenames
 - `fetch(url, options?)` — async HTTP request, returns response record
+
+**Directory Operations:**
+- `mkdir(path, recursive?)` — create directory (recursive by default)
+- `rmdir(path, recursive?)` — remove directory (non-recursive by default)
+- `copyFile(src, dest)` — copy file
+- `renameFile(oldPath, newPath)` — rename/move file
+
+**File Metadata:**
+- `fileStats(path)` — get file stats; returns `{ size, isFile, isDirectory, isSymlink, createdAt, modifiedAt, accessedAt, mode }`
+- `isFile(path)` — check if path is a file
+- `isDirectory(path)` — check if path is a directory
+
+**Path Utilities:**
+- `pathJoin(...parts)` — join path segments
+- `pathDirname(path)` — get directory name
+- `pathBasename(path, ext?)` — get base name (optionally strip extension)
+- `pathExtname(path)` — get extension
+- `pathResolve(...parts)` — resolve to absolute path
+- `pathRelative(from, to)` — get relative path
+- `pathNormalize(path)` — normalize path
+- `pathIsAbsolute(path)` — check if path is absolute
+- `pathParse(path)` — parse path into `{ root, dir, base, ext, name }`
+
+**Environment Builtins:**
+- `getEnv(name)` — get environment variable (null if not set)
+- `getEnvAll()` — get all environment variables as record
+- `cwd()` — get current working directory
+- `homeDir()` — get home directory
+- `tmpDir()` — get temp directory
+- `platform()` — get platform (e.g., "linux", "darwin", "win32")
 
 **fetch options and response:**
 ```
