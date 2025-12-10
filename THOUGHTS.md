@@ -1,3 +1,5 @@
+**Gemini's analysis of Lea...**
+
 **Lea** is a very new, experimental **pipe-oriented functional programming language** developed by GitHub user `mcclowes`. It is built with a tree-walk interpreter written in TypeScript.
 
 Since it appears to have been released or significantly updated only recently (as of December 2025), it is currently a **hobby/educational project** rather than a production-ready tool.
