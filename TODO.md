@@ -19,6 +19,23 @@
 
 ## Feature Ideas
 
+### `if-then-else` Syntax
+
+Add `if-then-else` as syntactic sugar for ternary expressions:
+```lea
+let fibonacci = (n) ->
+  if n <= 1 then n
+  else fibonacci(n - 1) + fibonacci(n - 2)
+```
+Desugars to `n <= 1 ? n : fibonacci(n - 1) + fibonacci(n - 2)`
+
+### `\\\>` Parallel Spread Syntax
+
+Explore a combined parallel-spread operator for mapping over parallel branches:
+```lea
+5 \\\> double \\\> addOne  -- parallel branches that each produce a value
+```
+
 ### Refinement Types
 
 Types with predicates (like Liquid Haskell, F*):
