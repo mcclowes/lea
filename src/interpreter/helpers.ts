@@ -126,6 +126,20 @@ export function asList(val: LeaValue): LeaValue[] {
   return val;
 }
 
+// Cached Interpreter class and singleton instance for asFunction
+let _Interpreter: any = null;
+let _interpreterInstance: any = null;
+
+function getInterpreter(): any {
+  if (_interpreterInstance === null) {
+    if (_Interpreter === null) {
+      _Interpreter = require("./index").Interpreter;
+    }
+    _interpreterInstance = new _Interpreter();
+  }
+  return _interpreterInstance;
+}
+
 // Coerce value to callable function
 export function asFunction(val: LeaValue): (args: LeaValue[]) => LeaValue {
   if (val && typeof val === "object" && "kind" in val && val.kind === "function") {
@@ -138,8 +152,8 @@ export function asFunction(val: LeaValue): (args: LeaValue[]) => LeaValue {
       });
       // Note: This is a simplified version - the real implementation uses the Interpreter
       // This is primarily used by builtin functions like map/filter/reduce
-      const { Interpreter } = require("./index");
-      const interp = new Interpreter();
+      // Use cached interpreter instance to avoid repeated construction
+      const interp = getInterpreter();
       if (fn.body.kind === "BlockBody") {
         for (const stmt of fn.body.statements) {
           interp["executeStmt"](stmt, env);

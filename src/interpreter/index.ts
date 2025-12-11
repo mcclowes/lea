@@ -688,13 +688,20 @@ export class Interpreter implements InterpreterContext {
   }
 
   private isEqual(a: LeaValue, b: LeaValue): boolean {
-    if (a === null && b === null) return true;
+    // Fast path: reference equality handles primitives and same-object cases
+    if (a === b) return true;
+    // Null checks after reference equality (if both null, caught above)
     if (a === null || b === null) return false;
+    // Array comparison
     if (Array.isArray(a) && Array.isArray(b)) {
       if (a.length !== b.length) return false;
-      return a.every((el, i) => this.isEqual(el, b[i]));
+      for (let i = 0; i < a.length; i++) {
+        if (!this.isEqual(a[i], b[i])) return false;
+      }
+      return true;
     }
-    return a === b;
+    // Different types or non-equal primitives
+    return false;
   }
 
   private evaluatePipe(left: Expr, right: Expr, env: Environment): LeaValue {
@@ -909,8 +916,8 @@ export class Interpreter implements InterpreterContext {
     };
 
     // Apply decorators in reverse order (like function decorators)
-    for (const decorator of [...pipeline.decorators].reverse()) {
-      executor = applyPipelineDecorator(this, decorator, executor, pipeline);
+    for (let i = pipeline.decorators.length - 1; i >= 0; i--) {
+      executor = applyPipelineDecorator(this, pipeline.decorators[i], executor, pipeline);
     }
 
     const result = executor(args);
@@ -1228,8 +1235,8 @@ export class Interpreter implements InterpreterContext {
     };
 
     // Wrap with decorators (applied in reverse order)
-    for (const decorator of [...fn.decorators].reverse()) {
-      executor = applyFunctionDecorator(this, decorator, executor, fn);
+    for (let i = fn.decorators.length - 1; i >= 0; i--) {
+      executor = applyFunctionDecorator(this, fn.decorators[i], executor, fn);
     }
 
     // In strict mode, auto-apply validation for functions with type signatures
@@ -1735,8 +1742,8 @@ export class Interpreter implements InterpreterContext {
     };
 
     // Apply decorators in reverse order (like function decorators)
-    for (const decorator of [...pipeline.decorators].reverse()) {
-      executor = applyPipelineDecoratorAsync(this, decorator, executor, pipeline);
+    for (let i = pipeline.decorators.length - 1; i >= 0; i--) {
+      executor = applyPipelineDecoratorAsync(this, pipeline.decorators[i], executor, pipeline);
     }
 
     const result = await executor(args);
@@ -2024,8 +2031,8 @@ export class Interpreter implements InterpreterContext {
     };
 
     // Wrap with decorators (applied in reverse order)
-    for (const decorator of [...fn.decorators].reverse()) {
-      executor = applyFunctionDecorator(this, decorator, executor, fn);
+    for (let i = fn.decorators.length - 1; i >= 0; i--) {
+      executor = applyFunctionDecorator(this, fn.decorators[i], executor, fn);
     }
 
     // In strict mode, auto-apply validation for functions with type signatures
