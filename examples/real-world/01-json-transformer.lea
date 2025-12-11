@@ -1,0 +1,150 @@
+-- JSON Data Transformer
+-- A practical example showing how Lea excels at data transformation pipelines.
+-- Compare this to equivalent JavaScript - Lea's pipe syntax is cleaner and more readable.
+
+-- ============================================================================
+-- Sample Data (typical API response)
+-- ============================================================================
+
+let apiResponse = {
+  users: [
+    { id: 1, name: "Alice Chen", email: "alice@example.com", role: "admin", lastLogin: "2024-01-15", purchases: [120, 85, 200] },
+    { id: 2, name: "Bob Smith", email: "bob@example.com", role: "user", lastLogin: "2024-01-10", purchases: [50] },
+    { id: 3, name: "Carol Davis", email: "carol@example.com", role: "user", lastLogin: "2023-12-01", purchases: [300, 150, 75, 225] },
+    { id: 4, name: "Dan Wilson", email: "dan@example.com", role: "admin", lastLogin: "2024-01-14", purchases: [] },
+    { id: 5, name: "Eve Johnson", email: "eve@example.com", role: "user", lastLogin: "2024-01-12", purchases: [180, 90] },
+  ],
+  metadata: { total: 5, page: 1 },
+}
+
+-- ============================================================================
+-- Transformation Pipelines
+-- ============================================================================
+
+-- Helper: sum a list of numbers
+let sum = (nums) -> nums /> reduce(0, (acc, x) -> acc + x)
+
+-- Helper: calculate average
+let average = (nums) ->
+  length(nums) > 0 ? sum(nums) / length(nums) : 0
+
+-- Helper: transform user to customer summary
+let toCustomerSummary = (u) ->
+  let n = u.name
+  let e = u.email
+  let t = sum(u.purchases)
+  let a = average(u.purchases)
+  { name: n, email: e, totalSpent: t, avgPurchase: a }
+
+-- Pipeline: Extract active high-value customers
+let highValueCustomers = apiResponse.users
+  /> filter((u) -> length(u.purchases) > 0)
+  /> filter((u) -> sum(u.purchases) > 200)
+  /> map(toCustomerSummary)
+
+"=== High Value Customers ===" /> print
+highValueCustomers /> print
+
+-- ============================================================================
+-- More Complex Transformations
+-- ============================================================================
+
+-- Pipeline: Group users by role and summarize
+let adminUsers = apiResponse.users /> filter((u) -> u.role == "admin")
+let regularUsers = apiResponse.users /> filter((u) -> u.role == "user")
+
+let summary = {
+  admins: {
+    count: length(adminUsers),
+    names: adminUsers /> map((u) -> u.name),
+  },
+  users: {
+    count: length(regularUsers),
+    names: regularUsers /> map((u) -> u.name),
+    totalRevenue: regularUsers
+      /> map((u) -> sum(u.purchases))
+      /> reduce(0, (acc, x) -> acc + x),
+  },
+}
+
+"" /> print
+"=== User Summary by Role ===" /> print
+summary /> print
+
+-- ============================================================================
+-- Reusable Pipeline Composition
+-- ============================================================================
+
+-- Define reusable pipeline stages
+let extractName = /> map((u) -> u.name)
+let toSpendingEntry = (u) ->
+  { name: u.name, total: sum(u.purchases) }
+let sortBySpending = /> map(toSpendingEntry)
+let onlyActive = /> filter((u) -> length(u.purchases) > 0)
+
+-- Compose into a leaderboard pipeline
+let leaderboard = apiResponse.users
+  /> onlyActive
+  /> sortBySpending
+
+"" /> print
+"=== Spending Leaderboard ===" /> print
+leaderboard /> print
+
+-- ============================================================================
+-- Data Enrichment Pipeline
+-- ============================================================================
+
+-- Helper: determine customer tier
+let getTier = (total) -> total > 300 ? "gold" : (total > 100 ? "silver" : "bronze")
+
+-- Enrich each user with computed fields
+let enrichUser = (user) ->
+  let total = sum(user.purchases)
+  { ...user, totalSpent: total, purchaseCount: length(user.purchases), tier: getTier(total), isActive: length(user.purchases) > 0 }
+
+let enrichedUsers = apiResponse.users /> map(enrichUser)
+
+let toSummary = (u) ->
+  { name: u.name, tier: u.tier, totalSpent: u.totalSpent }
+
+"" /> print
+"=== Enriched User Data ===" /> print
+enrichedUsers /> map(toSummary) /> print
+
+-- ============================================================================
+-- Aggregation Pipeline
+-- ============================================================================
+
+-- Calculate overall statistics
+let allPurchases = apiResponse.users
+  /> map((u) -> u.purchases)
+  /> reduce([], (acc, p) -> concat(acc, p))
+
+let stats = {
+  totalUsers: length(apiResponse.users),
+  activeUsers: apiResponse.users /> filter((u) -> length(u.purchases) > 0) /> length,
+  totalRevenue: sum(allPurchases),
+  avgPurchaseValue: average(allPurchases),
+  largestPurchase: allPurchases /> reduce(0, (acc, x) -> x > acc ? x : acc),
+}
+
+"" /> print
+"=== Platform Statistics ===" /> print
+stats /> print
+
+-- ============================================================================
+-- Compare to JavaScript equivalent:
+--
+-- const highValueCustomers = apiResponse.users
+--   .filter(u => u.purchases.length > 0)
+--   .filter(u => u.purchases.reduce((a, b) => a + b, 0) > 200)
+--   .map(u => ({
+--     name: u.name,
+--     email: u.email,
+--     totalSpent: u.purchases.reduce((a, b) => a + b, 0),
+--     avgPurchase: u.purchases.reduce((a, b) => a + b, 0) / u.purchases.length,
+--   }));
+--
+-- Lea's pipe syntax reads top-to-bottom, left-to-right - matching how you think about data flow.
+-- ============================================================================

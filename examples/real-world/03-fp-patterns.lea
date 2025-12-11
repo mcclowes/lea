@@ -1,0 +1,319 @@
+-- Functional Programming Patterns in Lea
+-- A showcase of FP concepts and idioms for functional programming enthusiasts.
+
+-- ============================================================================
+-- Function Composition
+-- ============================================================================
+
+"=== Function Composition ===" /> print
+
+-- Basic functions to compose
+let double = (x) -> x * 2
+let addOne = (x) -> x + 1
+let square = (x) -> x * x
+
+-- Compose via pipelines (point-free style)
+let doubleThenAddOne = /> double /> addOne
+let squareThenDouble = /> square /> double
+
+-- Apply composed functions
+5 /> doubleThenAddOne /> print    -- (5 * 2) + 1 = 11
+5 /> squareThenDouble /> print    -- (5 * 5) * 2 = 50
+
+-- Pipelines are first-class values
+let transform = /> double /> square /> addOne
+"Pipeline stages:" /> print
+transform.stages /> print
+transform.length /> print
+
+-- ============================================================================
+-- Partial Application
+-- ============================================================================
+
+"" /> print
+"=== Partial Application ===" /> print
+
+-- Multi-parameter function
+let add = (a, b) -> a + b
+let multiply = (a, b) -> a * b
+
+-- Partial application via pipes
+let add10 = /> add(10)
+let triple = /> multiply(3)
+
+5 /> add10 /> print      -- 15
+7 /> triple /> print     -- 21
+
+-- Chain partial applications
+let transform2 = /> add(5) /> multiply(2) /> add(1)
+10 /> transform2 /> print  -- ((10 + 5) * 2) + 1 = 31
+
+-- ============================================================================
+-- Higher-Order Functions
+-- ============================================================================
+
+"" /> print
+"=== Higher-Order Functions ===" /> print
+
+-- Function that returns a function
+let makeAdder = (n) -> (x) -> x + n
+let makeMultiplier = (n) -> (x) -> x * n
+
+let add5 = makeAdder(5)
+let times10 = makeMultiplier(10)
+
+7 /> add5 /> print       -- 12
+7 /> times10 /> print    -- 70
+
+-- Function that takes a function
+let applyTwice = (f, x) -> x /> f /> f
+
+applyTwice(double, 3) /> print  -- 12 (3 -> 6 -> 12)
+applyTwice(addOne, 5) /> print  -- 7  (5 -> 6 -> 7)
+
+-- ============================================================================
+-- Functor Pattern (map over structures)
+-- ============================================================================
+
+"" /> print
+"=== Functor Pattern ===" /> print
+
+-- Lists are functors - map transforms contents
+[1, 2, 3] /> map(double) /> print           -- [2, 4, 6]
+[1, 2, 3] /> map(square) /> map(addOne) /> print  -- [2, 5, 10]
+
+-- Nested structures
+let users = [
+  { name: "Alice", scores: [85, 90, 88] },
+  { name: "Bob", scores: [70, 75, 80] },
+]
+
+-- Map over outer, then map over inner
+let curveScores = (u) ->
+  { name: u.name, scores: u.scores /> map((s) -> s + 5) }
+
+let curved = users /> map(curveScores)
+curved /> print
+
+-- ============================================================================
+-- Monadic Patterns (flatMap / bind)
+-- ============================================================================
+
+"" /> print
+"=== Monadic Patterns ===" /> print
+
+-- Flatten nested lists
+let nested = [[1, 2], [3, 4], [5]]
+let flattened = nested /> reduce([], (acc, xs) -> concat(acc, xs))
+flattened /> print  -- [1, 2, 3, 4, 5]
+
+-- flatMap: map then flatten
+let duplicate = (x) -> [x, x]
+let flatMapped = [1, 2, 3]
+  /> map(duplicate)
+  /> reduce([], (acc, xs) -> concat(acc, xs))
+flatMapped /> print  -- [1, 1, 2, 2, 3, 3]
+
+-- ============================================================================
+-- Option/Maybe Pattern (handling absence)
+-- ============================================================================
+
+"" /> print
+"=== Option/Maybe Pattern ===" /> print
+
+-- Represent optional values with records
+let some = (value) ->
+  { hasValue: true, value: value }
+let none = { hasValue: false, value: 0 }
+
+-- Safe operations that might fail
+let safeDivide = (a, b) -> b == 0 ? none : some(a / b)
+let safeHead = (list) -> length(list) == 0 ? none : some(head(list))
+
+-- Map over optional values
+let mapOption = (opt, f) ->
+  opt.hasValue ? some(f(opt.value)) : none
+
+-- Chain optional operations
+let result1 = safeDivide(10, 2)
+result1 /> print  -- { hasValue: true, value: 5 }
+
+let result2 = safeDivide(10, 0)
+result2 /> print  -- { hasValue: false, value: 0 }
+
+-- Safely transform
+mapOption(safeDivide(10, 2), double) /> print  -- { hasValue: true, value: 10 }
+mapOption(safeDivide(10, 0), double) /> print  -- { hasValue: false, value: 0 }
+
+-- ============================================================================
+-- Fold / Reduce Patterns
+-- ============================================================================
+
+"" /> print
+"=== Fold Patterns ===" /> print
+
+let numbers = [1, 2, 3, 4, 5]
+
+-- Sum (fold with +)
+let sum = numbers /> reduce(0, (acc, x) -> acc + x)
+"Sum: " ++ sum /> print
+
+-- Product (fold with *)
+let product = numbers /> reduce(1, (acc, x) -> acc * x)
+"Product: " ++ product /> print
+
+-- Maximum (fold with comparison)
+let maximum = numbers /> reduce(head(numbers), (acc, x) -> x > acc ? x : acc)
+"Maximum: " ++ maximum /> print
+
+-- Build a record (fold to accumulate structure)
+let initialAcc = { items: [], index: 0 }
+let addIndexedItem = (acc, x) ->
+  let newItem = { index: acc.index, value: x }
+  { items: push(acc.items, newItem), index: acc.index + 1 }
+
+let indexed = numbers /> reduce(initialAcc, addIndexedItem)
+indexed.items /> print
+
+-- ============================================================================
+-- Pipeline Algebra
+-- ============================================================================
+
+"" /> print
+"=== Pipeline Algebra ===" /> print
+
+let pipeA = /> double /> addOne
+let pipeB = /> square /> triple
+
+-- Composition
+let composed = /> pipeA /> pipeB
+5 /> composed /> print  -- 5 -> 10 -> 11 -> 121 -> 363
+
+-- Pipeline properties
+"pipeA length: " ++ pipeA.length /> print
+"pipeB stages: " /> print
+pipeB.stages /> print
+
+-- Reverse a pipeline
+let reversed = pipeA.reverse()
+"Reversed stages: " /> print
+reversed.stages /> print
+
+-- ============================================================================
+-- Reversible Functions (Bidirectional Transforms)
+-- ============================================================================
+
+"" /> print
+"=== Reversible Functions ===" /> print
+
+-- Define forward and reverse transformations
+let celsiusToFahrenheit = (c) -> c * 9 / 5 + 32
+and celsiusToFahrenheit = (f) <- (f - 32) * 5 / 9
+
+-- Use forward
+100 /> celsiusToFahrenheit /> print  -- 212
+
+-- Use reverse
+212 </ celsiusToFahrenheit /> print  -- 100
+
+-- Roundtrip
+25 /> celsiusToFahrenheit </ celsiusToFahrenheit /> print  -- 25
+
+-- ============================================================================
+-- Point-Free Style
+-- ============================================================================
+
+"" /> print
+"=== Point-Free Style ===" /> print
+
+-- Instead of: (x) -> x /> double /> addOne
+-- Write: /> double /> addOne
+
+-- Data processing without naming intermediate values
+let data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+-- Point-free pipeline
+let processData = />
+  filter((x) -> x > 3) />
+  map(square) />
+  filter((x) -> x < 50) />
+  reduce(0, (acc, x) -> acc + x)
+
+data /> processData /> print  -- 16 + 25 + 36 + 49 = 126
+
+-- ============================================================================
+-- Transducer-like Composition
+-- ============================================================================
+
+"" /> print
+"=== Efficient Pipeline Composition ===" /> print
+
+-- Compose transformations before applying to data
+let filterEven = /> filter((x) -> x % 2 == 0)
+let mapDouble = /> map(double)
+let takeFirst3 = /> take(3)
+
+-- Single pass through data
+let efficientPipeline = /> filterEven /> mapDouble /> takeFirst3
+
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] /> efficientPipeline /> print  -- [4, 8, 12]
+
+-- ============================================================================
+-- Recursion via Reduce (Tail-call friendly)
+-- ============================================================================
+
+"" /> print
+"=== Recursion Patterns ===" /> print
+
+-- Factorial via reduce (no explicit recursion)
+let factorial = (n) ->
+  range(1, n + 1) /> reduce(1, (acc, x) -> acc * x)
+
+factorial(5) /> print  -- 120
+factorial(10) /> print -- 3628800
+
+-- Fibonacci sequence via reduce
+let fibStep = (pair, _) -> [snd(pair), fst(pair) + snd(pair)]
+let fibonacci = (n) -> range(0, n) /> reduce([0, 1], fibStep) /> fst
+
+fibonacci(10) /> print  -- 55
+fibonacci(15) /> print  -- 610
+
+-- ============================================================================
+-- Kleisli Composition (composing functions that return wrapped values)
+-- ============================================================================
+
+"" /> print
+"=== Kleisli Composition ===" /> print
+
+-- Functions returning optional values
+let parsePositive = (x) -> x > 0 ? some(x) : none
+let safeSqrt = (x) -> x >= 0 ? some(sqrt(x)) : none
+
+-- Compose with bind
+let bindOption = (opt, f) ->
+  opt.hasValue ? f(opt.value) : none
+
+-- Chain computations
+let compute = (x) ->
+  parsePositive(x)
+    /> bindOption(safeSqrt)
+    /> bindOption((v) -> some(v * 2))
+
+compute(16) /> print  -- { hasValue: true, value: 8 }
+compute(-4) /> print  -- { hasValue: false, value: 0 }
+
+-- ============================================================================
+-- Summary: Lea's FP Features
+--
+-- ✓ First-class functions
+-- ✓ Higher-order functions
+-- ✓ Function composition via pipelines
+-- ✓ Partial application (currying via pipes)
+-- ✓ Immutable data by default
+-- ✓ Pattern matching
+-- ✓ Algebraic pipeline operations
+-- ✓ Reversible/bidirectional functions
+-- ✓ Point-free style support
+-- ✓ Rich collection operations (map, filter, reduce)
+-- ============================================================================

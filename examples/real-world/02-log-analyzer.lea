@@ -1,0 +1,207 @@
+-- Log Analyzer
+-- Demonstrates processing structured log data with pattern matching,
+-- aggregation, and reporting pipelines.
+
+-- ============================================================================
+-- Sample Log Data (simulating parsed log entries)
+-- ============================================================================
+
+let logs = [
+  { timestamp: "2024-01-15T10:00:00", level: "INFO", service: "api", message: "Server started on port 3000" },
+  { timestamp: "2024-01-15T10:00:05", level: "INFO", service: "api", message: "Connected to database" },
+  { timestamp: "2024-01-15T10:01:23", level: "WARN", service: "auth", message: "Failed login attempt for user: admin" },
+  { timestamp: "2024-01-15T10:01:45", level: "ERROR", service: "api", message: "Request timeout: /api/users" },
+  { timestamp: "2024-01-15T10:02:00", level: "INFO", service: "api", message: "Request completed: GET /api/health" },
+  { timestamp: "2024-01-15T10:02:15", level: "ERROR", service: "db", message: "Connection pool exhausted" },
+  { timestamp: "2024-01-15T10:02:30", level: "WARN", service: "auth", message: "Failed login attempt for user: admin" },
+  { timestamp: "2024-01-15T10:02:45", level: "ERROR", service: "api", message: "Request timeout: /api/orders" },
+  { timestamp: "2024-01-15T10:03:00", level: "INFO", service: "api", message: "Request completed: GET /api/products" },
+  { timestamp: "2024-01-15T10:03:15", level: "WARN", service: "auth", message: "Failed login attempt for user: admin" },
+  { timestamp: "2024-01-15T10:03:30", level: "ERROR", service: "auth", message: "Account locked: admin" },
+  { timestamp: "2024-01-15T10:04:00", level: "INFO", service: "scheduler", message: "Cron job started: cleanup" },
+  { timestamp: "2024-01-15T10:05:00", level: "INFO", service: "scheduler", message: "Cron job completed: cleanup" },
+  { timestamp: "2024-01-15T10:05:30", level: "DEBUG", service: "api", message: "Cache miss for key: user_123" },
+  { timestamp: "2024-01-15T10:06:00", level: "ERROR", service: "api", message: "Internal server error: null pointer" },
+]
+
+-- ============================================================================
+-- Log Level Classification
+-- ============================================================================
+
+-- Severity scoring using pattern matching
+let getSeverity = (level) -> match level
+  | "ERROR" -> 3
+  | "WARN" -> 2
+  | "INFO" -> 1
+  | "DEBUG" -> 0
+  | 0
+
+-- Filter helpers
+let isError = (log) -> log.level == "ERROR"
+let isWarning = (log) -> log.level == "WARN"
+let isHighSeverity = (log) -> getSeverity(log.level) >= 2
+
+-- ============================================================================
+-- Basic Log Queries
+-- ============================================================================
+
+"=== Error Logs ===" /> print
+logs
+  /> filter(isError)
+  /> map((log) -> `[{log.service}] {log.message}`)
+  /> print
+
+"" /> print
+"=== High Severity Events (WARN + ERROR) ===" /> print
+logs
+  /> filter(isHighSeverity)
+  /> map((log) -> `[{log.level}] {log.service}: {log.message}`)
+  /> print
+
+-- ============================================================================
+-- Aggregation: Count by Level
+-- ============================================================================
+
+let countByLevel = (level) ->
+  logs /> filter((log) -> log.level == level) /> length
+
+let levelCounts = {
+  errors: countByLevel("ERROR"),
+  warnings: countByLevel("WARN"),
+  info: countByLevel("INFO"),
+  debug: countByLevel("DEBUG"),
+}
+
+"" /> print
+"=== Log Level Summary ===" /> print
+levelCounts /> print
+
+-- ============================================================================
+-- Aggregation: Count by Service
+-- ============================================================================
+
+-- Get unique services
+let services = ["api", "auth", "db", "scheduler"]
+
+let countByService = (service) ->
+  logs /> filter((log) -> log.service == service) /> length
+
+let toServiceCount = (svc) ->
+  { service: svc, count: countByService(svc) }
+
+let serviceCounts = services
+  /> map(toServiceCount)
+  /> filter((s) -> s.count > 0)
+
+"" /> print
+"=== Logs by Service ===" /> print
+serviceCounts /> print
+
+-- ============================================================================
+-- Error Analysis Pipeline
+-- ============================================================================
+
+-- Find services with errors
+let toErrorCount = (svc) ->
+  let count = logs /> filter((log) -> log.service == svc) /> filter(isError) /> length
+  { service: svc, errorCount: count }
+
+let servicesWithErrors = services
+  /> map(toErrorCount)
+  /> filter((s) -> s.errorCount > 0)
+
+"" /> print
+"=== Services with Errors ===" /> print
+servicesWithErrors /> print
+
+-- ============================================================================
+-- Pattern Detection: Failed Login Attempts
+-- ============================================================================
+
+-- Detect brute force attempts (multiple failed logins)
+let failedLogins = logs
+  /> filter((log) -> log.service == "auth")
+  /> filter((log) -> includes(log.message, "Failed login"))
+
+let failedLoginCount = length(failedLogins)
+
+let securityAlert = failedLoginCount >= 3 ? {
+  alert: "SECURITY WARNING",
+  reason: "Multiple failed login attempts detected",
+  count: failedLoginCount,
+  recommendation: "Review auth logs and consider IP blocking",
+} : {
+  alert: "OK",
+  reason: "Normal login activity",
+}
+
+"" /> print
+"=== Security Analysis ===" /> print
+securityAlert /> print
+
+-- ============================================================================
+-- Time-based Analysis (simplified)
+-- ============================================================================
+
+-- Extract hour from timestamp
+let getMinute = (ts) -> slice(ts, 14, 16)
+
+-- Group errors by minute
+let toTimelineEntry = (log) ->
+  { minute: getMinute(log.timestamp), message: log.message }
+
+let errorsByMinute = logs
+  /> filter(isError)
+  /> map(toTimelineEntry)
+
+"" /> print
+"=== Error Timeline ===" /> print
+errorsByMinute /> print
+
+-- ============================================================================
+-- Generate Health Report
+-- ============================================================================
+
+let totalLogs = length(logs)
+let errorRate = (levelCounts.errors * 100) / totalLogs
+
+let healthReport = {
+  status: errorRate > 20 ? "CRITICAL" : (errorRate > 10 ? "DEGRADED" : "HEALTHY"),
+  totalEvents: totalLogs,
+  errorCount: levelCounts.errors,
+  warningCount: levelCounts.warnings,
+  errorRate: `{errorRate}%`,
+  topIssues: logs
+    /> filter(isError)
+    /> map((log) -> log.message)
+    /> take(3),
+}
+
+"" /> print
+"=== System Health Report ===" /> print
+healthReport /> print
+
+-- ============================================================================
+-- Reusable Log Processing Pipeline
+-- ============================================================================
+
+-- Define a composable log analysis pipeline
+let toLogSummary = (log) ->
+  { level: log.level, severity: getSeverity(log.level), message: log.message }
+
+let analyzeService = (serviceName) ->
+  logs
+    /> filter((log) -> log.service == serviceName)
+    /> map(toLogSummary)
+
+"" /> print
+"=== Detailed API Service Analysis ===" /> print
+analyzeService("api") /> print
+
+-- ============================================================================
+-- This example shows Lea's strengths for log analysis:
+-- 1. Clean filter/map pipelines for querying
+-- 2. Pattern matching for classification
+-- 3. Aggregation with reduce
+-- 4. Composable, reusable pipeline functions
+-- ============================================================================
