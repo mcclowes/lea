@@ -31,6 +31,15 @@ import { parseExpression, parseUnary, finishCall, parseEquality } from "./expres
 import { parseGroupingOrFunction, parsePipelineTypeSignature } from "./functions";
 import { Lexer } from "../lexer";
 
+// Cached Parser import to avoid repeated dynamic require() calls
+let _Parser: any = null;
+function getParser(): any {
+  if (_Parser === null) {
+    _Parser = require("./index").Parser;
+  }
+  return _Parser;
+}
+
 /**
  * Parse a primary expression (highest precedence)
  */
@@ -130,9 +139,8 @@ export function parseTemplateString(ctx: ParserContext): Expr {
         // Create a new lexer and parser for the embedded expression
         const lexer = new Lexer(exprSource);
         const tokens = lexer.scanTokens();
-        // Use the Parser class to parse the embedded expression
-        // We need to import it dynamically to avoid circular dependency
-        const { Parser } = require("./index");
+        // Use the cached Parser class to parse the embedded expression
+        const Parser = getParser();
         const parser = new Parser(tokens);
         const expr = parser.expression();
         parts.push(expr);

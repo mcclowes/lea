@@ -276,25 +276,25 @@ export class Lexer {
 
         // Read the expression until matching }
         let braceDepth = 1;
-        let exprSource = "";
+        const exprChars: string[] = [];
         while (braceDepth > 0 && !this.isAtEnd()) {
           const c = this.peek();
           if (c === '{') {
             braceDepth++;
-            exprSource += this.advance();
+            exprChars.push(this.advance());
           } else if (c === '}') {
             braceDepth--;
             if (braceDepth > 0) {
-              exprSource += this.advance();
+              exprChars.push(this.advance());
             } else {
               this.advance(); // consume closing }
             }
           } else if (c === "\n") {
             this.line++;
             this.column = 1;
-            exprSource += this.advance();
+            exprChars.push(this.advance());
           } else {
-            exprSource += this.advance();
+            exprChars.push(this.advance());
           }
         }
 
@@ -302,7 +302,7 @@ export class Lexer {
           throw new LexerError("Unterminated interpolation in template string", startLine, startColumn);
         }
 
-        parts.push(exprSource.trim());
+        parts.push(exprChars.join('').trim());
       } else {
         currentPart += this.advance();
       }
