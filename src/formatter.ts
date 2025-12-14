@@ -49,6 +49,8 @@ import {
   Decorator,
   TypeSignature,
   RecordField,
+  RecordFieldOrSpread,
+  ListElementOrSpread,
   MatchCase,
   AnyPipelineStage,
 } from "./ast";
@@ -605,9 +607,14 @@ export class Formatter {
     }
 
     if (sig.returnType) {
-      const returnType = typeof sig.returnType === "string"
-        ? sig.returnType
-        : `(${sig.returnType.tuple.join(", ")})`;
+      let returnType: string;
+      if (typeof sig.returnType === "string") {
+        returnType = sig.returnType;
+      } else if ("tuple" in sig.returnType) {
+        returnType = `(${sig.returnType.tuple.join(", ")})`;
+      } else {
+        returnType = `[${sig.returnType.list}]`;
+      }
       result += ` :> ${returnType}`;
     }
 
@@ -625,13 +632,20 @@ export class Formatter {
     return `#${dec.name}(${args})`;
   }
 
+  private formatListElement(el: ListElementOrSpread, ctx: FormatContext): string {
+    if (el.spread) {
+      return `...${this.formatExpr(el.value, ctx)}`;
+    }
+    return this.formatExpr(el.value, ctx);
+  }
+
   private formatListExpr(expr: ListExpr, ctx: FormatContext): string {
     if (expr.elements.length === 0) {
       return "[]";
     }
 
     // Try single-line first
-    const elements = expr.elements.map(e => this.formatExpr(e, ctx));
+    const elements = expr.elements.map(e => this.formatListElement(e, ctx));
     const singleLine = `[${elements.join(", ")}]`;
 
     if (singleLine.length <= ctx.options.printWidth) {
@@ -646,7 +660,7 @@ export class Formatter {
     const lines: string[] = ["["];
     for (let i = 0; i < expr.elements.length; i++) {
       const trailing = ctx.options.trailingCommas || i < expr.elements.length - 1 ? "," : "";
-      lines.push(`${innerIndent}${this.formatExpr(expr.elements[i], innerCtx)}${trailing}`);
+      lines.push(`${innerIndent}${this.formatListElement(expr.elements[i], innerCtx)}${trailing}`);
     }
     lines.push(`${indent}]`);
 
@@ -692,7 +706,10 @@ export class Formatter {
     return lines.join("\n");
   }
 
-  private formatRecordField(field: RecordField, ctx: FormatContext): string {
+  private formatRecordField(field: RecordFieldOrSpread, ctx: FormatContext): string {
+    if (field.spread) {
+      return `...${this.formatExpr(field.value, ctx)}`;
+    }
     return `${field.key}: ${this.formatExpr(field.value, ctx)}`;
   }
 
