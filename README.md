@@ -161,6 +161,50 @@ await fetchData() /> print
 - **[Pipelines](docs/PIPELINES.md)** — First-class pipelines, composition, and algebra
 - **[Concurrency](docs/CONCURRENCY.md)** — Async/await, parallel pipes, and concurrent execution
 
+## Working with Claude
+
+This repository includes [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills to help you write and modify Lea code effectively.
+
+### Available Skills
+
+| Skill | Description |
+|-------|-------------|
+| `lea` | Use when writing or modifying Lea code — covers syntax, builtins, and interpreter internals |
+| `functional-programming` | Use when writing functional code — covers FP best practices (Lea differs from traditional FP languages) |
+
+### Install with OpenSkills
+
+[OpenSkills](https://github.com/anthropics/openskills) is a CLI tool that makes it easy to install and manage Claude Code skills.
+
+**Step 1: Install OpenSkills**
+
+```bash
+npm i -g openskills
+```
+
+**Step 2: Install Skills**
+
+```bash
+# Interactive mode
+openskills install mcclowes/lea
+
+# Or skip prompts
+openskills install mcclowes/lea -y
+```
+
+**Step 3: Sync (optional)**
+
+If you have an `AGENTS.md` file, sync to update configuration:
+
+```bash
+openskills sync
+```
+
+### Installation Modes
+
+- **Project-level** (default): `openskills install mcclowes/lea` — installs to `.claude/skills/`
+- **Global**: `openskills install mcclowes/lea -g` — installs to `~/.claude/skills/`
+
 ## Architecture
 
 ```
