@@ -35,21 +35,22 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 
 ```
 NUMBER, STRING, TEMPLATE_STRING, IDENTIFIER
-LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, MATCH, IF, RETURN, INPUT, USE
+LET, AND, MAYBE, TRUE, FALSE, AWAIT, CONTEXT, PROVIDE, DECORATOR, MATCH, IF, RETURN, INPUT, USE
 PIPE (/>), SPREAD_PIPE (/>>>), PARALLEL_PIPE (\>), ARROW (->), REVERSE_ARROW (<-)
 REVERSE_PIPE (</), BIDIRECTIONAL_PIPE (</>), REACTIVE_PIPE (@>), PIPE_CHAR (|)
 PLUS, MINUS, STAR, SLASH, PERCENT, CONCAT (++)
 EQ, EQEQ, NEQ, LT, GT, LTE, GTE, DOUBLE_COLON (::), COLON_GT (:>)
 LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE
 COMMA, COLON, DOT, SPREAD (...), UNDERSCORE, HASH, AT, QUESTION
+CODEBLOCK_OPEN ({-- --}), CODEBLOCK_CLOSE ({/--})
 NEWLINE, EOF
 ```
 
 ## AST Nodes
 
-**Expressions:** NumberLiteral, StringLiteral, TemplateStringExpr, BooleanLiteral, Identifier, BinaryExpr, UnaryExpr, PipeExpr, SpreadPipeExpr, CallExpr, FunctionExpr, ListExpr, IndexExpr, TupleExpr, RecordExpr, MemberExpr, AwaitExpr, BlockBody, ReturnExpr, PipelineLiteral, ReversePipeExpr, UseExpr, BidirectionalPipelineLiteral, MatchExpr, ReactivePipeExpr
+**Expressions:** NumberLiteral, StringLiteral, TemplateStringExpr, BooleanLiteral, Identifier, BinaryExpr, UnaryExpr, PipeExpr, SpreadPipeExpr, ParallelPipeExpr, CallExpr, FunctionExpr, ListExpr, IndexExpr, PlaceholderExpr, TupleExpr, RecordExpr, MemberExpr, TernaryExpr, AwaitExpr, BlockBody, ReturnExpr, PipelineLiteral, ReversePipeExpr, UseExpr, BidirectionalPipelineLiteral, MatchExpr, ReactivePipeExpr
 
-**Statements:** LetStmt, AndStmt, AssignStmt, ExprStmt, ContextDefStmt, ProvideStmt, CodeblockStmt
+**Statements:** LetStmt, AndStmt, AssignStmt, ExprStmt, ContextDefStmt, ProvideStmt, DecoratorDefStmt, CodeblockStmt
 
 ## Parser Precedence (low to high)
 

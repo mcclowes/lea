@@ -29,6 +29,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `UnaryExpr` - Unary operations (-)
 - `PipeExpr` - Pipe operations (/>)
 - `SpreadPipeExpr` - Spread pipe (/>>>)
+- `ParallelPipeExpr` - Parallel pipe (\>)
 - `CallExpr` - Function calls
 - `FunctionExpr` - Function definitions (params, attachments, body, decorators, typeSignature?, isReverse?)
 - `ListExpr` - List literals
@@ -37,6 +38,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `TupleExpr` - Tuple literals
 - `RecordExpr` - Record literals { key: value }
 - `MemberExpr` - Member access (record.field)
+- `TernaryExpr` - Ternary conditional (? :)
 - `AwaitExpr` - Await expression for promises
 - `BlockBody` - Multi-statement function body
 - `ReturnExpr` - Early return with `return` keyword
@@ -46,6 +48,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `MatchExpr` - Pattern matching expression
 - `MatchCase` - Individual match case (pattern, guard, body)
 - `ReactivePipeExpr` - Reactive pipeline (@>)
+- `UseExpr` - Module import (use "path")
 
 ### Statements
 
@@ -55,6 +58,7 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 - `ExprStmt` - Expression as statement
 - `ContextDefStmt` - Context definition (name, defaultValue)
 - `ProvideStmt` - Context override (contextName, value)
+- `DecoratorDefStmt` - Custom decorator definition (name, transformer)
 - `CodeblockStmt` - Collapsible code region (label, statements)
 
 ## Interpreter Details
