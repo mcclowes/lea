@@ -1,28 +1,164 @@
+/* ============================================
+   Homepage Styles - Lea Documentation
+   ============================================ */
+
+/* Hero Banner */
 .heroBanner {
-  padding: 4rem 0;
+  padding: 5rem 0;
   text-align: center;
   position: relative;
   overflow: hidden;
+}
+
+/* Subtle animated background pattern */
+.heroBanner::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+  animation: drift 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes drift {
+  from { transform: translate(0, 0); }
+  to { transform: translate(30px, 30px); }
 }
 
 .buttons {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 1.5rem;
+  gap: 1rem;
+  margin-top: 2rem;
 }
 
+/* Features Section */
 .features {
   display: flex;
   align-items: center;
-  padding: 2rem 0;
+  padding: 4rem 0;
   width: 100%;
   background-color: var(--ifm-background-surface-color);
 }
 
+.featureCard {
+  padding: 2rem;
+  height: 100%;
+  background: var(--ifm-background-color);
+  border-radius: 12px;
+  border: 1px solid rgba(46, 133, 85, 0.1);
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.featureCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #2e8555 0%, #25c2a0 100%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(46, 133, 85, 0.15);
+  border-color: rgba(46, 133, 85, 0.2);
+}
+
+.featureCard:hover::before {
+  opacity: 1;
+}
+
+[data-theme='dark'] .featureCard {
+  background: var(--ifm-background-surface-color);
+  border-color: rgba(37, 194, 160, 0.1);
+}
+
+[data-theme='dark'] .featureCard:hover {
+  box-shadow: 0 12px 32px rgba(37, 194, 160, 0.1);
+  border-color: rgba(37, 194, 160, 0.25);
+}
+
+.featureIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, rgba(46, 133, 85, 0.1) 0%, rgba(37, 194, 160, 0.1) 100%);
+  border-radius: 12px;
+  font-size: 1.5rem;
+}
+
+[data-theme='dark'] .featureIcon {
+  background: linear-gradient(135deg, rgba(37, 194, 160, 0.15) 0%, rgba(46, 133, 85, 0.15) 100%);
+}
+
+.featureTitle {
+  color: var(--ifm-color-primary-darkest);
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+[data-theme='dark'] .featureTitle {
+  color: var(--ifm-color-primary-light);
+}
+
+.featureDescription {
+  color: var(--ifm-font-color-secondary);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.featureDescription code {
+  background: rgba(46, 133, 85, 0.08);
+  color: var(--ifm-color-primary-dark);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+[data-theme='dark'] .featureDescription code {
+  background: rgba(37, 194, 160, 0.12);
+  color: var(--ifm-color-primary-light);
+}
+
+/* Code Showcase Section */
 .codeShowcase {
-  padding: 3rem 0;
-  background-color: var(--ifm-color-emphasis-100);
+  padding: 4rem 0;
+  background: linear-gradient(180deg, var(--ifm-background-surface-color) 0%, var(--ifm-background-color) 100%);
+  position: relative;
+}
+
+.codeShowcase::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(46, 133, 85, 0.3), transparent);
+}
+
+.codeShowcaseTitle {
+  color: var(--ifm-color-primary-dark);
+  margin-bottom: 1.5rem;
+}
+
+[data-theme='dark'] .codeShowcaseTitle {
+  color: var(--ifm-color-primary-light);
 }
 
 .codeShowcase h2 {
@@ -30,61 +166,139 @@
 }
 
 .codeShowcase ul {
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  padding-left: 0;
+  list-style: none;
 }
 
 .codeShowcase li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.codeShowcase li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--ifm-color-primary);
+  font-weight: bold;
 }
 
 .codeBlock {
-  background-color: var(--ifm-code-background);
-  border-radius: 8px;
-  padding: 1.5rem;
+  background: linear-gradient(135deg, #1a2b23 0%, #0f1f18 100%);
+  border-radius: 12px;
+  padding: 1.75rem;
   font-size: 0.9rem;
   overflow-x: auto;
   margin: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(46, 133, 85, 0.2);
 }
 
+.codeBlock code {
+  color: #e6e6e6;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+  line-height: 1.7;
+}
+
+/* Quick Start Section */
 .quickStart {
-  padding: 3rem 0;
+  padding: 4rem 0;
   text-align: center;
+  background: var(--ifm-background-color);
 }
 
 .quickStart h2 {
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
+  color: var(--ifm-font-color-base);
 }
 
 .installCommands {
   display: flex;
   justify-content: center;
-  gap: 2rem;
+  gap: 1.5rem;
   flex-wrap: wrap;
 }
 
 .installOption {
-  background-color: var(--ifm-background-surface-color);
-  border-radius: 8px;
-  padding: 1.5rem;
-  min-width: 250px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--ifm-background-surface-color);
+  border-radius: 12px;
+  padding: 1.75rem;
+  min-width: 260px;
+  max-width: 300px;
+  border: 1px solid rgba(46, 133, 85, 0.1);
+  transition: all 0.25s ease;
+  text-align: left;
+}
+
+.installOption:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(46, 133, 85, 0.1);
+  border-color: rgba(46, 133, 85, 0.2);
+}
+
+[data-theme='dark'] .installOption {
+  border-color: rgba(37, 194, 160, 0.1);
+}
+
+[data-theme='dark'] .installOption:hover {
+  box-shadow: 0 8px 24px rgba(37, 194, 160, 0.08);
+  border-color: rgba(37, 194, 160, 0.2);
 }
 
 .installOption h4 {
   margin-bottom: 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--ifm-color-primary);
 }
 
 .installOption pre {
   margin: 0;
-  background-color: var(--ifm-code-background);
-  border-radius: 4px;
-  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #1a2b23 0%, #0f1f18 100%);
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  overflow-x: auto;
 }
 
+.installOption code {
+  color: #25c2a0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 0.9rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+}
+
+/* Section Titles */
+.sectionTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #2e8555 0%, #25c2a0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sectionSubtitle {
+  text-align: center;
+  color: var(--ifm-font-color-secondary);
+  max-width: 600px;
+  margin: 0 auto 3rem;
+}
+
+/* Responsive Adjustments */
 @media screen and (max-width: 996px) {
   .heroBanner {
-    padding: 2rem;
+    padding: 3rem 2rem;
   }
 
   .codeShowcase .row {
@@ -95,6 +309,14 @@
     margin-bottom: 2rem;
   }
 
+  .features {
+    padding: 3rem 0;
+  }
+
+  .quickStart {
+    padding: 3rem 0;
+  }
+
   .installCommands {
     flex-direction: column;
     align-items: center;
@@ -103,5 +325,30 @@
   .installOption {
     width: 100%;
     max-width: 350px;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .heroBanner {
+    padding: 2.5rem 1rem;
+  }
+
+  .buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .buttons > * {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .featureCard {
+    padding: 1.5rem;
+  }
+
+  .codeBlock {
+    padding: 1.25rem;
+    font-size: 0.85rem;
   }
 }
