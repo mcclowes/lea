@@ -107,7 +107,7 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "^20.19.26",
+    "@types/node": "^25.0.2",
     "husky": "^9.1.7",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
