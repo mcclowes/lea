@@ -23,8 +23,7 @@ function HomepageHeader() {
           </Link>
           <Link
             className="button button--secondary button--lg"
-            href="https://lea.mcclowes.com/"
-            style={{marginLeft: '1rem'}}>
+            href="https://lea.mcclowes.com/">
             Try Online
           </Link>
         </div>
@@ -48,7 +47,9 @@ function CodeShowcase() {
       <div className="container">
         <div className="row">
           <div className="col col--6">
-            <Heading as="h2">Clean, Expressive Syntax</Heading>
+            <Heading as="h2" className={styles.codeShowcaseTitle}>
+              Clean, Expressive Syntax
+            </Heading>
             <p>
               Lea's pipe operator <code>/&gt;</code> makes data transformations
               readable and composable. Chain operations naturally from left to right.
@@ -73,6 +74,7 @@ function CodeShowcase() {
 const FeatureList = [
   {
     title: 'Pipe-Oriented',
+    icon: '/>',
     description: (
       <>
         Write data transformations that read naturally from left to right.
@@ -83,6 +85,7 @@ const FeatureList = [
   },
   {
     title: 'First-Class Pipelines',
+    icon: '|>',
     description: (
       <>
         Pipelines are values you can store, compose, and inspect.
@@ -93,6 +96,7 @@ const FeatureList = [
   },
   {
     title: 'Functional by Default',
+    icon: 'fn',
     description: (
       <>
         Immutable bindings with <code>let</code>, pure functions,
@@ -103,6 +107,7 @@ const FeatureList = [
   },
   {
     title: 'Built-in Concurrency',
+    icon: '\\>',
     description: (
       <>
         Async/await support, parallel pipes with <code>\&gt;</code>,
@@ -113,6 +118,7 @@ const FeatureList = [
   },
   {
     title: 'Powerful Decorators',
+    icon: '#',
     description: (
       <>
         Add behavior to functions with trailing decorators:
@@ -123,6 +129,7 @@ const FeatureList = [
   },
   {
     title: 'Interactive Learning',
+    icon: '>_',
     description: (
       <>
         Built-in REPL with an interactive tutorial, help system,
@@ -133,12 +140,15 @@ const FeatureList = [
   },
 ];
 
-function Feature({title, description}) {
+function Feature({title, icon, description}) {
   return (
     <div className={clsx('col col--4')}>
-      <div className="text--center padding-horiz--md padding-vert--md">
-        <Heading as="h3">{title}</Heading>
-        <p>{description}</p>
+      <div className={styles.featureCard}>
+        <div className={styles.featureIcon}>
+          <span style={{fontFamily: 'monospace', fontWeight: 'bold', color: 'var(--ifm-color-primary)'}}>{icon}</span>
+        </div>
+        <Heading as="h3" className={styles.featureTitle}>{title}</Heading>
+        <p className={styles.featureDescription}>{description}</p>
       </div>
     </div>
   );
@@ -148,9 +158,12 @@ function HomepageFeatures() {
   return (
     <section className={styles.features}>
       <div className="container">
-        <Heading as="h2" className="text--center margin-bottom--lg">
+        <Heading as="h2" className={clsx('text--center', styles.sectionTitle)}>
           Why Lea?
         </Heading>
+        <p className={styles.sectionSubtitle}>
+          A modern language designed for clarity, composability, and developer joy.
+        </p>
         <div className="row">
           {FeatureList.map((props, idx) => (
             <Feature key={idx} {...props} />
@@ -165,7 +178,10 @@ function QuickStart() {
   return (
     <section className={styles.quickStart}>
       <div className="container">
-        <Heading as="h2" className="text--center">Quick Start</Heading>
+        <Heading as="h2" className={styles.sectionTitle}>Quick Start</Heading>
+        <p className={styles.sectionSubtitle}>
+          Get up and running with Lea in seconds.
+        </p>
         <div className={styles.installCommands}>
           <div className={styles.installOption}>
             <h4>Try without installing</h4>
