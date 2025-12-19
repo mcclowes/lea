@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lea Flow: 09-pipeline.lea</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        h1 {
+            color: #9b59b6;
+            margin-bottom: 10px;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .mermaid {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            padding: 10px;
+            background: #16213e;
+            border-radius: 5px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Lea Flow: 09-pipeline.lea</h1>
+    <div class="controls">
+        <button onclick="downloadSVG()">Download SVG</button>
+    </div>
+    <div class="mermaid">
+flowchart LR
+
+    %% Style definitions
+    classDef data fill:#9b59b6,stroke:#8e44ad,color:white
+    classDef operation fill:#3498db,stroke:#2980b9,color:white
+    classDef fanout fill:#e67e22,stroke:#d35400,color:white
+    classDef fanin fill:#e67e22,stroke:#d35400,color:white
+    classDef await fill:#27ae60,stroke:#1e8449,color:white
+    classDef return fill:#27ae60,stroke:#1e8449,color:white
+    classDef binding fill:#95a5a6,stroke:#7f8c8d,color:white
+    classDef pipeline fill:#9b59b6,stroke:#8e44ad,color:white
+    classDef match fill:#9b59b6,stroke:#8e44ad,color:white
+    classDef condition fill:#f39c12,stroke:#e67e22,color:white
+
+    subgraph let4["total"]
+        id0(["transactions"])
+        call1[/"map((t) -&gt; ...)"/]
+        call2[/"reduce(0, (acc, x) -&gt; ...)"/]
+    end
+        id0 --> call1
+        call1 --> call2
+
+    subgraph let14["foodSpending"]
+        id9(["transactions"])
+        call10[/"filter((t) -&gt; ...)"/]
+        call11[/"map((t) -&gt; ...)"/]
+        call12[/"reduce(0, (acc, x) -&gt; ...)"/]
+    end
+        id9 --> call10
+        call10 --> call11
+        call11 --> call12
+
+    subgraph let23["largeTransactions"]
+        id19(["transactions"])
+        call20[/"filter((t) -&gt; ...)"/]
+        call21[/"map((t) -&gt; ...)"/]
+    end
+        id19 --> call20
+        call20 --> call21
+
+    subgraph let32["countFood"]
+        id28(["transactions"])
+        call29[/"filter((t) -&gt; ...)"/]
+        id30(["length"])
+    end
+        id28 --> call29
+        call29 --> id30
+
+    subgraph let40["count"]
+        id37(["transactions"])
+        id38(["length"])
+    end
+        id37 --> id38
+
+    bind3["let total"]
+    lit5(["'Total spending:'"])
+    id6(["print"])
+    id7(["total"])
+    id8(["print"])
+    bind13["let foodSpending"]
+    lit15(["'Food spending:'"])
+    id16(["print"])
+    id17(["foodSpending"])
+    id18(["print"])
+    bind22["let largeTransactions"]
+    lit24(["'Large transaction IDs: '"])
+    id25(["print"])
+    id26(["largeTransactions"])
+    id27(["print"])
+    bind31["let countFood"]
+    lit33(["'Food transactions:'"])
+    id34(["print"])
+    id35(["countFood"])
+    id36(["print"])
+    bind39["let count"]
+    lit41(["'Average transaction:'"])
+    id42(["print"])
+    id43(["average"])
+    id44(["print"])
+    lit45(["'Pipeline complete!'"])
+    id46(["print"])
+
+    call2 --> bind3
+    lit5 --> id6
+    bind3 -->|"then"| lit5
+    id7 --> id8
+    id6 -->|"then"| id7
+    call12 --> bind13
+    id8 -->|"then"| id9
+    lit15 --> id16
+    bind13 -->|"then"| lit15
+    id17 --> id18
+    id16 -->|"then"| id17
+    call21 --> bind22
+    id18 -->|"then"| id19
+    lit24 --> id25
+    bind22 -->|"then"| lit24
+    id26 --> id27
+    id25 -->|"then"| id26
+    id30 --> bind31
+    id27 -->|"then"| id28
+    lit33 --> id34
+    bind31 -->|"then"| lit33
+    id35 --> id36
+    id34 -->|"then"| id35
+    id38 --> bind39
+    id36 -->|"then"| id37
+    lit41 --> id42
+    bind39 -->|"then"| lit41
+    id43 --> id44
+    id42 -->|"then"| id43
+    lit45 --> id46
+    id44 -->|"then"| lit45
+
+    class bind3,bind13,bind22,bind31,bind39 binding
+    class lit5,id6,id7,id8,lit15,id16,id17,id18,lit24,id25,id26,id27,lit33,id34,id35,id36,lit41,id42,id43,id44,lit45,id46,id0,id9,id19,id28,id30,id37,id38 data
+    class call1,call2,call10,call11,call12,call20,call21,call29 operation
+    </div>
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background: #9b59b6;"></div>
+            <span>Data Values</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #3498db;"></div>
+            <span>Operations</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #e67e22;"></div>
+            <span>Fan-out/Fan-in</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #27ae60;"></div>
+            <span>Await/Return</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f39c12;"></div>
+            <span>Conditionals</span>
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+
+        function downloadSVG() {
+            const svg = document.querySelector('.mermaid svg');
+            if (!svg) {
+                alert('Diagram not ready yet');
+                return;
+            }
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'lea-flow.svg';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
