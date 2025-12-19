@@ -149,11 +149,11 @@
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
-    "@types/node": "^20.10.0",
-    "@types/vscode": "^1.80.0",
-    "eslint": "^9.0.0",
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^25.0.2",
+    "@types/vscode": "^1.107.0",
+    "eslint": "^9.39.2",
     "typescript": "^5.3.0",
-    "typescript-eslint": "^8.0.0"
+    "typescript-eslint": "^8.18.0"
   }
 }
