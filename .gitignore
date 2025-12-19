@@ -2,6 +2,7 @@ node_modules/
 dist/
 *.js
 !src/**/*.js
+!docusaurus/**/*.js
 .DS_Store
 vscode-lea/out/
 vscode-lea/*.vsix
