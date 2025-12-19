@@ -63,6 +63,7 @@
     "prepack": "mv README.md README.repo.md && cp README.npm.md README.md",
     "postpack": "rm README.md && mv README.repo.md README.md",
     "prepublishOnly": "npm run build",
+    "postversion": "git push && git push --tags",
     "repl": "ts-node src/repl.ts",
     "lea": "ts-node src/index.ts",
     "lea:init": "ts-node src/init.ts",
