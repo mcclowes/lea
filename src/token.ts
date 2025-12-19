@@ -82,10 +82,18 @@ export enum TokenType {
   EOF = "EOF",
 }
 
+/** The literal value of a token:
+ *  - number for NUMBER tokens
+ *  - string for STRING tokens
+ *  - string[] for TEMPLATE_STRING tokens (array of string parts between interpolations)
+ *  - null for non-literal tokens
+ */
+export type TokenLiteral = number | string | string[] | null;
+
 export interface Token {
   type: TokenType;
   lexeme: string;
-  literal: unknown;
+  literal: TokenLiteral;
   line: number;
   column: number;
 }
@@ -110,7 +118,7 @@ export const KEYWORDS: Record<string, TokenType> = Object.create(null, {
 export const createToken = (
   type: TokenType,
   lexeme: string,
-  literal: unknown,
+  literal: TokenLiteral,
   line: number,
   column: number
 ): Token => ({ type, lexeme, literal, line, column });

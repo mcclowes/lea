@@ -366,4 +366,14 @@ export class Environment {
     }
     throw new RuntimeError(`Undefined variable '${name}'`);
   }
+
+  /** Iterate over all bindings in this scope (not parent scopes) */
+  entries(): IterableIterator<[string, { value: LeaValue; mutable: boolean }]> {
+    return this.values.entries();
+  }
+
+  /** Get number of bindings in this scope (not parent scopes) */
+  get size(): number {
+    return this.values.size;
+  }
 }

@@ -1,4 +1,4 @@
-import { Token, TokenType, KEYWORDS, createToken } from "./token";
+import { Token, TokenType, TokenLiteral, KEYWORDS, createToken } from "./token";
 
 export class LexerError extends Error {
   constructor(message: string, public line: number, public column: number) {
@@ -371,7 +371,7 @@ export class Lexer {
     return true;
   }
 
-  private addToken(type: TokenType, literal: unknown = null): void {
+  private addToken(type: TokenType, literal: TokenLiteral = null): void {
     const lexeme = this.source.slice(this.start, this.current);
     const col = this.start - this.lineStart + 1;
     this.tokens.push(createToken(type, lexeme, literal, this.line, col));

@@ -22,6 +22,7 @@ import {
   RuntimeError,
   Environment,
 } from "./types";
+import type { InterpreterContext } from "./context";
 
 // Type guard for LeaPromise
 export function isLeaPromise(val: LeaValue): val is LeaPromise {
@@ -127,15 +128,17 @@ export function asList(val: LeaValue): LeaValue[] {
 }
 
 // Cached Interpreter class and singleton instance for asFunction
-let _Interpreter: any = null;
-let _interpreterInstance: any = null;
+// Uses dynamic require to avoid circular dependency
+let _InterpreterClass: (new () => InterpreterContext) | null = null;
+let _interpreterInstance: InterpreterContext | null = null;
 
-function getInterpreter(): any {
+function getInterpreter(): InterpreterContext {
   if (_interpreterInstance === null) {
-    if (_Interpreter === null) {
-      _Interpreter = require("./index").Interpreter;
+    if (_InterpreterClass === null) {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      _InterpreterClass = require("./index").Interpreter;
     }
-    _interpreterInstance = new _Interpreter();
+    _interpreterInstance = new _InterpreterClass!();
   }
   return _interpreterInstance;
 }
@@ -156,7 +159,7 @@ export function asFunction(val: LeaValue): (args: LeaValue[]) => LeaValue {
       const interp = getInterpreter();
       if (fn.body.kind === "BlockBody") {
         for (const stmt of fn.body.statements) {
-          interp["executeStmt"](stmt, env);
+          interp.executeStmt(stmt, env);
         }
         return interp.evaluateExpr(fn.body.result, env);
       }

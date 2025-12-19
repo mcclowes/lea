@@ -30,14 +30,22 @@ import { ParserContext, ParseError } from "./types";
 import { parseExpression, parseUnary, finishCall, parseEquality } from "./expressions";
 import { parseGroupingOrFunction, parsePipelineTypeSignature } from "./functions";
 import { Lexer } from "../lexer";
+import { Token } from "../token";
+
+/** Interface for Parser constructor used in template string parsing */
+interface ParserConstructor {
+  new (tokens: Token[]): { expression(): Expr };
+}
 
 // Cached Parser import to avoid repeated dynamic require() calls
-let _Parser: any = null;
-function getParser(): any {
+// Uses dynamic require to avoid circular dependency with parser/index.ts
+let _Parser: ParserConstructor | null = null;
+function getParser(): ParserConstructor {
   if (_Parser === null) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     _Parser = require("./index").Parser;
   }
-  return _Parser;
+  return _Parser!;
 }
 
 /**

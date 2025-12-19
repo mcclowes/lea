@@ -13,6 +13,7 @@ import {
   LeaBidirectionalPipeline,
   LeaReactiveValue,
   LeaTuple,
+  LeaRecord,
 } from "./interpreter";
 import { formatError } from "./errors";
 import { stringify } from "./interpreter/helpers";
@@ -824,17 +825,15 @@ function saveWorkspace(name?: string): string {
   const workspacePath = path.join(WORKSPACE_DIR, `${workspaceName}.json`);
 
   // Get all user-defined bindings
-  const globals = (state.interpreter as unknown as { globals: Environment }).globals;
-  const values = (globals as unknown as { values: Map<string, { value: LeaValue; mutable: boolean }> }).values;
+  const globals = state.interpreter.globals;
+  const values = globals.entries();
 
   const bindings: Record<string, string> = {};
-  if (values) {
-    for (const [bindingName, entry] of values) {
-      // Skip built-ins
-      if (bindingName === "Pipeline") continue;
-      if (typeof entry.value === "object" && entry.value !== null && "kind" in entry.value && entry.value.kind === "builtin") continue;
-      bindings[bindingName] = serializeValue(entry.value);
-    }
+  for (const [bindingName, entry] of values) {
+    // Skip built-ins
+    if (bindingName === "Pipeline") continue;
+    if (typeof entry.value === "object" && entry.value !== null && "kind" in entry.value && entry.value.kind === "builtin") continue;
+    bindings[bindingName] = serializeValue(entry.value);
   }
 
   const data: WorkspaceData = {
@@ -929,35 +928,33 @@ function formatValue(val: LeaValue): string {
   if (val === null) return "null";
   if (Array.isArray(val)) return `[${val.map(formatValue).join(", ")}]`;
   if (typeof val === "object" && val !== null && "kind" in val) {
-    const obj = val as { kind: string; elements?: unknown[]; fields?: Map<string, unknown> };
-    if (obj.kind === "tuple" && obj.elements) {
-      return `(${(obj.elements as LeaValue[]).map(formatValue).join(", ")})`;
+    switch (val.kind) {
+      case "tuple": {
+        const tuple = val as LeaTuple;
+        return `(${tuple.elements.map(formatValue).join(", ")})`;
+      }
+      case "record": {
+        const record = val as LeaRecord;
+        const entries = Array.from(record.fields.entries())
+          .map(([k, v]) => `${k}: ${formatValue(v)}`)
+          .join(", ");
+        return `{ ${entries} }`;
+      }
+      case "pipeline":
+        return `<pipeline:${(val as LeaPipeline).stages.length} stages>`;
+      case "bidirectional_pipeline":
+        return `<bidirectional-pipeline:${(val as LeaBidirectionalPipeline).stages.length} stages>`;
+      case "reversible_function":
+        return "<reversible-function>";
+      case "reactive":
+        return `<reactive:${(val as LeaReactiveValue).sourceName}>`;
+      case "overload_set":
+        return "<overloaded-function>";
+      case "promise":
+        return "<promise>";
+      default:
+        return "<function>";
     }
-    if (obj.kind === "record" && obj.fields) {
-      const entries = Array.from(obj.fields.entries())
-        .map(([k, v]) => `${k}: ${formatValue(v as LeaValue)}`)
-        .join(", ");
-      return `{ ${entries} }`;
-    }
-    if (obj.kind === "pipeline") {
-      return `<pipeline:${(obj as LeaPipeline).stages.length} stages>`;
-    }
-    if (obj.kind === "bidirectional_pipeline") {
-      return `<bidirectional-pipeline:${(obj as LeaBidirectionalPipeline).stages.length} stages>`;
-    }
-    if (obj.kind === "reversible_function") {
-      return "<reversible-function>";
-    }
-    if (obj.kind === "reactive") {
-      return `<reactive:${(obj as LeaReactiveValue).sourceName}>`;
-    }
-    if (obj.kind === "overload_set") {
-      return "<overloaded-function>";
-    }
-    if (obj.kind === "promise") {
-      return "<promise>";
-    }
-    return "<function>";
   }
   return String(val);
 }
@@ -1047,21 +1044,14 @@ function runExample(num: number): void {
 function showBindings(): void {
   console.log("\nCurrent bindings:");
   // Access the global environment
-  const globals = (state.interpreter as unknown as { globals: Environment }).globals;
-  if (!globals) {
-    console.log("  (none)");
-    return;
-  }
-
-  // Get all user-defined bindings (skip builtins by checking if they're functions with bodies)
-  const values = (globals as unknown as { values: Map<string, { value: LeaValue; mutable: boolean }> }).values;
-  if (!values || values.size === 0) {
+  const globals = state.interpreter.globals;
+  if (!globals || globals.size === 0) {
     console.log("  (none)");
     return;
   }
 
   let count = 0;
-  for (const [name, entry] of values) {
+  for (const [name, entry] of globals.entries()) {
     // Skip internal Pipeline object
     if (name === "Pipeline") continue;
     const typeStr = getValueType(entry.value);
