@@ -16,6 +16,7 @@
     "url": "https://github.com/mcclowes/lea/issues"
   },
   "homepage": "https://github.com/mcclowes/lea#readme",
+  "type": "module",
   "engines": {
     "vscode": "^1.80.0"
   },
