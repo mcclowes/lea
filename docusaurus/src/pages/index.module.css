@@ -1,0 +1,107 @@
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.features {
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+  width: 100%;
+  background-color: var(--ifm-background-surface-color);
+}
+
+.codeShowcase {
+  padding: 3rem 0;
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.codeShowcase h2 {
+  margin-bottom: 1rem;
+}
+
+.codeShowcase ul {
+  margin-top: 1rem;
+}
+
+.codeShowcase li {
+  margin-bottom: 0.5rem;
+}
+
+.codeBlock {
+  background-color: var(--ifm-code-background);
+  border-radius: 8px;
+  padding: 1.5rem;
+  font-size: 0.9rem;
+  overflow-x: auto;
+  margin: 0;
+}
+
+.quickStart {
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.quickStart h2 {
+  margin-bottom: 2rem;
+}
+
+.installCommands {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.installOption {
+  background-color: var(--ifm-background-surface-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  min-width: 250px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.installOption h4 {
+  margin-bottom: 1rem;
+  color: var(--ifm-color-primary);
+}
+
+.installOption pre {
+  margin: 0;
+  background-color: var(--ifm-code-background);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem;
+  }
+
+  .codeShowcase .row {
+    flex-direction: column;
+  }
+
+  .codeShowcase .col--6:first-child {
+    margin-bottom: 2rem;
+  }
+
+  .installCommands {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .installOption {
+    width: 100%;
+    max-width: 350px;
+  }
+}
