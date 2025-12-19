@@ -1,0 +1,122 @@
+/**
+ * Custom CSS for Lea documentation
+ */
+
+:root {
+  --ifm-color-primary: #2e8555;
+  --ifm-color-primary-dark: #29784c;
+  --ifm-color-primary-darker: #277148;
+  --ifm-color-primary-darkest: #205d3b;
+  --ifm-color-primary-light: #33925d;
+  --ifm-color-primary-lighter: #359962;
+  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Code blocks */
+.prism-code {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Tables */
+table {
+  display: table;
+  width: 100%;
+}
+
+table th,
+table td {
+  padding: 0.75rem;
+}
+
+/* Improve inline code readability */
+code {
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+/* Hero section styling */
+.hero--primary {
+  background: linear-gradient(135deg, var(--ifm-color-primary-darkest) 0%, var(--ifm-color-primary) 100%);
+}
+
+[data-theme='dark'] .hero--primary {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+/* Better heading spacing in docs */
+.markdown h2 {
+  margin-top: 2rem;
+}
+
+.markdown h3 {
+  margin-top: 1.5rem;
+}
+
+/* Sidebar styling */
+.menu__link--active {
+  font-weight: 600;
+}
+
+/* Better table styling */
+table thead tr {
+  background-color: var(--ifm-table-stripe-background);
+}
+
+/* Code example styling */
+.markdown pre {
+  margin-bottom: 1.5rem;
+}
+
+/* Feature cards on homepage */
+.feature-card {
+  border-radius: 8px;
+  padding: 1.5rem;
+  height: 100%;
+}
+
+/* Admonition styling */
+.admonition {
+  margin-bottom: 1.5rem;
+}
+
+/* Better list styling in docs */
+.markdown ul,
+.markdown ol {
+  margin-bottom: 1rem;
+}
+
+.markdown li {
+  margin-bottom: 0.5rem;
+}
+
+/* Footer links */
+.footer__link-item {
+  line-height: 2;
+}
+
+/* Navbar styling */
+.navbar__title {
+  font-weight: 700;
+}
+
+/* Better blockquote styling */
+blockquote {
+  border-left: 4px solid var(--ifm-color-primary);
+  padding-left: 1rem;
+  margin-left: 0;
+  font-style: italic;
+}
