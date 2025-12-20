@@ -23,8 +23,8 @@ function HomepageHeader() {
           </Link>
           <Link
             className="button button--secondary button--lg"
-            href="https://lea.mcclowes.com/">
-            Try Online
+            href="https://lea.playground.mcclowes.com/">
+            Playground
           </Link>
         </div>
       </div>
@@ -174,6 +174,74 @@ function HomepageFeatures() {
   );
 }
 
+const comparisonData = [
+  {
+    feature: 'Data transformation',
+    lea: 'numbers /> filter(isEven) /> map(double)',
+    javascript: 'numbers.filter(isEven).map(double)',
+    python: 'list(map(double, filter(isEven, numbers)))',
+  },
+  {
+    feature: 'Function composition',
+    lea: 'let process = /> step1 /> step2 /> step3',
+    javascript: 'const process = (x) => step3(step2(step1(x)))',
+    python: 'process = lambda x: step3(step2(step1(x)))',
+  },
+  {
+    feature: 'Parallel execution',
+    lea: 'data \\> (fetchA, fetchB, fetchC)',
+    javascript: 'await Promise.all([fetchA(data), ...])',
+    python: 'await asyncio.gather(fetchA(data), ...)',
+  },
+  {
+    feature: 'Memoization',
+    lea: 'let fib = (n) -> ... #memo',
+    javascript: '// Requires library or manual impl',
+    python: '@functools.lru_cache',
+  },
+  {
+    feature: 'Spread over list',
+    lea: 'items />>> processItem',
+    javascript: 'items.map(processItem)',
+    python: '[processItem(x) for x in items]',
+  },
+];
+
+function ComparisonMatrix() {
+  return (
+    <section className={styles.comparison}>
+      <div className="container">
+        <Heading as="h2" className={styles.sectionTitle}>How Lea Compares</Heading>
+        <p className={styles.sectionSubtitle}>
+          See how common patterns look in Lea versus other languages.
+        </p>
+        <div className={styles.comparisonTable}>
+          <table>
+            <thead>
+              <tr>
+                <th>Pattern</th>
+                <th>Lea</th>
+                <th>JavaScript</th>
+                <th>Python</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparisonData.map((row, idx) => (
+                <tr key={idx}>
+                  <td className={styles.featureCell}>{row.feature}</td>
+                  <td><code>{row.lea}</code></td>
+                  <td><code>{row.javascript}</code></td>
+                  <td><code>{row.python}</code></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function QuickStart() {
   return (
     <section className={styles.quickStart}>
@@ -211,6 +279,7 @@ export default function Home() {
       <main>
         <CodeShowcase />
         <HomepageFeatures />
+        <ComparisonMatrix />
         <QuickStart />
       </main>
     </Layout>

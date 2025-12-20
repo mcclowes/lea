@@ -276,6 +276,107 @@
   font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
 }
 
+/* Comparison Matrix Section */
+.comparison {
+  padding: 4rem 0;
+  background: var(--ifm-background-surface-color);
+}
+
+.comparisonTable {
+  overflow-x: auto;
+  margin-top: 2rem;
+}
+
+.comparisonTable table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--ifm-background-color);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='dark'] .comparisonTable table {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.comparisonTable th {
+  background: linear-gradient(135deg, #2e8555 0%, #25c2a0 100%);
+  color: white;
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.comparisonTable th:first-child {
+  border-radius: 12px 0 0 0;
+}
+
+.comparisonTable th:last-child {
+  border-radius: 0 12px 0 0;
+}
+
+.comparisonTable td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(46, 133, 85, 0.1);
+  vertical-align: top;
+}
+
+[data-theme='dark'] .comparisonTable td {
+  border-bottom-color: rgba(37, 194, 160, 0.1);
+}
+
+.comparisonTable tr:last-child td {
+  border-bottom: none;
+}
+
+.comparisonTable tr:hover td {
+  background: rgba(46, 133, 85, 0.03);
+}
+
+[data-theme='dark'] .comparisonTable tr:hover td {
+  background: rgba(37, 194, 160, 0.05);
+}
+
+.featureCell {
+  font-weight: 600;
+  color: var(--ifm-color-primary-dark);
+  white-space: nowrap;
+}
+
+[data-theme='dark'] .featureCell {
+  color: var(--ifm-color-primary-light);
+}
+
+.comparisonTable code {
+  background: rgba(46, 133, 85, 0.08);
+  color: var(--ifm-font-color-base);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+  white-space: nowrap;
+}
+
+[data-theme='dark'] .comparisonTable code {
+  background: rgba(37, 194, 160, 0.1);
+}
+
+/* Highlight Lea column */
+.comparisonTable td:nth-child(2) code {
+  background: rgba(46, 133, 85, 0.15);
+  color: var(--ifm-color-primary-darkest);
+  font-weight: 500;
+}
+
+[data-theme='dark'] .comparisonTable td:nth-child(2) code {
+  background: rgba(37, 194, 160, 0.2);
+  color: var(--ifm-color-primary-lightest);
+}
+
 /* Section Titles */
 .sectionTitle {
   font-size: 2rem;

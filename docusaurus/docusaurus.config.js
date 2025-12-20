@@ -56,8 +56,8 @@ const config = {
             label: 'Documentation',
           },
           {
-            href: 'https://lea.mcclowes.com/',
-            label: 'Try Online',
+            href: 'https://lea.playground.mcclowes.com/',
+            label: 'Playground',
             position: 'left',
           },
           {
@@ -116,8 +116,8 @@ const config = {
                 href: 'https://www.npmjs.com/package/lea-lang',
               },
               {
-                label: 'Try Online',
-                href: 'https://lea.mcclowes.com/',
+                label: 'Playground',
+                href: 'https://lea.playground.mcclowes.com/',
               },
             ],
           },
@@ -127,7 +127,7 @@ const config = {
       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
-        additionalLanguages: ['bash'],
+        additionalLanguages: ['bash', 'lea'],
       },
       colorMode: {
         defaultMode: 'light',
