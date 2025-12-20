@@ -31,6 +31,7 @@ null                    -- Null
 == != < > <= >=         -- comparison
 ++                      -- string concat (coerces types)
 ? :                     -- ternary
+if ... then ... else    -- if-then-else (sugar for ternary)
 ```
 
 ## Pipes

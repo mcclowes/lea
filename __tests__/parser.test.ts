@@ -396,6 +396,36 @@ describe('Parser', () => {
         expect(expr.elseBranch.kind).toBe('StringLiteral');
       }
     });
+
+    it('should parse if-then-else expression', () => {
+      const expr = parseExpr('if x > 0 then "yes" else "no"');
+      expect(expr.kind).toBe('TernaryExpr');
+      if (expr.kind === 'TernaryExpr') {
+        expect(expr.condition.kind).toBe('BinaryExpr');
+        expect(expr.thenBranch.kind).toBe('StringLiteral');
+        expect(expr.elseBranch.kind).toBe('StringLiteral');
+      }
+    });
+
+    it('should parse multiline if-then-else expression', () => {
+      const expr = parseExpr('if x > 0\n  then "yes"\n  else "no"');
+      expect(expr.kind).toBe('TernaryExpr');
+      if (expr.kind === 'TernaryExpr') {
+        expect(expr.condition.kind).toBe('BinaryExpr');
+        expect(expr.thenBranch.kind).toBe('StringLiteral');
+        expect(expr.elseBranch.kind).toBe('StringLiteral');
+      }
+    });
+
+    it('should parse nested if-then-else expression', () => {
+      const expr = parseExpr('if x > 0 then "positive" else if x < 0 then "negative" else "zero"');
+      expect(expr.kind).toBe('TernaryExpr');
+      if (expr.kind === 'TernaryExpr') {
+        expect(expr.condition.kind).toBe('BinaryExpr');
+        expect(expr.thenBranch.kind).toBe('StringLiteral');
+        expect(expr.elseBranch.kind).toBe('TernaryExpr');
+      }
+    });
   });
 
   describe('match expressions', () => {

@@ -261,6 +261,25 @@ x > 100
   : "small"
 ```
 
+### If-Then-Else
+
+Syntactic sugar for ternary expressions:
+
+```lea
+if condition then trueValue else falseValue
+
+-- Multi-line
+if n <= 1
+  then n
+  else fibonacci(n - 1) + fibonacci(n - 2)
+
+-- Nested if-then-else
+let classify = (n) ->
+  if n > 0 then "positive"
+  else if n < 0 then "negative"
+  else "zero"
+```
+
 ## Pattern Matching
 
 ```lea
