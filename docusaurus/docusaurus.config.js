@@ -5,7 +5,7 @@ import { themes as prismThemes } from 'prism-react-renderer';
 const config = {
   title: 'Lea',
   tagline: 'A pipe-oriented functional programming language',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.png',
 
   url: 'https://lea.mcclowes.com',
   baseUrl: '/',
