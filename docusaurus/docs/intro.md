@@ -3,7 +3,7 @@ sidebar_position: 1
 slug: /
 ---
 
-# Introduction to Lea
+# Introduction
 
 Lea is a pipe-oriented functional programming language with a tree-walk interpreter written in TypeScript.
 
@@ -20,14 +20,16 @@ sumOfSquares /> print  -- 50
 
 ## Features
 
-- **Pipes** - Left-to-right data flow with `/>` operator
-- **Functions** - First-class, with optional type annotations
-- **Decorators** - Composable function modifiers (`#log`, `#memo`, `#retry(3)`)
-- **Records** - Object literals with member access
-- **Contexts** - Dependency injection system
-- **Async/Await** - Promise-based asynchronous execution
+Lea provides the following features:
 
-## Quick Start
+- **Pipes** — Left-to-right data flow with the `/>` operator
+- **Functions** — First-class functions with optional type annotations
+- **Decorators** — Composable function modifiers (`#log`, `#memo`, `#retry(3)`)
+- **Records** — Object literals with member access
+- **Contexts** — Dependency injection system
+- **Async/await** — Promise-based asynchronous execution
+
+## Quick start
 
 ```bash
 # Clone and install
@@ -48,7 +50,7 @@ Or use npx without installing:
 npx lea-lang hello.lea
 ```
 
-## Syntax Overview
+## Syntax overview
 
 ### Bindings
 
@@ -99,7 +101,7 @@ nested.data.value /> print
 
 ### Decorators
 
-Apply modifiers after function body:
+Apply modifiers after the function body:
 
 ```lea
 let logged = (x) -> x * 2 #log
@@ -107,20 +109,23 @@ let cached = (x) -> expensiveOp(x) #memo
 let resilient = (x) -> riskyOp(x) #retry(3) #timeout(1000)
 ```
 
-Available decorators:
-- `#log` - Log inputs/outputs
-- `#memo` - Cache results
-- `#time` - Log execution time
-- `#retry(n)` - Retry on failure
-- `#timeout(ms)` - Fail if exceeds time
-- `#validate` - Runtime type checking
-- `#pure` - Warn on side effects
-- `#async` - Mark as async
-- `#trace` - Deep call logging
+Lea provides the following built-in decorators:
 
-### Context System
+| Decorator | Description |
+|-----------|-------------|
+| `#log` | Log inputs and outputs |
+| `#memo` | Cache results |
+| `#time` | Log execution time |
+| `#retry(n)` | Retry on failure |
+| `#timeout(ms)` | Fail if time limit exceeded |
+| `#validate` | Runtime type checking |
+| `#pure` | Warn on side effects |
+| `#async` | Mark as async |
+| `#trace` | Deep call logging |
 
-Dependency injection for functions:
+### Context system
+
+Use contexts for dependency injection:
 
 ```lea
 -- Define context with default
