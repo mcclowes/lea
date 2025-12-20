@@ -17,6 +17,8 @@ export enum TokenType {
   DECORATOR = "DECORATOR",
   MATCH = "MATCH",
   IF = "IF",
+  THEN = "THEN",           // then keyword for if-then-else
+  ELSE = "ELSE",           // else keyword for if-then-else
   RETURN = "RETURN",       // return keyword for early return
   INPUT = "INPUT",         // input keyword for placeholder/matched value
   USE = "USE",             // use keyword for module imports
@@ -110,6 +112,8 @@ export const KEYWORDS: Record<string, TokenType> = Object.create(null, {
   decorator: { value: TokenType.DECORATOR, enumerable: true },
   match: { value: TokenType.MATCH, enumerable: true },
   if: { value: TokenType.IF, enumerable: true },
+  then: { value: TokenType.THEN, enumerable: true },
+  else: { value: TokenType.ELSE, enumerable: true },
   return: { value: TokenType.RETURN, enumerable: true },
   input: { value: TokenType.INPUT, enumerable: true },
   use: { value: TokenType.USE, enumerable: true },

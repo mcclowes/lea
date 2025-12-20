@@ -118,7 +118,7 @@
       "patterns": [
         {
           "name": "keyword.control.lea",
-          "match": "\\b(let|and|maybe|await|context|provide|decorator|match|if|return|input|use)\\b"
+          "match": "\\b(let|and|maybe|await|context|provide|decorator|match|if|then|else|return|input|use)\\b"
         },
         {
           "name": "storage.type.lea",

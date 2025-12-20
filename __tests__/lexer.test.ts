@@ -80,6 +80,8 @@ describe('Lexer', () => {
       expect(tokenize('provide')[0].type).toBe(TokenType.PROVIDE);
       expect(tokenize('match')[0].type).toBe(TokenType.MATCH);
       expect(tokenize('if')[0].type).toBe(TokenType.IF);
+      expect(tokenize('then')[0].type).toBe(TokenType.THEN);
+      expect(tokenize('else')[0].type).toBe(TokenType.ELSE);
       expect(tokenize('return')[0].type).toBe(TokenType.RETURN);
       expect(tokenize('input')[0].type).toBe(TokenType.INPUT);
     });
@@ -307,6 +309,21 @@ describe('Lexer', () => {
         TokenType.QUESTION,
         TokenType.STRING,
         TokenType.COLON,
+        TokenType.STRING,
+        TokenType.EOF,
+      ]);
+    });
+
+    it('should tokenize if-then-else expression', () => {
+      const types = getTokenTypes('if x > 0 then "positive" else "non-positive"');
+      expect(types).toEqual([
+        TokenType.IF,
+        TokenType.IDENTIFIER,
+        TokenType.GT,
+        TokenType.NUMBER,
+        TokenType.THEN,
+        TokenType.STRING,
+        TokenType.ELSE,
         TokenType.STRING,
         TokenType.EOF,
       ]);
