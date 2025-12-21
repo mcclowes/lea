@@ -15,6 +15,22 @@ import {
   AnyPipelineStage,
 } from "../ast";
 
+/**
+ * All possible Lea object kinds - used for fast type checking
+ */
+export type LeaKind =
+  | "function"
+  | "record"
+  | "builtin"
+  | "promise"
+  | "parallel_result"
+  | "tuple"
+  | "overload_set"
+  | "pipeline"
+  | "bidirectional_pipeline"
+  | "reversible_function"
+  | "reactive";
+
 export interface LeaFunction {
   kind: "function";
   params: FunctionParam[];
@@ -147,7 +163,8 @@ export class Environment {
   private values = new Map<string, { value: LeaValue; mutable: boolean }>();
   private parent: Environment | null;
   // Track reactive values that depend on each source variable
-  private reactivesBySource = new Map<string, Set<LeaReactiveValue>>();
+  // Lazily initialized to avoid allocation overhead for non-reactive code
+  private reactivesBySource: Map<string, Set<LeaReactiveValue>> | null = null;
 
   constructor(parent: Environment | null = null) {
     this.parent = parent;
@@ -155,10 +172,16 @@ export class Environment {
 
   // Register a reactive value as depending on a source variable
   registerReactive(sourceName: string, reactive: LeaReactiveValue): void {
-    if (!this.reactivesBySource.has(sourceName)) {
-      this.reactivesBySource.set(sourceName, new Set());
+    // Lazy initialization of reactives map
+    if (this.reactivesBySource === null) {
+      this.reactivesBySource = new Map();
     }
-    this.reactivesBySource.get(sourceName)!.add(reactive);
+    let reactives = this.reactivesBySource.get(sourceName);
+    if (!reactives) {
+      reactives = new Set();
+      this.reactivesBySource.set(sourceName, reactives);
+    }
+    reactives.add(reactive);
     // Also register in parent if variable is defined there
     if (this.parent && !this.values.has(sourceName)) {
       this.parent.registerReactive(sourceName, reactive);
@@ -167,10 +190,12 @@ export class Environment {
 
   // Mark all reactive values depending on a source as dirty
   private markReactivesDirty(name: string): void {
-    const reactives = this.reactivesBySource.get(name);
-    if (reactives) {
-      for (const reactive of reactives) {
-        reactive.dirty = true;
+    if (this.reactivesBySource !== null) {
+      const reactives = this.reactivesBySource.get(name);
+      if (reactives) {
+        for (const reactive of reactives) {
+          reactive.dirty = true;
+        }
       }
     }
     // Also check parent scopes

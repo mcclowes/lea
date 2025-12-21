@@ -23,6 +23,7 @@ import {
   isRecord,
   unwrapPromise,
   wrapPromise,
+  getKind,
 } from "./helpers";
 
 export type BuiltinFn = (args: LeaValue[]) => LeaValue | Promise<LeaValue>;
@@ -169,21 +170,38 @@ export const builtins: Record<string, BuiltinFn> = {
 
   variance: (args) => {
     const list = asList(args[0]);
-    if (list.length === 0) throw new RuntimeError("variance requires a non-empty list");
-    const nums = list.map(asNumber);
-    const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
-    const squaredDiffs = nums.map(x => (x - mean) ** 2);
-    return squaredDiffs.reduce((a, b) => a + b, 0) / nums.length;
+    const n = list.length;
+    if (n === 0) throw new RuntimeError("variance requires a non-empty list");
+    // Single pass for mean, then single pass for variance
+    let sum = 0;
+    for (let i = 0; i < n; i++) {
+      sum += asNumber(list[i]);
+    }
+    const mean = sum / n;
+    let squaredSum = 0;
+    for (let i = 0; i < n; i++) {
+      const diff = asNumber(list[i]) - mean;
+      squaredSum += diff * diff;
+    }
+    return squaredSum / n;
   },
 
   stdDev: (args) => {
     const list = asList(args[0]);
-    if (list.length === 0) throw new RuntimeError("stdDev requires a non-empty list");
-    const nums = list.map(asNumber);
-    const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
-    const squaredDiffs = nums.map(x => (x - mean) ** 2);
-    const variance = squaredDiffs.reduce((a, b) => a + b, 0) / nums.length;
-    return Math.sqrt(variance);
+    const n = list.length;
+    if (n === 0) throw new RuntimeError("stdDev requires a non-empty list");
+    // Single pass for mean, then single pass for variance
+    let sum = 0;
+    for (let i = 0; i < n; i++) {
+      sum += asNumber(list[i]);
+    }
+    const mean = sum / n;
+    let squaredSum = 0;
+    for (let i = 0; i < n; i++) {
+      const diff = asNumber(list[i]) - mean;
+      squaredSum += diff * diff;
+    }
+    return Math.sqrt(squaredSum / n);
   },
 
   // ===== Number Theory Builtins =====
@@ -294,11 +312,14 @@ export const builtins: Record<string, BuiltinFn> = {
     return list[index];
   },
   shuffle: (args) => {
-    const list = [...asList(args[0])];
+    // Use slice for shallow copy instead of spread
+    const list = asList(args[0]).slice();
     // Fisher-Yates shuffle
     for (let i = list.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [list[i], list[j]] = [list[j], list[i]];
+      const temp = list[i];
+      list[i] = list[j];
+      list[j] = temp;
     }
     return list;
   },
@@ -329,12 +350,14 @@ export const builtins: Record<string, BuiltinFn> = {
   concat: (args) => {
     const a = asList(args[0]);
     const b = asList(args[1]);
-    return [...a, ...b];
+    // Use native concat which is optimized for array concatenation
+    return a.concat(b);
   },
 
   reverse: (args) => {
     const list = asList(args[0]);
-    return [...list].reverse();
+    // Use slice for shallow copy, then reverse in place
+    return list.slice().reverse();
   },
 
   isEmpty: (args) => {
@@ -346,7 +369,7 @@ export const builtins: Record<string, BuiltinFn> = {
 
   fst: (args) => {
     const val = args[0];
-    if (val && typeof val === "object" && "kind" in val && val.kind === "tuple") {
+    if (getKind(val) === "tuple") {
       return (val as LeaTuple).elements[0];
     }
     if (Array.isArray(val)) return val[0];
@@ -355,7 +378,7 @@ export const builtins: Record<string, BuiltinFn> = {
 
   snd: (args) => {
     const val = args[0];
-    if (val && typeof val === "object" && "kind" in val && val.kind === "tuple") {
+    if (getKind(val) === "tuple") {
       return (val as LeaTuple).elements[1];
     }
     if (Array.isArray(val)) return val[1];
@@ -473,7 +496,8 @@ export const builtins: Record<string, BuiltinFn> = {
 
   // Sort list with optional comparator function
   sort: (args) => {
-    const list = [...asList(args[0])];
+    // Use slice for shallow copy instead of spread
+    const list = asList(args[0]).slice();
     const comparator = args[1] !== undefined ? asFunction(args[1]) : null;
 
     if (comparator) {
