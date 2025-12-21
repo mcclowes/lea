@@ -21,6 +21,37 @@ const config = {
     locales: ['en'],
   },
 
+  headTags: [
+    {
+      tagName: 'meta',
+      attributes: {
+        name: 'description',
+        content: 'Lea is a pipe-oriented functional programming language with a tree-walk interpreter written in TypeScript. Features first-class pipelines, pattern matching, and clean syntax.',
+      },
+    },
+    {
+      tagName: 'meta',
+      attributes: {
+        name: 'keywords',
+        content: 'lea, programming language, functional programming, pipe operator, typescript, interpreter, pipelines, pattern matching',
+      },
+    },
+    {
+      tagName: 'meta',
+      attributes: {
+        name: 'author',
+        content: 'mcclowes',
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'canonical',
+        href: 'https://lea.mcclowes.com',
+      },
+    },
+  ],
+
   presets: [
     [
       'classic',
@@ -42,6 +73,13 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       image: 'img/lea-social-card.png',
+      metadata: [
+        { name: 'og:type', content: 'website' },
+        { name: 'og:site_name', content: 'Lea Programming Language' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: 'Lea - A Pipe-Oriented Functional Programming Language' },
+        { name: 'twitter:description', content: 'Lea is a pipe-oriented functional programming language with first-class pipelines and clean syntax.' },
+      ],
       navbar: {
         title: 'Lea',
         logo: {
