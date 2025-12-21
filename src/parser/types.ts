@@ -10,11 +10,13 @@ export interface ParserContext {
   current: number;
   inParallelPipeBranch: boolean;
   inPipeOperand: boolean;
+  inPipelineLiteral: boolean;
 
   // State mutators
   setCurrent(pos: number): void;
   setInParallelPipeBranch(value: boolean): void;
   setInPipeOperand(value: boolean): void;
+  setInPipelineLiteral(value: boolean): void;
 
   // Utility methods
   match(...types: TokenType[]): boolean;
@@ -34,16 +36,19 @@ export function createParserContext(tokens: Token[]): ParserContext {
   let current = 0;
   let inParallelPipeBranch = false;
   let inPipeOperand = false;
+  let inPipelineLiteral = false;
 
   const ctx: ParserContext = {
     get tokens() { return tokens; },
     get current() { return current; },
     get inParallelPipeBranch() { return inParallelPipeBranch; },
     get inPipeOperand() { return inPipeOperand; },
+    get inPipelineLiteral() { return inPipelineLiteral; },
 
     setCurrent(pos: number) { current = pos; },
     setInParallelPipeBranch(value: boolean) { inParallelPipeBranch = value; },
     setInPipeOperand(value: boolean) { inPipeOperand = value; },
+    setInPipelineLiteral(value: boolean) { inPipelineLiteral = value; },
 
     match(...types: TokenType[]): boolean {
       for (const type of types) {

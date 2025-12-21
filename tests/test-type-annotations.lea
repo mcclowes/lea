@@ -49,7 +49,7 @@ let getRange = (n) -> range(n) :: Int :> [Int] #validate
 getRange(5) /> print  -- [0, 1, 2, 3, 4]
 
 -- List of lists
-let flatten = (lists) -> reduce(lists, [], (acc, list) -> concat(acc, list)) :: [[Int]] :> [Int]
-flatten([[1, 2], [3, 4]]) /> print  -- [1, 2, 3, 4] - note: nested list types work as documentation
+let flattenLists = (lists) -> reduce(lists, [], (acc, list) -> concat(acc, list)) :: [[Int]] :> [Int]
+flattenLists([[1, 2], [3, 4]]) /> print  -- [1, 2, 3, 4] - note: nested list types work as documentation
 
 print("All type annotation tests passed!")
