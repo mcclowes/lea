@@ -1,6 +1,6 @@
 {
   "name": "lea-lang",
-  "version": "1.1.3",
+  "version": "1.2.0",
   "description": "A pipe-oriented functional programming language, embeddable in TypeScript",
   "author": "Max Clayton Clowes",
   "license": "MIT",
