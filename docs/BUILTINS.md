@@ -53,6 +53,43 @@
 | `TAU()` | Tau (2*PI) | `6.28318...` |
 | `INFINITY()` | Positive infinity | `Infinity` |
 
+### Statistics
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `sum(list)` | Sum of elements | `sum([1,2,3])` → `6` |
+| `product(list)` | Product of elements | `product([2,3,4])` → `24` |
+| `mean(list)` | Arithmetic mean | `mean([1,2,3])` → `2` |
+| `median(list)` | Median value | `median([1,2,3,4,5])` → `3` |
+| `variance(list)` | Population variance | `variance([1,2,3])` → `0.666...` |
+| `stdDev(list)` | Standard deviation | `stdDev([1,2,3])` → `0.816...` |
+
+### Number Theory
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `gcd(a, b)` | Greatest common divisor | `gcd(12, 8)` → `4` |
+| `lcm(a, b)` | Least common multiple | `lcm(4, 6)` → `12` |
+| `isPrime(n)` | Check if prime | `isPrime(7)` → `true` |
+| `factorial(n)` | Factorial | `factorial(5)` → `120` |
+| `fibonacci(n)` | Nth Fibonacci number | `fibonacci(10)` → `55` |
+| `isEven(n)` | Check if even | `isEven(4)` → `true` |
+| `isOdd(n)` | Check if odd | `isOdd(3)` → `true` |
+| `mod(a, b)` | Modulo (handles negatives) | `mod(-1, 3)` → `2` |
+| `divInt(a, b)` | Integer division | `divInt(7, 3)` → `2` |
+
+### Bitwise Operations
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `bitAnd(a, b)` | Bitwise AND | `bitAnd(5, 3)` → `1` |
+| `bitOr(a, b)` | Bitwise OR | `bitOr(5, 3)` → `7` |
+| `bitXor(a, b)` | Bitwise XOR | `bitXor(5, 3)` → `6` |
+| `bitNot(a)` | Bitwise NOT | `bitNot(5)` → `-6` |
+| `bitShiftLeft(a, b)` | Left shift | `bitShiftLeft(1, 4)` → `16` |
+| `bitShiftRight(a, b)` | Right shift (signed) | `bitShiftRight(16, 2)` → `4` |
+| `bitShiftRightUnsigned(a, b)` | Right shift (unsigned) | `bitShiftRightUnsigned(-1, 1)` |
+
 ## Random Functions
 
 | Function | Description | Example |
@@ -71,17 +108,24 @@
 |----------|-------------|---------|
 | `length(list)` | Number of elements | `length([1,2,3])` → `3` |
 | `head(list)` | First element | `head([1,2,3])` → `1` |
+| `last(list)` | Last element | `last([1,2,3])` → `3` |
 | `tail(list)` | All except first | `tail([1,2,3])` → `[2,3]` |
 | `push(list, item)` | Append item | `push([1,2], 3)` → `[1,2,3]` |
 | `concat(a, b)` | Join two lists | `concat([1,2], [3,4])` → `[1,2,3,4]` |
 | `reverse(list)` | Reverse order | `reverse([1,2,3])` → `[3,2,1]` |
-| `zip(a, b)` | Pair elements | `zip([1,2], ["a","b"])` → `[[1,"a"],[2,"b"]]` |
+| `zip(lists)` | Pair elements | `zip([[1,2], [3,4]])` → `[[1,3],[2,4]]` |
 | `isEmpty(list)` | Check if empty | `isEmpty([])` → `true` |
 | `range(start, end)` | Generate range | `range(1, 4)` → `[1,2,3]` |
 | `take(list, n)` | First n elements | `take([1,2,3,4], 2)` → `[1,2]` |
+| `drop(list, n)` | Skip first n elements | `drop([1,2,3,4], 2)` → `[3,4]` |
 | `at(list, index)` | Element at index | `at([1,2,3], 1)` → `2` |
+| `slice(list, start, end?)` | Extract sublist | `slice([1,2,3,4], 1, 3)` → `[2,3]` |
 | `partition(list, fn)` | Split by predicate | `partition([1,2,3], (x) -> x > 1)` → `[[2,3], [1]]` |
-| `iterations(n, fn)` | Apply fn n times | `iterations(3, (x) -> x * 2)(1)` → `8` |
+| `iterations(n)` | List of 0 to n-1 | `iterations(3)` → `[0,1,2]` |
+| `flatten(list, depth?)` | Flatten nested lists | `flatten([[1,2],[3]])` → `[1,2,3]` |
+| `intersperse(list, sep)` | Insert between elements | `intersperse([1,2,3], 0)` → `[1,0,2,0,3]` |
+| `enumerate(list, start?)` | List of [index, element] | `enumerate(["a","b"])` → `[[0,"a"],[1,"b"]]` |
+| `transpose(matrix)` | Transpose rows/cols | `transpose([[1,2],[3,4]])` → `[[1,3],[2,4]]` |
 
 ### Higher-Order List Functions
 
@@ -97,6 +141,22 @@ All callbacks receive `(element, index)`:
 [1, 2, 3] /> reduce(0, (acc, x) -> acc + x)           -- 6
 [1, 2, 3] /> reduce("", (acc, x, i) -> acc ++ `{i}`)  -- "012"
 ```
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `map(list, fn)` | Transform each element | `map([1,2], (x) -> x * 2)` → `[2,4]` |
+| `filter(list, fn)` | Keep matching elements | `filter([1,2,3], (x) -> x > 1)` → `[2,3]` |
+| `reduce(list, init, fn)` | Fold to single value | `reduce([1,2,3], 0, (a,x) -> a+x)` → `6` |
+| `find(list, fn)` | First matching element | `find([1,2,3], (x) -> x > 1)` → `2` |
+| `findIndex(list, fn)` | Index of first match | `findIndex([1,2,3], (x) -> x > 1)` → `1` |
+| `some(list, fn)` | Any element matches | `some([1,2,3], (x) -> x > 2)` → `true` |
+| `every(list, fn)` | All elements match | `every([1,2,3], (x) -> x > 0)` → `true` |
+| `sort(list, fn?)` | Sort with optional comparator | `sort([3,1,2])` → `[1,2,3]` |
+| `groupBy(list, fn)` | Group by key function | `groupBy([1,2,3], (x) -> x % 2)` |
+| `flatMap(list, fn)` | Map then flatten | `flatMap([1,2], (x) -> [x,x])` → `[1,1,2,2]` |
+| `takeWhile(list, fn)` | Take while predicate true | `takeWhile([1,2,3,1], (x) -> x < 3)` → `[1,2]` |
+| `dropWhile(list, fn)` | Drop while predicate true | `dropWhile([1,2,3,1], (x) -> x < 3)` → `[3,1]` |
+| `count(list, fn?)` | Count (matching) elements | `count([1,2,3], (x) -> x > 1)` → `2` |
 
 ## Tuple Functions
 
@@ -123,12 +183,48 @@ All callbacks receive `(element, index)`:
 | `padEnd(str, len, char?)` | Pad end | `padEnd("hi", 5)` → `"hi   "` |
 | `padStart(str, len, char?)` | Pad start | `padStart("hi", 5)` → `"   hi"` |
 | `trim(str)` | Remove whitespace | `trim("  hi  ")` → `"hi"` |
-| `trimEnd(str)` | Remove trailing ws | `trimEnd("hi  ")` → `"hi"` |
+| `trimStart(str)` | Remove leading whitespace | `trimStart("  hi")` → `"hi"` |
+| `trimEnd(str)` | Remove trailing whitespace | `trimEnd("hi  ")` → `"hi"` |
 | `indexOf(str, search)` | Find index | `indexOf("hello", "l")` → `2` |
 | `includes(str, item)` | Contains substring | `includes("hello", "ell")` → `true` |
 | `repeat(str, n)` | Repeat string | `repeat("ab", 3)` → `"ababab"` |
 | `slice(str, start, end?)` | Extract substring | `slice("hello", 1, 3)` → `"el"` |
 | `toString(value)` | Convert to string | `toString(42)` → `"42"` |
+
+### Case Conversion
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `capitalize(str)` | Capitalize first letter | `capitalize("hello")` → `"Hello"` |
+| `titleCase(str)` | Capitalize each word | `titleCase("hello world")` → `"Hello World"` |
+| `toCamelCase(str)` | Convert to camelCase | `toCamelCase("hello-world")` → `"helloWorld"` |
+| `toPascalCase(str)` | Convert to PascalCase | `toPascalCase("hello-world")` → `"HelloWorld"` |
+| `toSnakeCase(str)` | Convert to snake_case | `toSnakeCase("helloWorld")` → `"hello_world"` |
+| `toKebabCase(str)` | Convert to kebab-case | `toKebabCase("helloWorld")` → `"hello-world"` |
+| `toConstantCase(str)` | Convert to CONSTANT_CASE | `toConstantCase("helloWorld")` → `"HELLO_WORLD"` |
+
+### Regular Expressions
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `regexTest(str, pattern, flags?)` | Test if matches | `regexTest("hello", "ell")` → `true` |
+| `regexMatch(str, pattern, flags?)` | First match info | `regexMatch("hello", "(l+)")` |
+| `regexMatchAll(str, pattern, flags?)` | All matches | `regexMatchAll("abab", "a")` |
+| `regexReplace(str, pattern, repl, flags?)` | Replace with regex | `regexReplace("a1b2", "\\d", "X")` → `"aXbX"` |
+| `regexSplit(str, pattern, flags?)` | Split by regex | `regexSplit("a1b2c", "\\d")` → `["a","b","c"]` |
+
+Match results are records with `match`, `index`, and `groups` fields.
+
+### Encoding
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `base64Encode(str)` | Encode to Base64 | `base64Encode("hello")` → `"aGVsbG8="` |
+| `base64Decode(str)` | Decode from Base64 | `base64Decode("aGVsbG8=")` → `"hello"` |
+| `urlEncode(str)` | URL encode | `urlEncode("a b")` → `"a%20b"` |
+| `urlDecode(str)` | URL decode | `urlDecode("a%20b")` → `"a b"` |
+| `hexEncode(str)` | Encode to hex | `hexEncode("hi")` → `"6869"` |
+| `hexDecode(str)` | Decode from hex | `hexDecode("6869")` → `"hi"` |
 
 ## Set Operations (on Lists)
 
@@ -223,6 +319,84 @@ today() /> formatDate("locale") /> print
 | Function | Description | Example |
 |----------|-------------|---------|
 | `print(value)` | Print and return value | `print("hi")` → prints "hi", returns "hi" |
+
+### File Operations
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `readFile(path)` | Read file contents | `await readFile("data.txt")` |
+| `writeFile(path, content)` | Write to file | `await writeFile("out.txt", "hello")` |
+| `appendFile(path, content)` | Append to file | `await appendFile("log.txt", "entry")` |
+| `fileExists(path)` | Check if file exists | `await fileExists("config.json")` |
+| `deleteFile(path)` | Delete file | `await deleteFile("temp.txt")` |
+| `readDir(path)` | List directory contents | `await readDir("./src")` |
+| `copyFile(src, dest)` | Copy file | `await copyFile("a.txt", "b.txt")` |
+| `renameFile(old, new)` | Rename/move file | `await renameFile("old.txt", "new.txt")` |
+
+### Directory Operations
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `mkdir(path, recursive?)` | Create directory | `await mkdir("a/b/c")` |
+| `rmdir(path, recursive?)` | Remove directory | `await rmdir("temp", true)` |
+
+### File Metadata
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `fileStats(path)` | Get file info | `await fileStats("file.txt")` |
+| `isFile(path)` | Check if path is file | `await isFile("data.txt")` |
+| `isDirectory(path)` | Check if path is directory | `await isDirectory("./src")` |
+
+File stats returns a record with: `size`, `isFile`, `isDirectory`, `isSymlink`, `createdAt`, `modifiedAt`, `accessedAt`, `mode`.
+
+### Path Utilities
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `pathJoin(parts...)` | Join path segments | `pathJoin("a", "b", "c")` → `"a/b/c"` |
+| `pathDirname(path)` | Get directory name | `pathDirname("/a/b/c.txt")` → `"/a/b"` |
+| `pathBasename(path, ext?)` | Get file name | `pathBasename("/a/b/c.txt")` → `"c.txt"` |
+| `pathExtname(path)` | Get extension | `pathExtname("file.txt")` → `".txt"` |
+| `pathResolve(parts...)` | Resolve to absolute | `pathResolve(".", "file.txt")` |
+| `pathRelative(from, to)` | Get relative path | `pathRelative("/a/b", "/a/c")` → `"../c"` |
+| `pathNormalize(path)` | Normalize path | `pathNormalize("a//b/../c")` → `"a/c"` |
+| `pathIsAbsolute(path)` | Check if absolute | `pathIsAbsolute("/usr")` → `true` |
+| `pathParse(path)` | Parse into components | `pathParse("/a/b.txt")` |
+
+Path parse returns a record with: `root`, `dir`, `base`, `ext`, `name`.
+
+### Environment
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `getEnv(name)` | Get environment variable | `getEnv("HOME")` |
+| `getEnvAll()` | Get all env variables | `getEnvAll()` |
+| `cwd()` | Current working directory | `cwd()` |
+| `homeDir()` | User home directory | `homeDir()` |
+| `tmpDir()` | Temp directory | `tmpDir()` |
+| `platform()` | OS platform | `platform()` → `"darwin"` |
+
+### HTTP
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `fetch(url, options?)` | HTTP request | `await fetch("https://api.example.com")` |
+
+```lea
+-- Simple GET
+let response = await fetch("https://api.example.com/data")
+response.body /> print
+
+-- POST with JSON
+let result = await fetch("https://api.example.com/users", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: { name: "Alice" }
+})
+```
+
+Response is a record with: `status`, `ok`, `statusText`, `body`, `headers`.
 
 ## Async Functions
 
