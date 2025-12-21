@@ -1,8 +1,7 @@
 ---
-sidebar_position: 5
+sidebar_position: 3
 ---
-
-# Syntax Guide
+# Lea Syntax Guide
 
 A comprehensive guide to Lea's syntax.
 
@@ -312,7 +311,7 @@ Maps over each element:
 
 ### Parallel Pipe `\>`
 
-See [Concurrency](./concurrency.md) for details.
+See [CONCURRENCY.md](./CONCURRENCY.md) for details.
 
 ```lea
 value
@@ -335,7 +334,7 @@ and double = (x) <- x / 2
 
 ## Pipelines (First-Class)
 
-See [Pipelines](./pipelines.md) for details.
+See [PIPELINES.md](./PIPELINES.md) for details.
 
 ```lea
 let processNumbers = /> double /> addOne
@@ -351,7 +350,7 @@ let logged = (x) -> x * 2 #log #memo #time
 let retryable = (x) -> riskyOp(x) #retry(3)
 ```
 
-See [Built-in Functions](./builtins.md#decorators) for all available decorators.
+See [BUILTINS.md](./BUILTINS.md#decorators) for all available decorators.
 
 ## Context System
 
@@ -383,7 +382,7 @@ let y = 20
 
 ## Async/Await
 
-See [Concurrency](./concurrency.md) for details.
+See [CONCURRENCY.md](./CONCURRENCY.md) for details.
 
 ```lea
 let fetchData = () -> delay(100) #async

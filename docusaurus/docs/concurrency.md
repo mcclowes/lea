@@ -1,16 +1,15 @@
 ---
-sidebar_position: 8
+sidebar_position: 6
 ---
-
-# Concurrency
+# Concurrency in Lea
 
 Lea provides concurrency primitives that embrace functional purity and pipe composition.
 
 ## Core Concepts
 
-1. **Functional purity** - Parallelism is safe because of immutability by default
-2. **Pipe composition** - Async flows compose naturally with pipes
-3. **Explicit over implicit** - Clear markers for concurrent operations
+1. **Functional purity** — Parallelism is safe because of immutability by default
+2. **Pipe composition** — Async flows compose naturally with pipes
+3. **Explicit over implicit** — Clear markers for concurrent operations
 
 ## Async/Await
 
@@ -61,9 +60,9 @@ let result = input
 Visual model:
 
 ```
-        +--- \> f(x) ---+
-input --+--- \> g(x) ---+--- /> combine(a, b, c) --- result
-        +--- \> h(x) ---+
+        ┌─── \> f(x) ───┐
+input ──┼─── \> g(x) ───┼─── /> combine(a, b, c) ─── result
+        └─── \> h(x) ───┘
          (parallel)         (sequential)
 ```
 
@@ -164,7 +163,7 @@ let fetchWithFallback = (id) ->
 
 Lea provides decorators for automatic parallelization of pipeline operations:
 
-### `#parallel` - Process List Elements Concurrently
+### `#parallel` — Process List Elements Concurrently
 
 ```lea
 -- Process all elements concurrently
@@ -175,7 +174,7 @@ let pipeline = /> map(expensiveOp) #parallel
 let limitedPipeline = /> map(expensiveOp) #parallel(4)
 ```
 
-### `#batch(n)` - Split Into Parallel Batches
+### `#batch(n)` — Split Into Parallel Batches
 
 Splits list input into n chunks and processes them in parallel:
 
@@ -185,7 +184,7 @@ let pipeline = /> map(transform) #batch(4)
 range(100) /> pipeline
 ```
 
-### `#prefetch(n)` - Prefetch Ahead for I/O
+### `#prefetch(n)` — Prefetch Ahead for I/O
 
 For I/O-bound operations, prefetch n items ahead while processing:
 
@@ -195,7 +194,7 @@ let pipeline = /> fetch /> process #prefetch(3)
 urls /> pipeline
 ```
 
-### `#autoparallel` - Automatic Parallelization
+### `#autoparallel` — Automatic Parallelization
 
 Automatically detects and parallelizes operations:
 
@@ -212,12 +211,12 @@ let pipeline = /> filter((x) -> x > 0) /> map((x) -> x * 2) /> map((x) -> x + 1)
 
 pipeline.analyze()
 -- Prints analysis report with suggestions:
--- +============================================================+
--- |             PIPELINE PARALLELIZATION ANALYSIS              |
--- +============================================================+
--- | SUGGESTION: Use #parallel decorator for concurrent map     |
--- | SUGGESTION: Fuse multiple maps into single operation       |
--- +============================================================+
+-- ╔════════════════════════════════════════════════════════════╗
+-- ║             PIPELINE PARALLELIZATION ANALYSIS              ║
+-- ╠════════════════════════════════════════════════════════════╣
+-- ║ 💡 SUGGESTION: Use #parallel decorator for concurrent map  ║
+-- ║ 💡 SUGGESTION: Fuse multiple maps into single operation    ║
+-- ╚════════════════════════════════════════════════════════════╝
 
 -- Returns a record with analysis data:
 let result = pipeline.analyze()
@@ -226,7 +225,7 @@ result.stageCount    -- 3
 result.mapCount      -- 2
 ```
 
-## Spread Pipe `/>>>` - Parallel Map
+## Spread Pipe `/>>>` — Parallel Map
 
 The spread pipe maps a function over list elements in parallel:
 

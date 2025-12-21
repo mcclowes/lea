@@ -1,14 +1,11 @@
 ---
-sidebar_position: 3
+sidebar_position: 8
 ---
-
-# Cheat Sheet
-
-A quick reference for Lea syntax and builtins.
+# Lea Cheat Sheet
 
 ## Basics
 
-```lea
+```
 -- Comments start with --
 
 let x = 10              -- immutable binding
@@ -18,7 +15,7 @@ y = 30                  -- reassign mutable
 
 ## Types
 
-```lea
+```
 10                      -- Int
 3.14                    -- Float
 "hello"                 -- String
@@ -32,7 +29,7 @@ null                    -- Null
 
 ## Operators
 
-```lea
+```
 + - * / %               -- arithmetic
 == != < > <= >=         -- comparison
 ++                      -- string concat (coerces types)
@@ -41,7 +38,7 @@ null                    -- Null
 
 ## Pipes
 
-```lea
+```
 x /> f                  -- forward pipe: f(x)
 x /> f(a)               -- with args: f(x, a)
 x /> f(a, input)        -- placeholder: f(a, x)
@@ -52,7 +49,7 @@ x </ f                  -- reverse pipe
 
 ## Functions
 
-```lea
+```
 let f = (x) -> x * 2                    -- single param
 let f = (a, b) -> a + b                 -- multi param
 let f = (x = 10) -> x * 2               -- default param
@@ -95,7 +92,7 @@ and f = (a, b) -> a ++ b :: (String, String) :> String
 
 ## Lists
 
-```lea
+```
 let lst = [1, 2, 3]
 length(lst)             -- 3
 head(lst)               -- 1
@@ -111,7 +108,7 @@ range(1, 5)             -- [1, 2, 3, 4]
 
 ## List Transformations
 
-```lea
+```
 lst /> map((x) -> x * 2)
 lst /> filter((x) -> x > 2)
 lst /> reduce(0, (acc, x) -> acc + x)
@@ -123,7 +120,7 @@ lst /> filter((x, i) -> i < 2)
 
 ## Records
 
-```lea
+```
 let r = { name: "Max", age: 99 }
 r.name                  -- "Max"
 let { name, age } = r   -- destructure
@@ -132,7 +129,7 @@ let { name, age } = r   -- destructure
 
 ## Tuples
 
-```lea
+```
 let t = (10, 20)
 let (x, y) = t          -- destructure
 fst(t)                  -- 10
@@ -141,7 +138,7 @@ snd(t)                  -- 20
 
 ## Strings
 
-```lea
+```
 "a" ++ "b"              -- "ab" (concat)
 `Hello {name}`          -- template
 split(s, ",")           -- to list
@@ -153,7 +150,7 @@ chars(s)                -- ["h","i"]
 
 ## Pattern Matching
 
-```lea
+```
 match x
   | 0 -> "zero"
   | 1 -> "one"
@@ -163,7 +160,7 @@ match x
 
 ## Pipelines (First-Class)
 
-```lea
+```
 let p = /> f /> g       -- define pipeline
 x /> p                  -- apply
 p.length                -- stage count
@@ -182,7 +179,7 @@ p.concat(p2)
 
 ## Bidirectional Pipelines
 
-```lea
+```
 let p = </> f </> g
 x /> p                  -- forward
 x </ p                  -- reverse
@@ -190,7 +187,7 @@ x </ p                  -- reverse
 
 ## Reactive
 
-```lea
+```
 maybe src = [1, 2, 3]
 let r = src @> map(f) /> reduce(0, add)
 r.value                 -- compute/cache
@@ -200,7 +197,7 @@ r.value                 -- recompute
 
 ## Context System
 
-```lea
+```
 context Logger = { log: print }
 provide Logger { log: (m) -> print("[LOG] " ++ m) }
 
@@ -211,7 +208,7 @@ let f = (x) ->
 
 ## Async
 
-```lea
+```
 let f = () -> delay(100) #async
 await f()
 
@@ -224,7 +221,7 @@ p /> then((x) -> x * 2)
 
 ## I/O
 
-```lea
+```
 await readFile("path")
 await writeFile("path", "content")
 await appendFile("path", "more")
@@ -237,7 +234,7 @@ await fetch(url, { method: "POST", body: data })
 
 ## Random
 
-```lea
+```
 random()                -- [0, 1)
 randomInt(10)           -- [0, 10)
 randomInt(5, 10)        -- [5, 10)
@@ -248,7 +245,7 @@ shuffle(lst)            -- shuffled copy
 
 ## Math
 
-```lea
+```
 sqrt(x)  abs(x)  floor(x)  ceil(x)  round(x)
 min(a, b)  max(a, b)
 ```

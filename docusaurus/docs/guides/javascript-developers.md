@@ -1,7 +1,6 @@
 ---
 sidebar_position: 1
 ---
-
 # Lea for JavaScript Developers
 
 If you know JavaScript, you already know more Lea than you think! This guide maps JavaScript concepts to their Lea equivalents.
@@ -29,7 +28,7 @@ let counter = 0;           // mutable binding
 counter = 1;               // reassignment
 ```
 
-```lea
+```
 -- Lea
 let name = "Alice"         -- immutable binding
 maybe counter = 0          -- mutable binding
@@ -47,7 +46,7 @@ const add = (a, b) => a + b;
 const greet = (name = "World") => `Hello ${name}!`;
 ```
 
-```lea
+```
 -- Lea
 let double = (x) -> x * 2
 let add = (a, b) -> a + b
@@ -70,7 +69,7 @@ const process = (x) => {
 };
 ```
 
-```lea
+```
 -- Lea (indentation-based)
 let process = (x) ->
   let y = x * 2
@@ -96,7 +95,7 @@ console.log(Math.sqrt(Math.abs(-16)));
 [-16].map(Math.abs).map(Math.sqrt).forEach(console.log);
 ```
 
-```lea
+```
 -- Lea - pipes (read left to right)
 -16 /> abs /> sqrt /> print
 ```
@@ -109,7 +108,7 @@ const add = (a, b) => a + b;
 add(5, 3);  // 8
 ```
 
-```lea
+```
 -- Lea - piped value becomes first argument
 5 /> add(3)    -- becomes add(5, 3) = 8
 
@@ -127,7 +126,7 @@ nums.filter(x => x > 2);        // [3, 4, 5]
 nums.reduce((acc, x) => acc + x, 0);  // 15
 ```
 
-```lea
+```
 -- Lea (same operations, piped)
 let nums = [1, 2, 3, 4, 5]
 nums /> map((x) -> x * 2)                  -- [2, 4, 6, 8, 10]
@@ -147,7 +146,7 @@ Note: In Lea's `reduce`, the initial value comes first!
   .reduce((acc, x) => acc + x, 0);
 ```
 
-```lea
+```
 -- Lea
 [1, 2, 3, 4, 5]
   /> filter((x) -> x > 2)
@@ -163,7 +162,7 @@ Note: In Lea's `reduce`, the initial value comes first!
 // ['0: a', '1: b', '2: c']
 ```
 
-```lea
+```
 -- Lea
 ["a", "b", "c"] /> map((x, i) -> `{i}: {x}`)
 -- ["0: a", "1: b", "2: c"]
@@ -183,7 +182,7 @@ const { name, age } = user;
 const updated = { ...user, age: 31 };
 ```
 
-```lea
+```
 -- Lea (nearly identical!)
 let user = { name: "Alice", age: 30 }
 user.name  -- "Alice"
@@ -210,7 +209,7 @@ if (x > 0) {
 }
 ```
 
-```lea
+```
 -- Lea (ternary only - everything is an expression)
 let result = x > 0 ? "positive" : "non-positive"
 
@@ -233,7 +232,7 @@ async function fetchData(url) {
 const data = await fetchData("https://api.example.com");
 ```
 
-```lea
+```
 -- Lea
 let fetchData = (url) -> fetch(url) #async
 let data = await fetchData("https://api.example.com")
@@ -250,7 +249,7 @@ const results = await Promise.all([
 ]);
 ```
 
-```lea
+```
 -- Lea
 let results = [url1, url2, url3] /> parallel((url) -> fetch(url))
 ```
@@ -264,7 +263,7 @@ const b = [3, 4];
 const combined = [...a, ...b];  // [1, 2, 3, 4]
 ```
 
-```lea
+```
 -- Lea (identical!)
 let a = [1, 2]
 let b = [3, 4]
@@ -279,7 +278,7 @@ const greeting = `Hello ${name}!`;
 const combined = "Hello" + " " + "World";
 ```
 
-```lea
+```
 -- Lea
 let greeting = `Hello {name}!`           -- template string
 let combined = "Hello" ++ " " ++ "World" -- ++ for concat
@@ -299,7 +298,7 @@ function fib(n) {
 }
 ```
 
-```lea
+```
 -- Lea (trailing decorators)
 let fib = (n) -> n <= 1 ? n : fib(n - 1) + fib(n - 2) #memo
 ```
@@ -320,7 +319,7 @@ function add(a: number, b: number): number {
 }
 ```
 
-```lea
+```
 -- Lea (trailing type syntax)
 let add = (a, b) -> a + b :: (Int, Int) :> Int
 ```
@@ -339,7 +338,7 @@ let add = (a, b) -> a + b :: (Int, Int) :> Int
 
 ### Parallel Pipes
 
-```lea
+```
 -- Fan out to multiple functions, fan in to combine
 10 \> addOne \> double /> combine
 -- Runs addOne(10) and double(10) concurrently
@@ -347,7 +346,7 @@ let add = (a, b) -> a + b :: (Int, Int) :> Int
 
 ### First-Class Pipelines
 
-```lea
+```
 -- Store a pipeline as a value
 let process = /> filter((x) -> x > 0) /> map((x) -> x * 2)
 
@@ -357,7 +356,7 @@ let process = /> filter((x) -> x > 0) /> map((x) -> x * 2)
 
 ### Reversible Functions
 
-```lea
+```
 -- Define forward and reverse
 let double = (x) -> x * 2
 and double = (x) <- x / 2
@@ -368,7 +367,7 @@ and double = (x) <- x / 2
 
 ### Context System (like React Context)
 
-```lea
+```
 context Logger = { log: (msg) -> print(msg) }
 
 let greet = (name) ->

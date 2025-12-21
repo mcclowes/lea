@@ -1,24 +1,23 @@
 ---
 sidebar_position: 2
 ---
+# Getting Started with Lea
 
-# Getting Started
-
-This guide helps you install Lea and write your first program.
+Welcome to Lea, a pipe-oriented functional programming language! This guide will help you go from zero to writing your first Lea programs.
 
 ## Installation
 
-### Quick start with npx
+### Quick Start (via npx)
 
-Run Lea files directly without installing:
+No installation required! Run Lea files directly:
 
 ```bash
 npx lea-lang hello.lea
 ```
 
-### Global installation
+### Global Installation
 
-If you use Lea frequently, install it globally:
+For frequent use, install globally:
 
 ```bash
 npm install -g lea-lang
@@ -29,9 +28,7 @@ lea --repl
 lea --help
 ```
 
-### Install from source
-
-To contribute or modify Lea:
+### From Source (for development)
 
 ```bash
 # Clone the repository
@@ -45,32 +42,33 @@ npm install
 npm run lea examples/01-basics.lea
 ```
 
-## Your first Lea program
+## Your First Lea Program
 
-To create and run your first program:
+Create a file called `hello.lea`:
 
-1. Create a file called `hello.lea`:
+```
+-- This is a comment
+"Hello, World!" /> print
+```
 
-   ```lea
-   -- This is a comment
-   "Hello, World!" /> print
-   ```
+Run it:
 
-2. Run the file:
+```bash
+# Via npx (no install)
+npx lea-lang hello.lea
 
-   ```bash
-   npx lea-lang hello.lea
-   ```
+# Or if globally installed
+lea hello.lea
 
-   Or if you installed globally:
+# Or from source
+npm run lea hello.lea
+```
 
-   ```bash
-   lea hello.lea
-   ```
+Congratulations! You've written your first Lea program.
 
 ## The REPL
 
-Lea includes an interactive REPL (Read-Eval-Print Loop) for experimenting. Start it with:
+Lea includes an interactive REPL (Read-Eval-Print Loop) for experimenting:
 
 ```bash
 # Via global install
@@ -83,31 +81,31 @@ npm run repl
 You'll see:
 
 ```
-+===============================================================================+
-|                                                                               |
-|   ██╗     ███████╗ █████╗                                                     |
-|   ██║     ██╔════╝██╔══██╗    Pipe-oriented functional language               |
-|   ██║     █████╗  ███████║    Type .help for commands                         |
-|   ██║     ██╔══╝  ██╔══██║    Type .tutorial for interactive guide            |
-|   ███████╗███████╗██║  ██║                                                    |
-|   ╚══════╝╚══════╝╚═╝  ╚═╝                                                    |
-|                                                                               |
-+===============================================================================+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║   ██╗     ███████╗ █████╗                                                     ║
+║   ██║     ██╔════╝██╔══██╗    Pipe-oriented functional language               ║
+║   ██║     █████╗  ███████║    Type .help for commands                         ║
+║   ██║     ██╔══╝  ██╔══██║    Type .tutorial for interactive guide            ║
+║   ███████╗███████╗██║  ██║                                                    ║
+║   ╚══════╝╚══════╝╚═╝  ╚═╝                                                    ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
 
 lea>
 ```
 
-### Interactive tutorial
+### Interactive Tutorial
 
-To learn Lea interactively, start the built-in tutorial:
+The best way to learn Lea is through the built-in tutorial:
 
 ```
 lea> .tutorial
 ```
 
-### REPL commands
+This will guide you through the basics step by step.
 
-The REPL supports the following commands:
+### REPL Commands
 
 | Command | Description |
 |---------|-------------|
@@ -122,11 +120,11 @@ The REPL supports the following commands:
 | `.reset` | Reset interpreter state |
 | `.exit` | Exit the REPL |
 
-## Core concepts
+## Core Concepts
 
-### Variables and bindings
+### 1. Variables and Bindings
 
-```lea
+```
 -- Immutable binding (cannot be changed)
 let name = "Alice"
 let age = 30
@@ -136,21 +134,23 @@ maybe counter = 0
 counter = 1    -- OK
 ```
 
-### The pipe operator
+### 2. The Pipe Operator
 
-The pipe operator `/>` passes a value as the first argument to a function:
+The pipe operator `/>` is the heart of Lea. It passes a value as the first argument to the next function:
 
-```lea
+```
 -- Instead of: print(sqrt(16))
 -- Write:
 16 /> sqrt /> print    -- Output: 4
 ```
 
-### Functions
+This reads naturally: "Take 16, get its square root, then print it."
+
+### 3. Functions
 
 Functions use arrow syntax:
 
-```lea
+```
 -- Single parameter
 let double = (x) -> x * 2
 
@@ -162,9 +162,9 @@ let add = (a, b) -> a + b
 5 /> add(3) /> print      -- Output: 8
 ```
 
-### Lists and transformations
+### 4. Lists and Transformations
 
-```lea
+```
 let numbers = [1, 2, 3, 4, 5]
 
 -- Map: transform each element
@@ -177,9 +177,9 @@ numbers /> filter((x) -> x > 2)   -- [3, 4, 5]
 numbers /> reduce(0, (acc, x) -> acc + x)  -- 15
 ```
 
-### Records
+### 5. Records (Objects)
 
-```lea
+```
 let user = {
   name: "Alice",
   age: 30,
@@ -193,11 +193,11 @@ let { name, age } = user
 name /> print         -- Output: Alice
 ```
 
-## Build a data processing pipeline
+## Building Your First Real Program
 
-This example shows a complete data processing pipeline:
+Let's build a simple data processing pipeline:
 
-```lea
+```
 -- sample-data.lea
 
 -- Define some data
@@ -221,15 +221,14 @@ users /> processUsers /> print
 -- Output: Alice, Diana
 ```
 
-## Next steps
+## Next Steps
 
-To continue learning Lea:
+1. **Explore the examples**: `examples/` directory has progressive examples
+2. **Read the docs**: `docs/` has detailed documentation on each feature
+3. **Try the REPL**: Use `.examples` to see runnable code snippets
+4. **Check the cheat sheet**: `docs/CHEATSHEET.md` for quick reference
 
-- Explore the `examples/` directory for progressive examples
-- Use `.examples` in the REPL to see runnable code snippets
-- Check the [Cheat Sheet](./cheatsheet.md) for quick reference
-
-### Learning path
+### Learning Path
 
 | Level | Topics | Examples |
 |-------|--------|----------|
@@ -238,11 +237,11 @@ To continue learning Lea:
 | Advanced | Async, pipelines, pattern matching | 07-16 |
 | Expert | Reactives, reversibles, complex examples | 17-20, complex/ |
 
-## Common patterns
+## Common Patterns
 
-### Pipeline composition
+### Pipeline Composition
 
-```lea
+```
 -- Define reusable pipelines
 let normalize = /> trim /> toLowerCase
 let validate = /> filter((x) -> length(x) > 0)
@@ -253,9 +252,9 @@ let processInput = /> normalize /> validate
 -- ["hello", "world"]
 ```
 
-### Error handling with decorators
+### Error Handling with Decorators
 
-```lea
+```
 -- Retry failed operations
 let fetchData = (url) -> fetch(url) #retry(3)
 
@@ -263,9 +262,9 @@ let fetchData = (url) -> fetch(url) #retry(3)
 let fib = (n) -> n <= 1 ? n : fib(n-1) + fib(n-2) #memo
 ```
 
-### Async operations
+### Async Operations
 
-```lea
+```
 -- Sequential async
 let data = await readFile("config.json")
 data /> print
@@ -275,28 +274,23 @@ let urls = ["url1", "url2", "url3"]
 urls /> parallel((url) -> fetch(url)) /> print
 ```
 
-## Get help
+## Getting Help
 
-For help while using Lea:
+- **REPL Help**: Type `.help` in the REPL
+- **Topic Help**: `.help pipes`, `.help functions`, etc.
+- **Examples**: `.examples` shows runnable snippets
+- **Tutorial**: `.tutorial` for interactive learning
+- **Documentation**: See `docs/` directory
 
-- Type `.help` in the REPL for command reference
-- Type `.help pipes` or `.help functions` for topic-specific help
-- Type `.examples` to see runnable code snippets
-- Type `.tutorial` to start the interactive tutorial
+## VS Code Support
 
-## VS Code support
+Install the Lea VS Code extension for syntax highlighting:
 
-To install syntax highlighting for VS Code:
+```bash
+cd vscode-lea
+npm install
+npm run package
+# Install the generated .vsix file
+```
 
-1. Navigate to the extension directory:
-   ```bash
-   cd vscode-lea
-   ```
-
-2. Build the extension:
-   ```bash
-   npm install
-   npm run package
-   ```
-
-3. Install the generated `.vsix` file in VS Code.
+Happy coding with Lea!

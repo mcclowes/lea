@@ -1,15 +1,8 @@
-import { Lexer, LexerError } from '../src/lexer';
+import { LexerError } from '../src/lexer';
 import { TokenType } from '../src/token';
+import { tokenize, getTokenTypes } from './helpers';
 
 describe('Lexer', () => {
-  const tokenize = (source: string) => {
-    const lexer = new Lexer(source);
-    return lexer.scanTokens();
-  };
-
-  const getTokenTypes = (source: string) => {
-    return tokenize(source).map(t => t.type);
-  };
 
   describe('literals', () => {
     it('should tokenize integers', () => {

@@ -78,6 +78,7 @@
     "test:integration": "for f in tests/*.lea; do echo \"\\n=== $f ===\"; ts-node src/index.ts \"$f\"; done",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "docs:sync": "node scripts/sync-docs.js",
     "vscode:package": "cd vscode-lea && npm run build && vsce package",
     "vscode:publish": "cd vscode-lea && npm run build && vsce publish",
     "prepare": "husky"

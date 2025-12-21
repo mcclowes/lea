@@ -1,34 +1,13 @@
-import { Lexer } from '../src/lexer';
-import { Parser } from '../src/parser';
 import {
-  Interpreter,
-  LeaValue,
   LeaFunction,
   LeaRecord,
   LeaTuple,
   LeaPipeline,
   RuntimeError,
 } from '../src/interpreter';
+import { evaluate, evaluateAsync } from './helpers';
 
 describe('Interpreter', () => {
-  const evaluate = (source: string, strictMode = false): LeaValue => {
-    const lexer = new Lexer(source);
-    const tokens = lexer.scanTokens();
-    const parser = new Parser(tokens);
-    const program = parser.parse();
-    const interpreter = new Interpreter(strictMode || program.strict);
-    return interpreter.interpret(program);
-  };
-
-  const evaluateAsync = async (source: string): Promise<LeaValue> => {
-    const lexer = new Lexer(source);
-    const tokens = lexer.scanTokens();
-    const parser = new Parser(tokens);
-    const program = parser.parse();
-    const interpreter = new Interpreter(program.strict);
-    return interpreter.interpretAsync(program);
-  };
-
   describe('literals', () => {
     it('should evaluate number literals', () => {
       expect(evaluate('42')).toBe(42);

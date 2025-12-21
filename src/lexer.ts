@@ -1,11 +1,6 @@
 import { Token, TokenType, TokenLiteral, KEYWORDS, createToken } from "./token";
-
-export class LexerError extends Error {
-  constructor(message: string, public line: number, public column: number) {
-    super(`[${line}:${column}] ${message}`);
-    this.name = "LexerError";
-  }
-}
+import { LexerError } from "./error-types";
+export { LexerError } from "./error-types";
 
 export class Lexer {
   private source: string;

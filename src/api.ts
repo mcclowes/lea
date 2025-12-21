@@ -67,6 +67,48 @@ function jsToLea(value: unknown): LeaValue {
   return value as LeaValue;
 }
 
+// ============================================================================
+// Internal Helpers - Shared execution pipeline components
+// ============================================================================
+
+/**
+ * Build Lea source code from a template literal with placeholders
+ */
+function buildTemplateSource(
+  strings: TemplateStringsArray,
+  values: unknown[]
+): { source: string; placeholders: string[] } {
+  const placeholders = values.map((_, i) => `__lea_interop_${i}__`);
+  let source = "";
+  for (let i = 0; i < strings.length; i++) {
+    source += strings[i];
+    if (i < placeholders.length) {
+      source += placeholders[i];
+    }
+  }
+  return { source, placeholders };
+}
+
+/**
+ * Parse source code and create an interpreter with injected values
+ */
+function prepareInterpreter(
+  source: string,
+  bindings: Array<[string, unknown]>
+): { interpreter: Interpreter; program: ReturnType<Parser["parse"]> } {
+  const lexer = new Lexer(source);
+  const tokens = lexer.scanTokens();
+  const parser = new Parser(tokens);
+  const program = parser.parse();
+  const interpreter = new Interpreter(false);
+
+  for (const [name, value] of bindings) {
+    interpreter.defineGlobal(name, jsToLea(value));
+  }
+
+  return { interpreter, program };
+}
+
 /**
  * Convert a Lea value to a JavaScript value
  */
@@ -125,34 +167,10 @@ function leaToJs(value: LeaValue): unknown {
  * ```
  */
 export function lea(strings: TemplateStringsArray, ...values: unknown[]): unknown {
-  // Generate unique placeholder names for interpolated values
-  const placeholders: string[] = values.map((_, i) => `__lea_interop_${i}__`);
-
-  // Build the Lea source by interleaving strings and placeholder names
-  let source = "";
-  for (let i = 0; i < strings.length; i++) {
-    source += strings[i];
-    if (i < placeholders.length) {
-      source += placeholders[i];
-    }
-  }
-
-  // Parse and run
-  const lexer = new Lexer(source);
-  const tokens = lexer.scanTokens();
-  const parser = new Parser(tokens);
-  const program = parser.parse();
-
-  const interpreter = new Interpreter(false);
-
-  // Inject interpolated values into the environment
-  for (let i = 0; i < values.length; i++) {
-    interpreter.defineGlobal(placeholders[i], jsToLea(values[i]));
-  }
-
-  // Execute and return result
-  const result = interpreter.interpret(program);
-  return leaToJs(result);
+  const { source, placeholders } = buildTemplateSource(strings, values);
+  const bindings: Array<[string, unknown]> = placeholders.map((p, i) => [p, values[i]]);
+  const { interpreter, program } = prepareInterpreter(source, bindings);
+  return leaToJs(interpreter.interpret(program));
 }
 
 /**
@@ -167,29 +185,10 @@ export function lea(strings: TemplateStringsArray, ...values: unknown[]): unknow
  * ```
  */
 export async function leaAsync(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown> {
-  const placeholders: string[] = values.map((_, i) => `__lea_interop_${i}__`);
-
-  let source = "";
-  for (let i = 0; i < strings.length; i++) {
-    source += strings[i];
-    if (i < placeholders.length) {
-      source += placeholders[i];
-    }
-  }
-
-  const lexer = new Lexer(source);
-  const tokens = lexer.scanTokens();
-  const parser = new Parser(tokens);
-  const program = parser.parse();
-
-  const interpreter = new Interpreter(false);
-
-  for (let i = 0; i < values.length; i++) {
-    interpreter.defineGlobal(placeholders[i], jsToLea(values[i]));
-  }
-
-  const result = await interpreter.interpretAsync(program);
-  return leaToJs(result);
+  const { source, placeholders } = buildTemplateSource(strings, values);
+  const bindings: Array<[string, unknown]> = placeholders.map((p, i) => [p, values[i]]);
+  const { interpreter, program } = prepareInterpreter(source, bindings);
+  return leaToJs(await interpreter.interpretAsync(program));
 }
 
 /**
@@ -211,39 +210,16 @@ export function createLea(bindings: Record<string, unknown> = {}) {
      * Run Lea code synchronously
      */
     run(source: string): unknown {
-      const lexer = new Lexer(source);
-      const tokens = lexer.scanTokens();
-      const parser = new Parser(tokens);
-      const program = parser.parse();
-
-      const interpreter = new Interpreter(false);
-
-      // Inject bindings
-      for (const [name, value] of Object.entries(bindings)) {
-        interpreter.defineGlobal(name, jsToLea(value));
-      }
-
-      const result = interpreter.interpret(program);
-      return leaToJs(result);
+      const { interpreter, program } = prepareInterpreter(source, Object.entries(bindings));
+      return leaToJs(interpreter.interpret(program));
     },
 
     /**
      * Run Lea code asynchronously (supports await)
      */
     async runAsync(source: string): Promise<unknown> {
-      const lexer = new Lexer(source);
-      const tokens = lexer.scanTokens();
-      const parser = new Parser(tokens);
-      const program = parser.parse();
-
-      const interpreter = new Interpreter(false);
-
-      for (const [name, value] of Object.entries(bindings)) {
-        interpreter.defineGlobal(name, jsToLea(value));
-      }
-
-      const result = await interpreter.interpretAsync(program);
-      return leaToJs(result);
+      const { interpreter, program } = prepareInterpreter(source, Object.entries(bindings));
+      return leaToJs(await interpreter.interpretAsync(program));
     },
 
     /**

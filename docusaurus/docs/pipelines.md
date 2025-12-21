@@ -1,8 +1,7 @@
 ---
-sidebar_position: 7
+sidebar_position: 5
 ---
-
-# Pipelines
+# Pipelines in Lea
 
 Pipelines are first-class values in Lea, enabling composition, inspection, and reuse of data transformation chains.
 
@@ -50,7 +49,7 @@ p.visualize()
 Outputs an ASCII diagram:
 
 ```
---- double --- addOne --- toString ---
+─── double ─── addOne ─── toString ───
 ```
 
 ## Pipeline Composition

@@ -1,4 +1,6 @@
 import { Token, TokenType } from "../token";
+import { ParseError } from "../error-types";
+export { ParseError } from "../error-types";
 
 /**
  * Parser context containing state and utility methods.
@@ -92,9 +94,3 @@ export function createParserContext(tokens: Token[]): ParserContext {
   return ctx;
 }
 
-export class ParseError extends Error {
-  constructor(message: string, public token: Token) {
-    super(`[${token.line}:${token.column}] ${message}`);
-    this.name = "ParseError";
-  }
-}
