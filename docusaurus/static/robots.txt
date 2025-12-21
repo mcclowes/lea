@@ -1,0 +1,6 @@
+# Allow all crawlers to index the site
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://lea.mcclowes.com/sitemap.xml
