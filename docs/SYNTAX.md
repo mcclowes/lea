@@ -1,4 +1,4 @@
-# Lea Syntax Guide
+# Lea syntax guide
 
 A comprehensive guide to Lea's syntax.
 
@@ -16,7 +16,7 @@ maybe counter = 0       -- Mutable binding
 counter = 5             -- Reassign mutable binding
 ```
 
-## Primitive Types
+## Primitive types
 
 ```lea
 42                      -- Number (Int)
@@ -38,7 +38,7 @@ The `++` operator concatenates strings with automatic type coercion:
 "Done: " ++ true        -- "Done: true"
 ```
 
-### Template Strings
+### Template strings
 
 Use backticks with `{expr}` for interpolation:
 
@@ -90,14 +90,14 @@ let config = {
 
 ## Destructuring
 
-### Record Destructuring
+### Record destructuring
 
 ```lea
 let user = { name: "Alice", age: 99 }
 let { name, age } = user    -- Extracts name and age
 ```
 
-### Tuple/List Destructuring
+### Tuple/list destructuring
 
 ```lea
 let point = (10, 20)
@@ -106,9 +106,9 @@ let (x, y) = point          -- x=10, y=20
 let (first, second) = [1, 2, 3]  -- Works with lists too
 ```
 
-## Spread Operator
+## Spread operator
 
-### In Lists
+### In lists
 
 ```lea
 let a = [1, 2, 3]
@@ -116,7 +116,7 @@ let b = [4, 5, 6]
 let combined = [...a, ...b]     -- [1, 2, 3, 4, 5, 6]
 ```
 
-### In Records
+### In records
 
 ```lea
 let base = { x: 1, y: 2 }
@@ -126,14 +126,14 @@ let updated = { ...base, y: 20 }    -- { x: 1, y: 20 }
 
 ## Functions
 
-### Basic Syntax
+### Basic syntax
 
 ```lea
 let double = (x) -> x * 2
 let add = (a, b) -> a + b
 ```
 
-### Multi-Statement Bodies
+### Multi-statement bodies
 
 ```lea
 let process = (x) ->
@@ -142,7 +142,7 @@ let process = (x) ->
   z
 ```
 
-### Default Parameters
+### Default parameters
 
 ```lea
 let greet = (name, greeting = "Hello") -> greeting ++ " " ++ name
@@ -150,13 +150,13 @@ greet("World")              -- "Hello World"
 greet("World", "Hi")        -- "Hi World"
 ```
 
-### Ignored Parameters
+### Ignored parameters
 
 ```lea
 let ignoreSecond = (x, _) -> x
 ```
 
-### Type Annotations
+### Type annotations
 
 ```lea
 -- Single parameter
@@ -176,7 +176,7 @@ let maybe = (x) -> x :: ?Int :> ?Int
 let sumList = (nums) -> reduce(nums, 0, (acc, x) -> acc + x) :: [Int] :> Int
 ```
 
-### Runtime Type Validation
+### Runtime type validation
 
 Use `#validate` decorator for explicit validation:
 
@@ -184,7 +184,7 @@ Use `#validate` decorator for explicit validation:
 let safe = (x) -> x * 2 :: Int :> Int #validate
 ```
 
-### Strict Mode
+### Strict mode
 
 Enable automatic type validation for all typed functions with `#strict` pragma or CLI flag:
 
@@ -204,7 +204,7 @@ npm run lea file.lea --strict
 npm run repl -- --strict
 ```
 
-### Function Overloading
+### Function overloading
 
 Use `and` to add overloads:
 
@@ -216,7 +216,7 @@ add(1, 2)           -- 3 (Int version)
 add("a", "b")       -- "ab" (String version)
 ```
 
-### Early Return
+### Early return
 
 Use the `return` keyword for early return from functions:
 
@@ -280,7 +280,7 @@ let classify = (n) ->
   else "zero"
 ```
 
-## Pattern Matching
+## Pattern matching
 
 ```lea
 let describe = (x) -> match x
@@ -298,7 +298,7 @@ let double = (x) -> match x
 
 ## Pipes
 
-### Basic Pipe `/>`
+### Basic pipe `/>`
 
 ```lea
 16 /> sqrt                  -- sqrt(16) = 4
@@ -306,7 +306,7 @@ let double = (x) -> match x
 5 /> add(3, input)          -- add(3, 5) - placeholder controls position
 ```
 
-### Pipe Chains
+### Pipe chains
 
 ```lea
 [1, 2, 3, 4, 5]
@@ -315,7 +315,7 @@ let double = (x) -> match x
   /> reduce(0, (acc, x) -> acc + x)
 ```
 
-### Spread Pipe `/>>>`
+### Spread pipe `/>>>`
 
 Maps over each element:
 
@@ -325,7 +325,7 @@ Maps over each element:
 ["a", "b"] />>>(x, i) -> `{i}: {x}`     -- ["0: a", "1: b"]
 ```
 
-### Parallel Pipe `\>`
+### Parallel pipe `\>`
 
 See [CONCURRENCY.md](./CONCURRENCY.md) for details.
 
@@ -336,7 +336,7 @@ value
   /> (a, b) -> a + b
 ```
 
-### Reverse Pipe `</`
+### Reverse pipe `</`
 
 For reversible functions:
 
@@ -348,7 +348,7 @@ and double = (x) <- x / 2
 10 </ double    -- 5 (reverse)
 ```
 
-## Pipelines (First-Class)
+## Pipelines (first-class)
 
 See [PIPELINES.md](./PIPELINES.md) for details.
 
@@ -368,7 +368,7 @@ let retryable = (x) -> riskyOp(x) #retry(3)
 
 See [BUILTINS.md](./BUILTINS.md#decorators) for all available decorators.
 
-## Context System
+## Context system
 
 Dependency injection:
 
