@@ -1,7 +1,6 @@
 ---
-sidebar_position: 6
+sidebar_position: 4
 ---
-
 # Built-in Functions & Decorators
 
 ## Math Functions
@@ -10,43 +9,43 @@ sidebar_position: 6
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `sqrt(x)` | Square root | `sqrt(16)` -> `4` |
-| `abs(x)` | Absolute value | `abs(-5)` -> `5` |
-| `floor(x)` | Round down | `floor(3.7)` -> `3` |
-| `ceil(x)` | Round up | `ceil(3.2)` -> `4` |
-| `round(x)` | Round to nearest | `round(3.5)` -> `4` |
-| `trunc(x)` | Truncate decimal | `trunc(3.9)` -> `3` |
-| `sign(x)` | Sign of number | `sign(-5)` -> `-1` |
-| `min(a, b, ...)` | Minimum value | `min(3, 7, 1)` -> `1` |
-| `max(a, b, ...)` | Maximum value | `max(3, 7, 1)` -> `7` |
-| `clamp(x, min, max)` | Clamp to range | `clamp(15, 0, 10)` -> `10` |
-| `lerp(a, b, t)` | Linear interpolation | `lerp(0, 10, 0.5)` -> `5` |
+| `sqrt(x)` | Square root | `sqrt(16)` → `4` |
+| `abs(x)` | Absolute value | `abs(-5)` → `5` |
+| `floor(x)` | Round down | `floor(3.7)` → `3` |
+| `ceil(x)` | Round up | `ceil(3.2)` → `4` |
+| `round(x)` | Round to nearest | `round(3.5)` → `4` |
+| `trunc(x)` | Truncate decimal | `trunc(3.9)` → `3` |
+| `sign(x)` | Sign of number | `sign(-5)` → `-1` |
+| `min(a, b, ...)` | Minimum value | `min(3, 7, 1)` → `1` |
+| `max(a, b, ...)` | Maximum value | `max(3, 7, 1)` → `7` |
+| `clamp(x, min, max)` | Clamp to range | `clamp(15, 0, 10)` → `10` |
+| `lerp(a, b, t)` | Linear interpolation | `lerp(0, 10, 0.5)` → `5` |
 
 ### Powers & Logarithms
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `pow(base, exp)` | Power | `pow(2, 3)` -> `8` |
-| `exp(x)` | e^x | `exp(1)` -> `2.718...` |
-| `log(x)` | Natural log | `log(E())` -> `1` |
-| `log(x, base)` | Log with base | `log(8, 2)` -> `3` |
-| `log10(x)` | Log base 10 | `log10(100)` -> `2` |
-| `log2(x)` | Log base 2 | `log2(8)` -> `3` |
+| `pow(base, exp)` | Power | `pow(2, 3)` → `8` |
+| `exp(x)` | e^x | `exp(1)` → `2.718...` |
+| `log(x)` | Natural log | `log(E())` → `1` |
+| `log(x, base)` | Log with base | `log(8, 2)` → `3` |
+| `log10(x)` | Log base 10 | `log10(100)` → `2` |
+| `log2(x)` | Log base 2 | `log2(8)` → `3` |
 
 ### Trigonometry
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `sin(x)` | Sine (radians) | `sin(PI() / 2)` -> `1` |
-| `cos(x)` | Cosine (radians) | `cos(0)` -> `1` |
-| `tan(x)` | Tangent (radians) | `tan(0)` -> `0` |
-| `asin(x)` | Arc sine | `asin(1)` -> `1.57...` |
-| `acos(x)` | Arc cosine | `acos(1)` -> `0` |
-| `atan(x)` | Arc tangent | `atan(1)` -> `0.785...` |
-| `atan2(y, x)` | Arc tangent of y/x | `atan2(1, 1)` -> `0.785...` |
-| `sinh(x)` | Hyperbolic sine | `sinh(0)` -> `0` |
-| `cosh(x)` | Hyperbolic cosine | `cosh(0)` -> `1` |
-| `tanh(x)` | Hyperbolic tangent | `tanh(0)` -> `0` |
+| `sin(x)` | Sine (radians) | `sin(PI() / 2)` → `1` |
+| `cos(x)` | Cosine (radians) | `cos(0)` → `1` |
+| `tan(x)` | Tangent (radians) | `tan(0)` → `0` |
+| `asin(x)` | Arc sine | `asin(1)` → `1.57...` |
+| `acos(x)` | Arc cosine | `acos(1)` → `0` |
+| `atan(x)` | Arc tangent | `atan(1)` → `0.785...` |
+| `atan2(y, x)` | Arc tangent of y/x | `atan2(1, 1)` → `0.785...` |
+| `sinh(x)` | Hyperbolic sine | `sinh(0)` → `0` |
+| `cosh(x)` | Hyperbolic cosine | `cosh(0)` → `1` |
+| `tanh(x)` | Hyperbolic tangent | `tanh(0)` → `0` |
 
 ### Constants
 
@@ -61,31 +60,31 @@ sidebar_position: 6
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `random()` | Random float in [0, 1) | `random()` -> `0.742...` |
-| `randomInt(max)` | Random int in [0, max) | `randomInt(10)` -> `7` |
-| `randomInt(min, max)` | Random int in [min, max) | `randomInt(5, 10)` -> `8` |
-| `randomFloat(max)` | Random float in [0, max) | `randomFloat(10)` -> `7.3...` |
-| `randomFloat(min, max)` | Random float in [min, max) | `randomFloat(5, 10)` -> `8.2...` |
-| `randomChoice(list)` | Random element from list | `randomChoice([1,2,3])` -> `2` |
-| `shuffle(list)` | Shuffled copy (Fisher-Yates) | `shuffle([1,2,3])` -> `[3,1,2]` |
+| `random()` | Random float in [0, 1) | `random()` → `0.742...` |
+| `randomInt(max)` | Random int in [0, max) | `randomInt(10)` → `7` |
+| `randomInt(min, max)` | Random int in [min, max) | `randomInt(5, 10)` → `8` |
+| `randomFloat(max)` | Random float in [0, max) | `randomFloat(10)` → `7.3...` |
+| `randomFloat(min, max)` | Random float in [min, max) | `randomFloat(5, 10)` → `8.2...` |
+| `randomChoice(list)` | Random element from list | `randomChoice([1,2,3])` → `2` |
+| `shuffle(list)` | Shuffled copy (Fisher-Yates) | `shuffle([1,2,3])` → `[3,1,2]` |
 
 ## List Functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `length(list)` | Number of elements | `length([1,2,3])` -> `3` |
-| `head(list)` | First element | `head([1,2,3])` -> `1` |
-| `tail(list)` | All except first | `tail([1,2,3])` -> `[2,3]` |
-| `push(list, item)` | Append item | `push([1,2], 3)` -> `[1,2,3]` |
-| `concat(a, b)` | Join two lists | `concat([1,2], [3,4])` -> `[1,2,3,4]` |
-| `reverse(list)` | Reverse order | `reverse([1,2,3])` -> `[3,2,1]` |
-| `zip(a, b)` | Pair elements | `zip([1,2], ["a","b"])` -> `[[1,"a"],[2,"b"]]` |
-| `isEmpty(list)` | Check if empty | `isEmpty([])` -> `true` |
-| `range(start, end)` | Generate range | `range(1, 4)` -> `[1,2,3]` |
-| `take(list, n)` | First n elements | `take([1,2,3,4], 2)` -> `[1,2]` |
-| `at(list, index)` | Element at index | `at([1,2,3], 1)` -> `2` |
-| `partition(list, fn)` | Split by predicate | `partition([1,2,3], (x) -> x > 1)` -> `[[2,3], [1]]` |
-| `iterations(n, fn)` | Apply fn n times | `iterations(3, (x) -> x * 2)(1)` -> `8` |
+| `length(list)` | Number of elements | `length([1,2,3])` → `3` |
+| `head(list)` | First element | `head([1,2,3])` → `1` |
+| `tail(list)` | All except first | `tail([1,2,3])` → `[2,3]` |
+| `push(list, item)` | Append item | `push([1,2], 3)` → `[1,2,3]` |
+| `concat(a, b)` | Join two lists | `concat([1,2], [3,4])` → `[1,2,3,4]` |
+| `reverse(list)` | Reverse order | `reverse([1,2,3])` → `[3,2,1]` |
+| `zip(a, b)` | Pair elements | `zip([1,2], ["a","b"])` → `[[1,"a"],[2,"b"]]` |
+| `isEmpty(list)` | Check if empty | `isEmpty([])` → `true` |
+| `range(start, end)` | Generate range | `range(1, 4)` → `[1,2,3]` |
+| `take(list, n)` | First n elements | `take([1,2,3,4], 2)` → `[1,2]` |
+| `at(list, index)` | Element at index | `at([1,2,3], 1)` → `2` |
+| `partition(list, fn)` | Split by predicate | `partition([1,2,3], (x) -> x > 1)` → `[[2,3], [1]]` |
+| `iterations(n, fn)` | Apply fn n times | `iterations(3, (x) -> x * 2)(1)` → `8` |
 
 ### Higher-Order List Functions
 
@@ -106,48 +105,48 @@ All callbacks receive `(element, index)`:
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `fst(tuple)` | First element | `fst((1, 2))` -> `1` |
-| `snd(tuple)` | Second element | `snd((1, 2))` -> `2` |
+| `fst(tuple)` | First element | `fst((1, 2))` → `1` |
+| `snd(tuple)` | Second element | `snd((1, 2))` → `2` |
 
 ## String Functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `split(str, delim)` | Split string | `split("a,b,c", ",")` -> `["a","b","c"]` |
-| `lines(str)` | Split by newlines | `lines("a\nb")` -> `["a","b"]` |
-| `charAt(str, i)` | Character at index | `charAt("hello", 1)` -> `"e"` |
-| `chars(str)` | Split to chars | `chars("hi")` -> `["h","i"]` |
-| `join(list, delim?)` | Join to string | `join(["a","b"], "-")` -> `"a-b"` |
-| `toUpperCase(str)` | Convert to uppercase | `toUpperCase("hello")` -> `"HELLO"` |
-| `toLowerCase(str)` | Convert to lowercase | `toLowerCase("HELLO")` -> `"hello"` |
-| `replace(str, search, repl)` | Replace all occurrences | `replace("aXbXc", "X", "-")` -> `"a-b-c"` |
-| `replaceFirst(str, search, repl)` | Replace first occurrence | `replaceFirst("aXbXc", "X", "-")` -> `"a-bXc"` |
-| `startsWith(str, prefix)` | Check prefix | `startsWith("hello", "he")` -> `true` |
-| `endsWith(str, suffix)` | Check suffix | `endsWith("hello", "lo")` -> `true` |
-| `padEnd(str, len, char?)` | Pad end | `padEnd("hi", 5)` -> `"hi   "` |
-| `padStart(str, len, char?)` | Pad start | `padStart("hi", 5)` -> `"   hi"` |
-| `trim(str)` | Remove whitespace | `trim("  hi  ")` -> `"hi"` |
-| `trimEnd(str)` | Remove trailing ws | `trimEnd("hi  ")` -> `"hi"` |
-| `indexOf(str, search)` | Find index | `indexOf("hello", "l")` -> `2` |
-| `includes(str, item)` | Contains substring | `includes("hello", "ell")` -> `true` |
-| `repeat(str, n)` | Repeat string | `repeat("ab", 3)` -> `"ababab"` |
-| `slice(str, start, end?)` | Extract substring | `slice("hello", 1, 3)` -> `"el"` |
-| `toString(value)` | Convert to string | `toString(42)` -> `"42"` |
+| `split(str, delim)` | Split string | `split("a,b,c", ",")` → `["a","b","c"]` |
+| `lines(str)` | Split by newlines | `lines("a\nb")` → `["a","b"]` |
+| `charAt(str, i)` | Character at index | `charAt("hello", 1)` → `"e"` |
+| `chars(str)` | Split to chars | `chars("hi")` → `["h","i"]` |
+| `join(list, delim?)` | Join to string | `join(["a","b"], "-")` → `"a-b"` |
+| `toUpperCase(str)` | Convert to uppercase | `toUpperCase("hello")` → `"HELLO"` |
+| `toLowerCase(str)` | Convert to lowercase | `toLowerCase("HELLO")` → `"hello"` |
+| `replace(str, search, repl)` | Replace all occurrences | `replace("aXbXc", "X", "-")` → `"a-b-c"` |
+| `replaceFirst(str, search, repl)` | Replace first occurrence | `replaceFirst("aXbXc", "X", "-")` → `"a-bXc"` |
+| `startsWith(str, prefix)` | Check prefix | `startsWith("hello", "he")` → `true` |
+| `endsWith(str, suffix)` | Check suffix | `endsWith("hello", "lo")` → `true` |
+| `padEnd(str, len, char?)` | Pad end | `padEnd("hi", 5)` → `"hi   "` |
+| `padStart(str, len, char?)` | Pad start | `padStart("hi", 5)` → `"   hi"` |
+| `trim(str)` | Remove whitespace | `trim("  hi  ")` → `"hi"` |
+| `trimEnd(str)` | Remove trailing ws | `trimEnd("hi  ")` → `"hi"` |
+| `indexOf(str, search)` | Find index | `indexOf("hello", "l")` → `2` |
+| `includes(str, item)` | Contains substring | `includes("hello", "ell")` → `true` |
+| `repeat(str, n)` | Repeat string | `repeat("ab", 3)` → `"ababab"` |
+| `slice(str, start, end?)` | Extract substring | `slice("hello", 1, 3)` → `"el"` |
+| `toString(value)` | Convert to string | `toString(42)` → `"42"` |
 
 ## Set Operations (on Lists)
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `listSet(list)` | Unique elements | `listSet([1,1,2])` -> `[1,2]` |
-| `setAdd(list, item)` | Add if not present | `setAdd([1,2], 3)` -> `[1,2,3]` |
-| `setHas(list, item)` | Check membership | `setHas([1,2], 2)` -> `true` |
+| `listSet(list)` | Unique elements | `listSet([1,1,2])` → `[1,2]` |
+| `setAdd(list, item)` | Add if not present | `setAdd([1,2], 3)` → `[1,2,3]` |
+| `setHas(list, item)` | Check membership | `setHas([1,2], 2)` → `true` |
 
 ## JSON Functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `parseJson(str)` | Parse JSON string | `parseJson('{"a":1}')` -> `{a: 1}` |
-| `toJson(value)` | Convert to JSON string | `toJson({a: 1})` -> `'{"a":1}'` |
+| `parseJson(str)` | Parse JSON string | `parseJson('{"a":1}')` → `{a: 1}` |
+| `toJson(value)` | Convert to JSON string | `toJson({a: 1})` → `'{"a":1}'` |
 | `toJson(value, indent)` | Convert with indentation | `toJson({a: 1}, 2)` |
 | `prettyJson(value)` | Pretty-print (2 spaces) | `prettyJson({a: 1})` |
 
@@ -171,8 +170,8 @@ user /> prettyJson /> print
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `now()` | Current timestamp (ms) | `now()` -> `1702500000000` |
-| `today()` | Current date record | `today()` -> `{year: 2024, ...}` |
+| `now()` | Current timestamp (ms) | `now()` → `1702500000000` |
+| `today()` | Current date record | `today()` → `{year: 2024, ...}` |
 | `date(timestamp)` | Date from timestamp | `date(1702500000000)` |
 | `date(str)` | Parse date string | `date("2024-01-15")` |
 | `date(y, m, d, ...)` | Create from components | `date(2024, 1, 15)` |
@@ -226,7 +225,7 @@ today() /> formatDate("locale") /> print
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `print(value)` | Print and return value | `print("hi")` -> prints "hi", returns "hi" |
+| `print(value)` | Print and return value | `print("hi")` → prints "hi", returns "hi" |
 
 ## Async Functions
 

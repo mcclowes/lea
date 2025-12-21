@@ -5,6 +5,9 @@
  * as well as error classes and the Environment class for lexical scoping.
  */
 
+export { RuntimeError, ReturnValue, SourceLocation } from "../error-types";
+import { RuntimeError, SourceLocation } from "../error-types";
+
 import {
   Expr,
   FunctionParam,
@@ -129,35 +132,6 @@ export type LeaValue =
   | LeaReactiveValue
   | null;
 
-/**
- * Source location information for error reporting
- */
-export interface SourceLocation {
-  line: number;
-  column: number;
-  file?: string;
-}
-
-export class RuntimeError extends Error {
-  location?: SourceLocation;
-
-  constructor(message: string, location?: SourceLocation) {
-    const locationPrefix = location
-      ? `[${location.file ? location.file + ":" : ""}${location.line}:${location.column}] `
-      : "";
-    super(`${locationPrefix}${message}`);
-    this.name = "RuntimeError";
-    this.location = location;
-  }
-}
-
-// Used for early return - not a real error, just control flow
-export class ReturnValue extends Error {
-  constructor(public value: LeaValue) {
-    super("Return");
-    this.name = "ReturnValue";
-  }
-}
 
 export class Environment {
   private values = new Map<string, { value: LeaValue; mutable: boolean }>();

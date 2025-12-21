@@ -1,7 +1,6 @@
 ---
 sidebar_position: 2
 ---
-
 # Lea for Python Developers
 
 If you know Python, you'll find Lea familiar yet refreshingly different. This guide maps Python concepts to Lea.
@@ -29,7 +28,7 @@ counter = 0
 counter = 1         # reassignment OK
 ```
 
-```lea
+```
 -- Lea
 let name = "Alice"     -- immutable (preferred)
 maybe counter = 0      -- mutable when needed
@@ -51,7 +50,7 @@ def greet(name="World"):
     return f"Hello {name}!"
 ```
 
-```lea
+```
 -- Lea
 let double = (x) -> x * 2
 
@@ -70,7 +69,7 @@ def process(x):
     return z
 ```
 
-```lea
+```
 -- Lea (indentation-based, like Python!)
 let process = (x) ->
   let y = x * 2
@@ -82,7 +81,7 @@ No `return` needed for the final expression - it's automatically returned!
 
 ### Early Return
 
-```lea
+```
 -- Lea (explicit return for early exit)
 let clamp = (x) ->
   let doubled = x * 2
@@ -105,7 +104,7 @@ x = math.sqrt(x)
 print(x)
 ```
 
-```lea
+```
 -- Lea - pipes (read left to right, like a shell pipeline)
 -16 /> abs /> sqrt /> print
 ```
@@ -121,7 +120,7 @@ def add(a, b):
 add(5, 3)  # 8
 ```
 
-```lea
+```
 -- Lea - piped value becomes first argument
 5 /> add(3)    -- becomes add(5, 3) = 8
 
@@ -146,7 +145,7 @@ from functools import reduce
 reduce(lambda acc, x: acc + x, nums, 0)
 ```
 
-```lea
+```
 -- Lea (piped operations)
 let nums = [1, 2, 3, 4, 5]
 nums /> map((x) -> x * 2)                  -- [2, 4, 6, 8, 10]
@@ -166,7 +165,7 @@ result = [x * 2 for x in result]
 total = sum(result)
 ```
 
-```lea
+```
 -- Lea (clean pipeline)
 [1, 2, 3, 4, 5]
   /> filter((x) -> x > 2)
@@ -182,7 +181,7 @@ for i, x in enumerate(['a', 'b', 'c']):
     print(f"{i}: {x}")
 ```
 
-```lea
+```
 -- Lea (index is second argument in callbacks)
 ["a", "b", "c"] /> map((x, i) -> `{i}: {x}`) /> print
 -- ["0: a", "1: b", "2: c"]
@@ -201,7 +200,7 @@ match user:
         print(name)
 ```
 
-```lea
+```
 -- Lea
 let user = { name: "Alice", age: 30 }
 user.name  -- "Alice"
@@ -219,7 +218,7 @@ user = {"name": "Alice", "age": 30}
 updated = {**user, "age": 31}
 ```
 
-```lea
+```
 -- Lea (identical spread syntax!)
 let user = { name: "Alice", age: 30 }
 let updated = { ...user, age: 31 }
@@ -233,7 +232,7 @@ point = (10, 20)
 x, y = point  # unpacking
 ```
 
-```lea
+```
 -- Lea
 let point = (10, 20)
 let (x, y) = point  -- destructuring
@@ -254,7 +253,7 @@ else:
     result = "zero"
 ```
 
-```lea
+```
 -- Lea (ternary)
 let result = x > 0 ? "positive" : "non-positive"
 
@@ -282,7 +281,7 @@ match value:
         result = "other"
 ```
 
-```lea
+```
 -- Lea
 let result = match value
   | 0 -> "zero"
@@ -302,7 +301,7 @@ async def fetch_data(url):
 data = await fetch_data("https://api.example.com")
 ```
 
-```lea
+```
 -- Lea
 let fetchData = (url) -> fetch(url) #async
 let data = await fetchData("https://api.example.com")
@@ -319,7 +318,7 @@ results = await asyncio.gather(
 )
 ```
 
-```lea
+```
 -- Lea
 let results = [url1, url2, url3] /> parallel((url) -> fetch(url))
 ```
@@ -333,7 +332,7 @@ count = 42
 message = f"Hello {name}! Count: {count}"
 ```
 
-```lea
+```
 -- Lea template strings (backticks with {})
 let name = "World"
 let count = 42
@@ -347,13 +346,13 @@ let message = `Hello {name}! Count: {count}`
 result = "Hello" + " " + "World"
 ```
 
-```lea
+```
 -- Lea (use ++ for concatenation)
 let result = "Hello" ++ " " ++ "World"
 ```
 
 Note: Lea uses `++` for string concatenation, which also auto-coerces types:
-```lea
+```
 "Answer: " ++ 42  -- "Answer: 42"
 ```
 
@@ -370,7 +369,7 @@ def fib(n):
     return n if n <= 1 else fib(n - 1) + fib(n - 2)
 ```
 
-```lea
+```
 -- Lea (trailing decorator syntax)
 let fib = (n) -> n <= 1 ? n : fib(n - 1) + fib(n - 2) #memo
 ```
@@ -391,7 +390,7 @@ def add(a: int, b: int) -> int:
     return a + b
 ```
 
-```lea
+```
 -- Lea (trailing type syntax)
 let add = (a, b) -> a + b :: (Int, Int) :> Int
 ```
@@ -424,7 +423,7 @@ let add = (a, b) -> a + b :: (Int, Int) :> Int
 
 ### Parallel Pipes
 
-```lea
+```
 -- Fan out to multiple functions, combine results
 10 \> addOne \> double /> combine
 -- Runs addOne(10) and double(10) concurrently
@@ -432,7 +431,7 @@ let add = (a, b) -> a + b :: (Int, Int) :> Int
 
 ### First-Class Pipelines
 
-```lea
+```
 -- Store a pipeline as a value (like a partial application)
 let process = /> filter((x) -> x > 0) /> map((x) -> x * 2)
 
@@ -442,7 +441,7 @@ let process = /> filter((x) -> x > 0) /> map((x) -> x * 2)
 
 ### Reversible Functions
 
-```lea
+```
 -- Define forward and reverse transformations
 let double = (x) -> x * 2
 and double = (x) <- x / 2
@@ -453,7 +452,7 @@ and double = (x) <- x / 2
 
 ### Context System (Dependency Injection)
 
-```lea
+```
 -- Like a simpler version of dependency injection
 context Logger = { log: (msg) -> print(msg) }
 
@@ -499,7 +498,7 @@ users = [
 print(process_users(users))
 ```
 
-```lea
+```
 -- Lea
 let processUsers = (users) ->
   users

@@ -1,29 +1,8 @@
-import { Lexer } from '../src/lexer';
-import { Parser, ParseError } from '../src/parser';
-import { Program, Expr, Stmt } from '../src/ast';
+import { ParseError } from '../src/parser';
+import { Expr } from '../src/ast';
+import { parse, parseExpr, parseStmt } from './helpers';
 
 describe('Parser', () => {
-  const parse = (source: string): Program => {
-    const lexer = new Lexer(source);
-    const tokens = lexer.scanTokens();
-    const parser = new Parser(tokens);
-    return parser.parse();
-  };
-
-  const parseExpr = (source: string): Expr => {
-    const program = parse(source);
-    const stmt = program.statements[0];
-    if (stmt.kind === 'ExprStmt') {
-      return stmt.expression;
-    }
-    throw new Error('Expected ExprStmt');
-  };
-
-  const parseStmt = (source: string): Stmt => {
-    const program = parse(source);
-    return program.statements[0];
-  };
-
   describe('literals', () => {
     it('should parse number literals', () => {
       const expr = parseExpr('42');
