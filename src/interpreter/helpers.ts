@@ -21,17 +21,32 @@ import {
   LeaRecord,
   RuntimeError,
   Environment,
+  LeaKind,
 } from "./types";
 import type { InterpreterContext } from "./context";
 
+/**
+ * Fast kind extraction - avoids repeated null/typeof/in checks.
+ * Returns the kind string if val is a Lea object, or null otherwise.
+ * This is the hot path for type checking.
+ */
+export function getKind(val: LeaValue): LeaKind | null {
+  // Fast path: primitives and null
+  if (val === null || typeof val !== "object") return null;
+  // Fast path: arrays (most common non-primitive)
+  if (Array.isArray(val)) return null;
+  // Object with kind property
+  return (val as { kind: LeaKind }).kind;
+}
+
 // Type guard for LeaPromise
 export function isLeaPromise(val: LeaValue): val is LeaPromise {
-  return val !== null && typeof val === "object" && "kind" in val && val.kind === "promise";
+  return getKind(val) === "promise";
 }
 
 // Type guard for LeaParallelResult
 export function isParallelResult(val: LeaValue): val is LeaParallelResult {
-  return val !== null && typeof val === "object" && "kind" in val && val.kind === "parallel_result";
+  return getKind(val) === "parallel_result";
 }
 
 // Type guard for parallel pipeline stages
@@ -54,47 +69,47 @@ export function getStageExpr(stage: AnyPipelineStage): Expr {
 
 // Type guard for LeaOverloadSet
 export function isOverloadSet(val: LeaValue): val is LeaOverloadSet {
-  return val !== null && typeof val === "object" && "kind" in val && val.kind === "overload_set";
+  return getKind(val) === "overload_set";
 }
 
 // Type guard for LeaPipeline
 export function isPipeline(val: LeaValue): val is LeaPipeline {
-  return val !== null && typeof val === "object" && "kind" in val && val.kind === "pipeline";
+  return getKind(val) === "pipeline";
 }
 
 // Type guard for LeaBidirectionalPipeline
 export function isBidirectionalPipeline(val: LeaValue): val is LeaBidirectionalPipeline {
-  return val !== null && typeof val === "object" && "kind" in val && val.kind === "bidirectional_pipeline";
+  return getKind(val) === "bidirectional_pipeline";
 }
 
 // Type guard for LeaReversibleFunction
 export function isReversibleFunction(val: LeaValue): val is LeaReversibleFunction {
-  return val !== null && typeof val === "object" && "kind" in val && val.kind === "reversible_function";
+  return getKind(val) === "reversible_function";
 }
 
 // Type guard for LeaFunction
 export function isLeaFunction(val: LeaValue): val is LeaFunction {
-  return val !== null && typeof val === "object" && "kind" in val && val.kind === "function";
+  return getKind(val) === "function";
 }
 
 // Type guard for LeaBuiltin
 export function isLeaBuiltin(val: LeaValue): val is LeaBuiltin {
-  return val !== null && typeof val === "object" && "kind" in val && val.kind === "builtin";
+  return getKind(val) === "builtin";
 }
 
 // Type guard for LeaTuple
 export function isLeaTuple(val: LeaValue): val is LeaTuple {
-  return val !== null && typeof val === "object" && "kind" in val && val.kind === "tuple";
+  return getKind(val) === "tuple";
 }
 
 // Type guard for LeaReactiveValue
 export function isReactiveValue(val: LeaValue): val is LeaReactiveValue {
-  return val !== null && typeof val === "object" && "kind" in val && val.kind === "reactive";
+  return getKind(val) === "reactive";
 }
 
 // Type guard for LeaRecord
 export function isRecord(val: LeaValue): val is LeaRecord {
-  return val !== null && typeof val === "object" && "kind" in val && val.kind === "record";
+  return getKind(val) === "record";
 }
 
 // Convenience aliases
@@ -144,15 +159,21 @@ function getInterpreter(): InterpreterContext {
 }
 
 // Coerce value to callable function
+// Uses getKind for fast type dispatch
 export function asFunction(val: LeaValue): (args: LeaValue[]) => LeaValue {
-  if (val && typeof val === "object" && "kind" in val && val.kind === "function") {
+  const kind = getKind(val);
+
+  if (kind === "function") {
     const fn = val as LeaFunction;
     return (args: LeaValue[]) => {
       const env = new Environment(fn.closure);
-      fn.params.forEach((param, i) => {
-        if (param.name === "_") return; // Skip ignored parameters
-        env.define(param.name, args[i] ?? null, false);
-      });
+      const params = fn.params;
+      for (let i = 0; i < params.length; i++) {
+        const param = params[i];
+        if (param.name !== "_") {
+          env.define(param.name, args[i] ?? null, false);
+        }
+      }
       // Note: This is a simplified version - the real implementation uses the Interpreter
       // This is primarily used by builtin functions like map/filter/reduce
       // Use cached interpreter instance to avoid repeated construction
@@ -166,7 +187,8 @@ export function asFunction(val: LeaValue): (args: LeaValue[]) => LeaValue {
       return interp.evaluateExpr(fn.body, env);
     };
   }
-  if (val && typeof val === "object" && "kind" in val && val.kind === "builtin") {
+
+  if (kind === "builtin") {
     const builtin = val as LeaBuiltin;
     return (args: LeaValue[]) => {
       const result = builtin.fn(args);
@@ -177,6 +199,7 @@ export function asFunction(val: LeaValue): (args: LeaValue[]) => LeaValue {
       return result;
     };
   }
+
   throw new RuntimeError("Expected function");
 }
 
@@ -188,34 +211,38 @@ export function isTruthy(val: LeaValue): boolean {
 }
 
 // Convert value to string for display
+// Uses switch for faster dispatch on kind
 export function stringify(val: LeaValue): string {
   if (val === null) return "null";
   if (Array.isArray(val)) return `[${val.map(stringify).join(", ")}]`;
-  if (typeof val === "object" && "kind" in val) {
-    if (val.kind === "promise") return "<promise>";
-    if (val.kind === "parallel_result") return `[${val.values.map(stringify).join(", ")}]`;
-    if (val.kind === "tuple") return `(${val.elements.map(stringify).join(", ")})`;
-    if (val.kind === "record") {
-      const entries = Array.from(val.fields.entries())
+
+  const kind = getKind(val);
+  if (kind === null) return String(val);
+
+  switch (kind) {
+    case "promise":
+      return "<promise>";
+    case "parallel_result":
+      return `[${(val as LeaParallelResult).values.map(stringify).join(", ")}]`;
+    case "tuple":
+      return `(${(val as LeaTuple).elements.map(stringify).join(", ")})`;
+    case "record": {
+      const entries = Array.from((val as LeaRecord).fields.entries())
         .map(([k, v]) => `${k}: ${stringify(v)}`)
         .join(", ");
       return `{ ${entries} }`;
     }
-    if (val.kind === "pipeline") {
-      return `<pipeline[${val.stages.length}]>`;
-    }
-    if (val.kind === "bidirectional_pipeline") {
-      return `<bidirectional_pipeline[${val.stages.length}]>`;
-    }
-    if (val.kind === "reversible_function") {
+    case "pipeline":
+      return `<pipeline[${(val as LeaPipeline).stages.length}]>`;
+    case "bidirectional_pipeline":
+      return `<bidirectional_pipeline[${(val as LeaBidirectionalPipeline).stages.length}]>`;
+    case "reversible_function":
       return "<reversible_function>";
-    }
-    if (val.kind === "reactive") {
-      return `<reactive[${val.sourceName}]>`;
-    }
-    return "<function>";
+    case "reactive":
+      return `<reactive[${(val as LeaReactiveValue).sourceName}]>`;
+    default:
+      return "<function>";
   }
-  return String(val);
 }
 
 // Convert a LeaValue to a string for concatenation with ++
@@ -226,36 +253,51 @@ export function coerceToString(val: LeaValue): string {
   if (typeof val === "number") return String(val);
   if (typeof val === "boolean") return String(val);
   if (Array.isArray(val)) return `[${val.map(coerceToString).join(", ")}]`;
-  if (typeof val === "object" && "kind" in val) {
-    if (val.kind === "promise") return "<promise>";
-    if (val.kind === "parallel_result") return `[${val.values.map(coerceToString).join(", ")}]`;
-    if (val.kind === "tuple") return `(${val.elements.map(coerceToString).join(", ")})`;
-    if (val.kind === "record") {
-      const entries = Array.from(val.fields.entries())
+
+  const kind = getKind(val);
+  if (kind === null) return String(val);
+
+  switch (kind) {
+    case "promise":
+      return "<promise>";
+    case "parallel_result":
+      return `[${(val as LeaParallelResult).values.map(coerceToString).join(", ")}]`;
+    case "tuple":
+      return `(${(val as LeaTuple).elements.map(coerceToString).join(", ")})`;
+    case "record": {
+      const entries = Array.from((val as LeaRecord).fields.entries())
         .map(([k, v]) => `${k}: ${coerceToString(v)}`)
         .join(", ");
       return `{ ${entries} }`;
     }
-    return "<function>";
+    default:
+      return "<function>";
   }
-  return String(val);
 }
 
 // Get the Lea type name for a value
+// Uses switch for faster dispatch on kind
 export function getLeaType(val: LeaValue): string {
   if (val === null) return "null";
   if (typeof val === "number") return "int";
   if (typeof val === "string") return "string";
   if (typeof val === "boolean") return "bool";
   if (Array.isArray(val)) return "list";
-  if (typeof val === "object" && "kind" in val) {
-    if (val.kind === "function") return "function";
-    if (val.kind === "builtin") return "function";
-    if (val.kind === "reversible_function") return "function";
-    if (val.kind === "tuple") return "tuple";
-    if (val.kind === "pipeline") return "pipeline";
-    if (val.kind === "bidirectional_pipeline") return "pipeline";
-    if (val.kind === "reactive") return "reactive";
+
+  const kind = getKind(val);
+  switch (kind) {
+    case "function":
+    case "builtin":
+    case "reversible_function":
+      return "function";
+    case "tuple":
+      return "tuple";
+    case "pipeline":
+    case "bidirectional_pipeline":
+      return "pipeline";
+    case "reactive":
+      return "reactive";
+    default:
+      return "unknown";
   }
-  return "unknown";
 }

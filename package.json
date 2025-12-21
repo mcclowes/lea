@@ -80,6 +80,7 @@
     "test:coverage": "jest --coverage",
     "vscode:package": "cd vscode-lea && npm run build && vsce package",
     "vscode:publish": "cd vscode-lea && npm run build && vsce publish",
+    "benchmark": "ts-node benchmarks/run.ts",
     "prepare": "husky"
   },
   "jest": {
