@@ -77,6 +77,11 @@ export function parsePrimary(ctx: ParserContext): Expr {
     return placeholderExpr();
   }
 
+  // Underscore '_' is also a placeholder for piped values in function arguments
+  if (ctx.match(TokenType.UNDERSCORE)) {
+    return placeholderExpr();
+  }
+
   if (ctx.match(TokenType.IDENTIFIER)) {
     return identifier(ctx.previous().lexeme);
   }
@@ -234,9 +239,11 @@ export function parseRecord(ctx: ParserContext): Expr {
 export function parsePipelineLiteral(ctx: ParserContext, firstIsSpread: boolean = false): Expr {
   const stages: AnyPipelineStage[] = [];
 
-  // Set inPipeOperand flag so function bodies don't consume pipes
+  // Set inPipeOperand and inPipelineLiteral flags so function bodies don't consume pipes
   const wasInPipeOperand = ctx.inPipeOperand;
+  const wasInPipelineLiteral = ctx.inPipelineLiteral;
   ctx.setInPipeOperand(true);
+  ctx.setInPipelineLiteral(true);
 
   // Parse the first stage (already consumed the initial /> or />>>)
   ctx.skipNewlines();
@@ -311,8 +318,9 @@ export function parsePipelineLiteral(ctx: ParserContext, firstIsSpread: boolean 
     break;
   }
 
-  // Restore inPipeOperand flag
+  // Restore flags
   ctx.setInPipeOperand(wasInPipeOperand);
+  ctx.setInPipelineLiteral(wasInPipelineLiteral);
 
   // Parse optional type signature: :: [Int] or :: [Int] /> [Int]
   let typeSignature: PipelineTypeSignature | undefined;
