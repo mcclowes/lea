@@ -2,7 +2,7 @@
 
 Lea provides concurrency primitives that embrace functional purity and pipe composition.
 
-## Core Concepts
+## Core concepts
 
 1. **Functional purity** — Parallelism is safe because of immutability by default
 2. **Pipe composition** — Async flows compose naturally with pipes
@@ -26,7 +26,7 @@ fetchUser("123")
   /> print
 ```
 
-## Parallel Pipe Operator `\>`
+## Parallel pipe operator `\>`
 
 The `\>` operator fans out a value to multiple parallel computations. Consecutive `\>` operations execute concurrently:
 
@@ -38,7 +38,7 @@ let result = input
 -- Returns [result1, result2, result3] after all complete
 ```
 
-### Fan-Out / Fan-In Pattern
+### Fan-out / fan-in pattern
 
 Combine parallel pipes with regular pipes for fan-in:
 
@@ -63,7 +63,7 @@ input ──┼─── \> g(x) ───┼─── /> combine(a, b, c) ─�
          (parallel)         (sequential)
 ```
 
-### Nested Pipes in Parallel Branches
+### Nested pipes in parallel branches
 
 Branches can contain nested pipes (must be more indented):
 
@@ -76,7 +76,7 @@ value
   /> combine
 ```
 
-## `parallel` Builtin
+## `parallel` builtin
 
 For parallel mapping over collections:
 
@@ -92,7 +92,7 @@ let results = urls /> parallel(fetch, { limit: 3 })
 
 The callback receives `(element, index)` like other collection functions.
 
-## `race` Builtin
+## `race` builtin
 
 Returns the first result to complete:
 
@@ -103,7 +103,7 @@ let fastest = [
 ] /> race
 ```
 
-## `then` Builtin
+## `then` builtin
 
 Chain promise transformations:
 
@@ -116,7 +116,7 @@ fetchUser("123")
 
 ## Examples
 
-### Parallel Data Fetching
+### Parallel data fetching
 
 ```lea
 let loadDashboard = (userId) ->
@@ -132,7 +132,7 @@ let loadDashboard = (userId) ->
 #async
 ```
 
-### Concurrent API Calls with Limit
+### Concurrent API calls with limit
 
 ```lea
 let fetchAllUsers = (ids) ->
@@ -145,7 +145,7 @@ await fetchAllUsers(["1", "2", "3", "4", "5"])
   /> print
 ```
 
-### Racing Multiple Sources
+### Racing multiple sources
 
 ```lea
 let fetchWithFallback = (id) ->
@@ -156,11 +156,11 @@ let fetchWithFallback = (id) ->
 #async
 ```
 
-## Pipeline Parallelization Decorators
+## Pipeline parallelization decorators
 
 Lea provides decorators for automatic parallelization of pipeline operations:
 
-### `#parallel` — Process List Elements Concurrently
+### `#parallel` — Process list elements concurrently
 
 ```lea
 -- Process all elements concurrently
@@ -171,7 +171,7 @@ let pipeline = /> map(expensiveOp) #parallel
 let limitedPipeline = /> map(expensiveOp) #parallel(4)
 ```
 
-### `#batch(n)` — Split Into Parallel Batches
+### `#batch(n)` — Split into parallel batches
 
 Splits list input into n chunks and processes them in parallel:
 
@@ -181,7 +181,7 @@ let pipeline = /> map(transform) #batch(4)
 range(100) /> pipeline
 ```
 
-### `#prefetch(n)` — Prefetch Ahead for I/O
+### `#prefetch(n)` — Prefetch ahead for I/O
 
 For I/O-bound operations, prefetch n items ahead while processing:
 
@@ -191,7 +191,7 @@ let pipeline = /> fetch /> process #prefetch(3)
 urls /> pipeline
 ```
 
-### `#autoparallel` — Automatic Parallelization
+### `#autoparallel` — Automatic parallelization
 
 Automatically detects and parallelizes operations:
 
@@ -199,7 +199,7 @@ Automatically detects and parallelizes operations:
 let pipeline = /> map(fn) /> filter(pred) #autoparallel
 ```
 
-## Pipeline Analysis
+## Pipeline analysis
 
 Pipelines have an `.analyze()` method that suggests parallelization opportunities:
 
@@ -222,7 +222,7 @@ result.stageCount    -- 3
 result.mapCount      -- 2
 ```
 
-## Spread Pipe `/>>>` — Parallel Map
+## Spread pipe `/>>>` — Parallel map
 
 The spread pipe maps a function over list elements in parallel:
 
@@ -234,36 +234,36 @@ The spread pipe maps a function over list elements in parallel:
 ["a", "b", "c"] />>>(x, i) -> `{i}: {x}`  -- ["0: a", "1: b", "2: c"]
 ```
 
-## Best Practices
+## Best practices
 
-### 1. Use `#parallel` for CPU-bound List Processing
+### 1. Use `#parallel` for CPU-bound list processing
 
 ```lea
 let processList = /> map(heavyComputation) #parallel(8)
 ```
 
-### 2. Use `#batch` for Memory-Efficient Parallel Processing
+### 2. Use `#batch` for memory-efficient parallel processing
 
 ```lea
 -- Process large dataset in 4 batches to avoid memory pressure
 let processLarge = /> map(transform) #batch(4)
 ```
 
-### 3. Use `#prefetch` for I/O-Bound Operations
+### 3. Use `#prefetch` for I/O-bound operations
 
 ```lea
 -- Keep the network busy by prefetching
 let fetchAll = /> fetch /> parse #prefetch(3)
 ```
 
-### 4. Analyze Before Optimizing
+### 4. Analyze before optimizing
 
 ```lea
 -- Let Lea suggest optimizations
 myPipeline.analyze()
 ```
 
-### 5. Filter Before Map
+### 5. Filter before map
 
 ```lea
 -- More efficient: filter first, then map

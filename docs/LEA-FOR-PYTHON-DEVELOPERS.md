@@ -1,8 +1,8 @@
-# Lea for Python Developers
+# Lea for Python developers
 
 If you know Python, you'll find Lea familiar yet refreshingly different. This guide maps Python concepts to Lea.
 
-## Quick Reference
+## Quick reference
 
 | Python | Lea |
 |--------|-----|
@@ -56,7 +56,7 @@ let add = (a, b) -> a + b
 let greet = (name = "World") -> `Hello {name}!`
 ```
 
-### Multi-line Functions
+### Multi-line functions
 
 ```python
 # Python
@@ -76,7 +76,7 @@ let process = (x) ->
 
 No `return` needed for the final expression - it's automatically returned!
 
-### Early Return
+### Early return
 
 ```
 -- Lea (explicit return for early exit)
@@ -86,7 +86,7 @@ let clamp = (x) ->
   doubled + 1
 ```
 
-## The Pipe Operator
+## The pipe operator
 
 This is the key concept! Instead of nested function calls, Lea uses pipes:
 
@@ -108,7 +108,7 @@ print(x)
 
 Think of it like Unix pipes: `echo -16 | abs | sqrt | print`
 
-### Passing Arguments Through Pipes
+### Passing arguments through pipes
 
 ```python
 # Python
@@ -125,7 +125,7 @@ add(5, 3)  # 8
 5 /> add(3, input)    -- becomes add(3, 5) = 8
 ```
 
-## List Operations
+## List operations
 
 Python's list comprehensions and functional tools map directly to Lea:
 
@@ -152,7 +152,7 @@ nums /> reduce(0, (acc, x) -> acc + x)     -- 15
 
 Note: Lea's `reduce` takes the initial value first, not last!
 
-### Chaining Operations
+### Chaining operations
 
 ```python
 # Python
@@ -170,7 +170,7 @@ total = sum(result)
   /> reduce(0, (acc, x) -> acc + x)
 ```
 
-### Enumerate Equivalent
+### Enumerate equivalent
 
 ```python
 # Python
@@ -184,7 +184,7 @@ for i, x in enumerate(['a', 'b', 'c']):
 -- ["0: a", "1: b", "2: c"]
 ```
 
-## Dictionaries (Records)
+## Dictionaries (records)
 
 ```python
 # Python
@@ -261,7 +261,7 @@ let result = match x
   | "zero"
 ```
 
-## Pattern Matching
+## Pattern matching
 
 Python 3.10+ has pattern matching, and Lea's is similar:
 
@@ -287,7 +287,7 @@ let result = match value
   | "other"
 ```
 
-## Async/Await
+## Async/await
 
 ```python
 # Python
@@ -304,7 +304,7 @@ let fetchData = (url) -> fetch(url) #async
 let data = await fetchData("https://api.example.com")
 ```
 
-### asyncio.gather Equivalent
+### asyncio.gather equivalent
 
 ```python
 # Python
@@ -320,7 +320,7 @@ results = await asyncio.gather(
 let results = [url1, url2, url3] /> parallel((url) -> fetch(url))
 ```
 
-## String Formatting
+## String formatting
 
 ```python
 # Python f-strings
@@ -336,7 +336,7 @@ let count = 42
 let message = `Hello {name}! Count: {count}`
 ```
 
-### String Concatenation
+### String concatenation
 
 ```python
 # Python
@@ -379,7 +379,7 @@ Available decorators:
 - `#validate` - runtime type checking
 - `#async` - mark as async
 
-## Type Hints
+## Type hints
 
 ```python
 # Python
@@ -392,7 +392,7 @@ def add(a: int, b: int) -> int:
 let add = (a, b) -> a + b :: (Int, Int) :> Int
 ```
 
-## List Operations Reference
+## List operations reference
 
 | Python | Lea |
 |--------|-----|
@@ -406,7 +406,7 @@ let add = (a, b) -> a + b :: (Int, Int) :> Int
 | `range(1, 5)` | `range(1, 5)` -- [1, 2, 3, 4] |
 | `zip(a, b)` | `zip(a, b)` |
 
-## What Lea Doesn't Have
+## What Lea doesn't have
 
 - `class` - use records and functions
 - `for`/`while` loops - use `map`, `filter`, `reduce`, recursion
@@ -416,9 +416,9 @@ let add = (a, b) -> a + b :: (Int, Int) :> Int
 - `import` - not yet implemented
 - List slicing syntax `[1:3]` - use `slice(lst, 1, 3)`
 
-## Lea-Specific Features
+## Lea-specific features
 
-### Parallel Pipes
+### Parallel pipes
 
 ```
 -- Fan out to multiple functions, combine results
@@ -426,7 +426,7 @@ let add = (a, b) -> a + b :: (Int, Int) :> Int
 -- Runs addOne(10) and double(10) concurrently
 ```
 
-### First-Class Pipelines
+### First-class pipelines
 
 ```
 -- Store a pipeline as a value (like a partial application)
@@ -436,7 +436,7 @@ let process = /> filter((x) -> x > 0) /> map((x) -> x * 2)
 [1, -2, 3] /> process  -- [2, 6]
 ```
 
-### Reversible Functions
+### Reversible functions
 
 ```
 -- Define forward and reverse transformations
@@ -447,7 +447,7 @@ and double = (x) <- x / 2
 10 </ double  -- 5  (reverse)
 ```
 
-### Context System (Dependency Injection)
+### Context system (dependency injection)
 
 ```
 -- Like a simpler version of dependency injection
@@ -469,7 +469,7 @@ let greet = (name) ->
 | Decorators `@` | Trailing `#` decorators |
 | `*args, **kwargs` | Spread operator |
 
-## Migration Tips
+## Migration tips
 
 1. **Think in pipelines**: Instead of `result = f(g(h(x)))`, write `x /> h /> g /> f`
 2. **Embrace immutability**: Use `let` by default, `maybe` only when needed
