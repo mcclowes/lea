@@ -85,6 +85,7 @@ const config = {
         logo: {
           alt: 'Lea Logo',
           src: 'img/logo.svg',
+          srcDark: 'img/logo-dark.svg',
         },
         items: [
           {

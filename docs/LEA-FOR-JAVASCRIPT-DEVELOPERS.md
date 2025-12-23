@@ -1,8 +1,8 @@
-# Lea for JavaScript Developers
+# Lea for JavaScript developers
 
 If you know JavaScript, you already know more Lea than you think! This guide maps JavaScript concepts to their Lea equivalents.
 
-## Quick Reference
+## Quick reference
 
 | JavaScript | Lea |
 |------------|-----|
@@ -55,7 +55,7 @@ Key differences:
 - Template strings use `{expr}` instead of `${expr}`
 - Parentheses always required around parameters
 
-### Multi-line Functions
+### Multi-line functions
 
 ```javascript
 // JavaScript
@@ -80,7 +80,7 @@ let process = (x) ->
   y + 1
 ```
 
-## The Pipe Operator
+## The pipe operator
 
 This is the biggest paradigm shift! Instead of nested function calls or method chaining, Lea uses pipes:
 
@@ -97,7 +97,7 @@ console.log(Math.sqrt(Math.abs(-16)));
 -16 /> abs /> sqrt /> print
 ```
 
-### Passing Arguments Through Pipes
+### Passing arguments through pipes
 
 ```javascript
 // JavaScript
@@ -113,7 +113,7 @@ add(5, 3);  // 8
 5 /> add(3, input)    -- becomes add(3, 5) = 8
 ```
 
-## Array Methods
+## Array methods
 
 ```javascript
 // JavaScript
@@ -133,7 +133,7 @@ nums /> reduce(0, (acc, x) -> acc + x)     -- 15
 
 Note: In Lea's `reduce`, the initial value comes first!
 
-### Chaining Operations
+### Chaining operations
 
 ```javascript
 // JavaScript
@@ -151,7 +151,7 @@ Note: In Lea's `reduce`, the initial value comes first!
   /> reduce(0, (acc, x) -> acc + x)
 ```
 
-### Index Access in Callbacks
+### Index access in callbacks
 
 ```javascript
 // JavaScript
@@ -165,7 +165,7 @@ Note: In Lea's `reduce`, the initial value comes first!
 -- ["0: a", "1: b", "2: c"]
 ```
 
-## Objects (Records)
+## Objects (records)
 
 ```javascript
 // JavaScript
@@ -217,7 +217,7 @@ let result = match x
   | "zero"
 ```
 
-## Async/Await
+## Async/await
 
 ```javascript
 // JavaScript
@@ -235,7 +235,7 @@ let fetchData = (url) -> fetch(url) #async
 let data = await fetchData("https://api.example.com")
 ```
 
-### Promise.all Equivalent
+### Promise.all equivalent
 
 ```javascript
 // JavaScript
@@ -251,7 +251,7 @@ const results = await Promise.all([
 let results = [url1, url2, url3] /> parallel((url) -> fetch(url))
 ```
 
-## Spread Operator
+## Spread operator
 
 ```javascript
 // JavaScript
@@ -267,7 +267,7 @@ let b = [3, 4]
 let combined = [...a, ...b]  -- [1, 2, 3, 4]
 ```
 
-## String Operations
+## String operations
 
 ```javascript
 // JavaScript
@@ -307,7 +307,7 @@ Available decorators:
 - `#retry(n)` - retry on failure
 - `#validate` - runtime type checking
 
-## Type Annotations
+## Type annotations
 
 ```javascript
 // TypeScript
@@ -321,7 +321,7 @@ function add(a: number, b: number): number {
 let add = (a, b) -> a + b :: (Int, Int) :> Int
 ```
 
-## What Lea Doesn't Have
+## What Lea doesn't have
 
 - `class` - use records and functions
 - `this` - use closures or context system
@@ -331,9 +331,9 @@ let add = (a, b) -> a + b :: (Int, Int) :> Int
 - Semicolons - not needed
 - `var` - doesn't exist
 
-## Lea-Specific Features
+## Lea-specific features
 
-### Parallel Pipes
+### Parallel pipes
 
 ```
 -- Fan out to multiple functions, fan in to combine
@@ -341,7 +341,7 @@ let add = (a, b) -> a + b :: (Int, Int) :> Int
 -- Runs addOne(10) and double(10) concurrently
 ```
 
-### First-Class Pipelines
+### First-class pipelines
 
 ```
 -- Store a pipeline as a value
@@ -351,7 +351,7 @@ let process = /> filter((x) -> x > 0) /> map((x) -> x * 2)
 [1, -2, 3] /> process  -- [2, 6]
 ```
 
-### Reversible Functions
+### Reversible functions
 
 ```
 -- Define forward and reverse
@@ -362,7 +362,7 @@ and double = (x) <- x / 2
 10 </ double  -- 5  (reverse)
 ```
 
-### Context System (like React Context)
+### Context system (like React Context)
 
 ```
 context Logger = { log: (msg) -> print(msg) }
@@ -372,7 +372,7 @@ let greet = (name) ->
   Logger.log("Hello " ++ name)
 ```
 
-## Migration Tips
+## Migration tips
 
 1. **Think in pipes**: Instead of `f(g(h(x)))`, write `x /> h /> g /> f`
 2. **Everything is an expression**: No statements, everything returns a value

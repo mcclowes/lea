@@ -2,7 +2,7 @@
 
 Pipelines are first-class values in Lea, enabling composition, inspection, and reuse of data transformation chains.
 
-## Creating Pipelines
+## Creating pipelines
 
 Define a pipeline with `/>` at the start:
 
@@ -16,7 +16,7 @@ Apply a pipeline by piping into it:
 5 /> processNumbers     -- 11
 ```
 
-### Starting with Spread Pipe
+### Starting with spread pipe
 
 Pipelines can also start with `/>>>` when the first operation should map over list elements:
 
@@ -25,7 +25,7 @@ let doubleAll = />>> double /> sum
 [1, 2, 3] /> doubleAll  -- 12 (2+4+6)
 ```
 
-## Pipeline Properties
+## Pipeline properties
 
 ```lea
 let p = /> double /> addOne /> toString
@@ -49,7 +49,7 @@ Outputs an ASCII diagram:
 ─── double ─── addOne ─── toString ───
 ```
 
-## Pipeline Composition
+## Pipeline composition
 
 Pipelines compose naturally:
 
@@ -59,22 +59,22 @@ let pipeB = /> map((x) -> x * 2)
 let combined = /> pipeA /> pipeB
 ```
 
-## Pipeline Algebra
+## Pipeline algebra
 
-### Identity and Empty
+### Identity and empty
 
 ```lea
 5 /> Pipeline.identity      -- 5 (passes through unchanged)
 5 /> Pipeline.empty         -- 5 (no stages)
 ```
 
-### Creating from Functions
+### Creating from functions
 
 ```lea
 let p = Pipeline.from([fn1, fn2, fn3])
 ```
 
-### Stage Access
+### Stage access
 
 ```lea
 p.at(0)                 -- Get stage at index as callable function
@@ -91,7 +91,7 @@ p.reverse()             -- Reverse stage order
 p.slice(0, 2)           -- Extract sub-pipeline
 ```
 
-### Set Operations (returns new pipeline)
+### Set operations (returns new pipeline)
 
 ```lea
 pipeA.without(pipeB)        -- Remove stages appearing in pipeB
@@ -107,7 +107,7 @@ pipeA.concat(pipeB)         -- Concatenate (preserves duplicates)
 pipeA.equals(pipeB)     -- Structural equality
 ```
 
-## Reversible Functions
+## Reversible functions
 
 Define both forward and reverse transformations:
 
@@ -126,7 +126,7 @@ Apply in either direction:
 5 /> double </ double   -- 5
 ```
 
-## Bidirectional Pipelines
+## Bidirectional pipelines
 
 Pipelines that work in both directions:
 
@@ -139,7 +139,7 @@ let transform = </> double </> addTen
 
 All stages should be reversible functions for reverse to work correctly.
 
-## Pipeline Decorators
+## Pipeline decorators
 
 ```lea
 let debugPipeline = /> double /> addOne #debug
@@ -157,7 +157,7 @@ let loggedPipeline = /> double /> addOne #log
 | `#profile` | Timing breakdown per stage |
 | `#trace` | Nested call tracing |
 
-## Reactive Pipelines
+## Reactive pipelines
 
 Pipelines that automatically recompute when their source changes:
 
@@ -181,7 +181,7 @@ Key behaviors:
 
 ## Examples
 
-### Data Processing Pipeline
+### Data processing pipeline
 
 ```lea
 let cleanData = />
@@ -197,7 +197,7 @@ let processCSV = />
 rawCSV /> processCSV /> print
 ```
 
-### Encoding/Decoding with Bidirectional Pipelines
+### Encoding/decoding with bidirectional pipelines
 
 ```lea
 let encode = (s) -> s ++ "!"
@@ -212,7 +212,7 @@ let codec = </> encode </> wrap
 "[hello!]" </ codec     -- "hello"
 ```
 
-### Reusable Transformations
+### Reusable transformations
 
 ```lea
 let normalizeNumbers = />

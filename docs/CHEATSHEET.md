@@ -1,4 +1,4 @@
-# Lea Cheat Sheet
+# Lea cheat sheet
 
 ## Basics
 
@@ -31,6 +31,7 @@ null                    -- Null
 == != < > <= >=         -- comparison
 ++                      -- string concat (coerces types)
 ? :                     -- ternary
+if ... then ... else    -- if-then-else (sugar for ternary)
 ```
 
 ## Pipes
@@ -103,7 +104,7 @@ range(1, 5)             -- [1, 2, 3, 4]
 [...a, ...b]            -- spread
 ```
 
-## List Transformations
+## List transformations
 
 ```
 lst /> map((x) -> x * 2)
@@ -145,7 +146,7 @@ trim(s)                 -- remove whitespace
 chars(s)                -- ["h","i"]
 ```
 
-## Pattern Matching
+## Pattern matching
 
 ```
 match x
@@ -155,7 +156,7 @@ match x
   | "default"
 ```
 
-## Pipelines (First-Class)
+## Pipelines (first-class)
 
 ```
 let p = /> f /> g       -- define pipeline
@@ -174,7 +175,7 @@ p.slice(0, 2)
 p.concat(p2)
 ```
 
-## Bidirectional Pipelines
+## Bidirectional pipelines
 
 ```
 let p = </> f </> g
@@ -192,7 +193,7 @@ src = [1, 2, 3, 4]      -- marks dirty
 r.value                 -- recompute
 ```
 
-## Context System
+## Context system
 
 ```
 context Logger = { log: print }
@@ -247,7 +248,7 @@ sqrt(x)  abs(x)  floor(x)  ceil(x)  round(x)
 min(a, b)  max(a, b)
 ```
 
-## REPL Commands
+## REPL commands
 
 ```
 .help [topic]           -- help

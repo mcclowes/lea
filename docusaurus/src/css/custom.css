@@ -162,7 +162,6 @@ html {
 
 .navbar {
   box-shadow: var(--lea-shadow-sm);
-  backdrop-filter: blur(8px);
 }
 
 .navbar__title {

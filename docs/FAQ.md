@@ -1,6 +1,6 @@
-# Lea FAQ & Common Pitfalls
+# Lea FAQ & common pitfalls
 
-## Frequently Asked Questions
+## Frequently asked questions
 
 ### General
 
@@ -181,7 +181,7 @@ let expensive = (x) -> compute(x) #log #memo #time
 
 ---
 
-### Pattern Matching
+### Pattern matching
 
 **Q: What is `input` in match expressions?**
 A: `input` refers to the matched value in guards and bodies:
@@ -203,9 +203,9 @@ match x
 
 ---
 
-## Common Pitfalls
+## Common pitfalls
 
-### 1. String Concatenation
+### 1. String concatenation
 
 **Wrong:**
 ```
@@ -217,7 +217,7 @@ match x
 "Hello" ++ " World"
 ```
 
-### 2. Pipe Precedence
+### 2. Pipe precedence
 
 **Wrong:** (if you expect `double(5 + 1)`)
 ```
@@ -229,7 +229,7 @@ match x
 (5 + 1) /> double    -- 12
 ```
 
-### 3. Reduce Initial Value
+### 3. Reduce initial value
 
 **Wrong:**
 ```
@@ -241,7 +241,7 @@ match x
 [1,2,3] /> reduce(0, (acc, x) -> acc + x)
 ```
 
-### 4. Mutable vs Immutable
+### 4. Mutable vs immutable
 
 **Wrong:**
 ```
@@ -255,7 +255,7 @@ maybe counter = 0
 counter = counter + 1    -- OK
 ```
 
-### 5. Template String Interpolation
+### 5. Template string interpolation
 
 **Wrong:**
 ```
@@ -267,7 +267,7 @@ counter = counter + 1    -- OK
 `Hello {name}`
 ```
 
-### 6. Arrow Syntax
+### 6. Arrow syntax
 
 **Wrong:**
 ```
@@ -291,7 +291,7 @@ let f = (x) -> x * 2
 -- this is a comment
 ```
 
-### 8. Missing Parentheses in Function Definitions
+### 8. Missing parentheses in function definitions
 
 **Wrong:**
 ```
@@ -303,7 +303,7 @@ let f = x -> x * 2
 let f = (x) -> x * 2
 ```
 
-### 9. Calling Functions Without Arguments
+### 9. Calling functions without arguments
 
 **Wrong:** (if f takes no arguments)
 ```
@@ -315,7 +315,7 @@ f
 f()
 ```
 
-### 10. Spread Pipe on Non-List
+### 10. Spread pipe on non-list
 
 **Wrong:**
 ```
@@ -354,7 +354,7 @@ f()
 
 ---
 
-## Getting Help
+## Getting help
 
 - **REPL Help**: Type `.help` in the REPL
 - **Topic Help**: `.help pipes`, `.help functions`, etc.

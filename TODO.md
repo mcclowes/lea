@@ -20,9 +20,9 @@
 
 ## Feature Ideas
 
-### `if-then-else` Syntax
+### ~~`if-then-else` Syntax~~ ✅
 
-Add `if-then-else` as syntactic sugar for ternary expressions:
+Implemented `if-then-else` as syntactic sugar for ternary expressions:
 ```lea
 let fibonacci = (n) ->
   if n <= 1 then n

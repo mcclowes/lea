@@ -451,6 +451,37 @@ describe('Interpreter', () => {
     it('should evaluate condition', () => {
       expect(evaluate('5 > 3 ? "bigger" : "smaller"')).toBe('bigger');
     });
+
+    it('should evaluate if-then-else (then branch)', () => {
+      expect(evaluate('if true then "yes" else "no"')).toBe('yes');
+    });
+
+    it('should evaluate if-then-else (else branch)', () => {
+      expect(evaluate('if false then "yes" else "no"')).toBe('no');
+    });
+
+    it('should evaluate if-then-else with comparison', () => {
+      expect(evaluate('if 5 > 3 then "bigger" else "smaller"')).toBe('bigger');
+    });
+
+    it('should evaluate nested if-then-else', () => {
+      expect(evaluate(`
+        let classify = (n) ->
+          if n > 0 then "positive"
+          else if n < 0 then "negative"
+          else "zero"
+        classify(-5)
+      `)).toBe('negative');
+    });
+
+    it('should evaluate fibonacci with if-then-else', () => {
+      expect(evaluate(`
+        let fibonacci = (n) ->
+          if n <= 1 then n
+          else fibonacci(n - 1) + fibonacci(n - 2)
+        fibonacci(10)
+      `)).toBe(55);
+    });
   });
 
   describe('match expressions', () => {

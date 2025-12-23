@@ -1,8 +1,8 @@
-# Lea Documentation
+# Lea documentation
 
 Welcome to the Lea documentation! Lea is a pipe-oriented functional programming language.
 
-## Getting Started
+## Getting started
 
 | Document | Description |
 |----------|-------------|
@@ -10,7 +10,7 @@ Welcome to the Lea documentation! Lea is a pipe-oriented functional programming 
 | [Cheat Sheet](CHEATSHEET.md) | Quick reference for syntax and builtins |
 | [FAQ](FAQ.md) | Common questions and troubleshooting |
 
-## Language Guides
+## Language guides
 
 | Document | Description |
 |----------|-------------|
@@ -26,7 +26,7 @@ Welcome to the Lea documentation! Lea is a pipe-oriented functional programming 
 | [Pipelines](PIPELINES.md) | First-class pipelines and composition |
 | [Concurrency](CONCURRENCY.md) | Async/await and parallel execution |
 
-## Quick Start
+## Quick start
 
 ```bash
 # Start the REPL
@@ -42,7 +42,7 @@ npm run lea:init
 npm run lea myfile.lea
 ```
 
-## REPL Commands
+## REPL commands
 
 ```
 .help              Show main help
@@ -52,7 +52,7 @@ npm run lea myfile.lea
 .type <expr>       Show expression type
 ```
 
-## Learning Path
+## Learning path
 
 1. **Beginners**: Start with [Getting Started](GETTING-STARTED.md) or `.tutorial` in the REPL
 2. **JS/Python developers**: Read the [JavaScript](LEA-FOR-JAVASCRIPT-DEVELOPERS.md) or [Python](LEA-FOR-PYTHON-DEVELOPERS.md) guides

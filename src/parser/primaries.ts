@@ -25,6 +25,7 @@ import {
   memberExpr,
   matchExpr,
   useExpr,
+  ternaryExpr,
 } from "../ast";
 import { ParserContext, ParseError } from "./types";
 import { parseExpression, parseUnary, finishCall, parseEquality } from "./expressions";
@@ -122,6 +123,12 @@ export function parsePrimary(ctx: ParserContext): Expr {
   //   | default
   if (ctx.match(TokenType.MATCH)) {
     return parseMatch(ctx);
+  }
+
+  // If-then-else expression: if condition then thenExpr else elseExpr
+  // Syntactic sugar for ternary: condition ? thenExpr : elseExpr
+  if (ctx.match(TokenType.IF)) {
+    return parseIfThenElse(ctx);
   }
 
   // Use expression: use "./path" or use "./path.lea"
@@ -642,4 +649,33 @@ export function parseUse(ctx: ParserContext): Expr {
   const path = pathToken.literal as string;
 
   return useExpr(path);
+}
+
+/**
+ * Parse an if-then-else expression: if condition then thenExpr else elseExpr
+ * This is syntactic sugar that desugars to a ternary expression: condition ? thenExpr : elseExpr
+ */
+export function parseIfThenElse(ctx: ParserContext): Expr {
+  // Parse the condition
+  ctx.skipNewlines();
+  const condition = parseEquality(ctx);
+
+  // Expect 'then' keyword
+  ctx.skipNewlines();
+  ctx.consume(TokenType.THEN, "Expected 'then' after if condition");
+
+  // Parse the then branch
+  ctx.skipNewlines();
+  const thenBranch = parseExpression(ctx);
+
+  // Expect 'else' keyword
+  ctx.skipNewlines();
+  ctx.consume(TokenType.ELSE, "Expected 'else' after then branch");
+
+  // Parse the else branch
+  ctx.skipNewlines();
+  const elseBranch = parseExpression(ctx);
+
+  // Desugar to ternary expression
+  return ternaryExpr(condition, thenBranch, elseBranch);
 }

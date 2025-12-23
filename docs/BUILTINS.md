@@ -1,8 +1,8 @@
-# Built-in Functions & Decorators
+# Built-in functions & decorators
 
-## Math Functions
+## Math functions
 
-### Basic Math
+### Basic math
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -18,7 +18,7 @@
 | `clamp(x, min, max)` | Clamp to range | `clamp(15, 0, 10)` → `10` |
 | `lerp(a, b, t)` | Linear interpolation | `lerp(0, 10, 0.5)` → `5` |
 
-### Powers & Logarithms
+### Powers & logarithms
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -64,7 +64,7 @@
 | `variance(list)` | Population variance | `variance([1,2,3])` → `0.666...` |
 | `stdDev(list)` | Standard deviation | `stdDev([1,2,3])` → `0.816...` |
 
-### Number Theory
+### Number theory
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -78,7 +78,7 @@
 | `mod(a, b)` | Modulo (handles negatives) | `mod(-1, 3)` → `2` |
 | `divInt(a, b)` | Integer division | `divInt(7, 3)` → `2` |
 
-### Bitwise Operations
+### Bitwise operations
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -90,7 +90,7 @@
 | `bitShiftRight(a, b)` | Right shift (signed) | `bitShiftRight(16, 2)` → `4` |
 | `bitShiftRightUnsigned(a, b)` | Right shift (unsigned) | `bitShiftRightUnsigned(-1, 1)` |
 
-## Random Functions
+## Random functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -102,7 +102,7 @@
 | `randomChoice(list)` | Random element from list | `randomChoice([1,2,3])` → `2` |
 | `shuffle(list)` | Shuffled copy (Fisher-Yates) | `shuffle([1,2,3])` → `[3,1,2]` |
 
-## List Functions
+## List functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -127,7 +127,7 @@
 | `enumerate(list, start?)` | List of [index, element] | `enumerate(["a","b"])` → `[[0,"a"],[1,"b"]]` |
 | `transpose(matrix)` | Transpose rows/cols | `transpose([[1,2],[3,4]])` → `[[1,3],[2,4]]` |
 
-### Higher-Order List Functions
+### Higher-order list functions
 
 All callbacks receive `(element, index)`:
 
@@ -158,14 +158,14 @@ All callbacks receive `(element, index)`:
 | `dropWhile(list, fn)` | Drop while predicate true | `dropWhile([1,2,3,1], (x) -> x < 3)` → `[3,1]` |
 | `count(list, fn?)` | Count (matching) elements | `count([1,2,3], (x) -> x > 1)` → `2` |
 
-## Tuple Functions
+## Tuple functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
 | `fst(tuple)` | First element | `fst((1, 2))` → `1` |
 | `snd(tuple)` | Second element | `snd((1, 2))` → `2` |
 
-## String Functions
+## String functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -191,7 +191,7 @@ All callbacks receive `(element, index)`:
 | `slice(str, start, end?)` | Extract substring | `slice("hello", 1, 3)` → `"el"` |
 | `toString(value)` | Convert to string | `toString(42)` → `"42"` |
 
-### Case Conversion
+### Case conversion
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -203,7 +203,7 @@ All callbacks receive `(element, index)`:
 | `toKebabCase(str)` | Convert to kebab-case | `toKebabCase("helloWorld")` → `"hello-world"` |
 | `toConstantCase(str)` | Convert to CONSTANT_CASE | `toConstantCase("helloWorld")` → `"HELLO_WORLD"` |
 
-### Regular Expressions
+### Regular expressions
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -226,7 +226,7 @@ Match results are records with `match`, `index`, and `groups` fields.
 | `hexEncode(str)` | Encode to hex | `hexEncode("hi")` → `"6869"` |
 | `hexDecode(str)` | Decode from hex | `hexDecode("6869")` → `"hi"` |
 
-## Set Operations (on Lists)
+## Set operations (on lists)
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -234,7 +234,7 @@ Match results are records with `match`, `index`, and `groups` fields.
 | `setAdd(list, item)` | Add if not present | `setAdd([1,2], 3)` → `[1,2,3]` |
 | `setHas(list, item)` | Check membership | `setHas([1,2], 2)` → `true` |
 
-## JSON Functions
+## JSON functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -259,7 +259,7 @@ user /> prettyJson /> print
 -- }
 ```
 
-## Date/Time Functions
+## Date/time functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -275,7 +275,7 @@ user /> prettyJson /> print
 | `addMinutes(d, n)` | Add minutes | `addMinutes(d, 30)` |
 | `diffDates(d1, d2)` | Difference in ms | `diffDates(d1, d2)` |
 
-### Date Record Fields
+### Date record fields
 
 Date functions return records with these fields:
 
@@ -292,7 +292,7 @@ d.dayOfWeek   -- 0 (Sun) - 6 (Sat)
 d.timestamp   -- Unix timestamp in ms
 ```
 
-### Format Strings
+### Format strings
 
 | Format | Description | Example Output |
 |--------|-------------|----------------|
@@ -314,13 +314,13 @@ now() /> formatDate("YYYY-MM-DD") /> print  -- "2024-12-10"
 today() /> formatDate("locale") /> print
 ```
 
-## I/O Functions
+## I/O functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
 | `print(value)` | Print and return value | `print("hi")` → prints "hi", returns "hi" |
 
-### File Operations
+### File operations
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -333,14 +333,14 @@ today() /> formatDate("locale") /> print
 | `copyFile(src, dest)` | Copy file | `await copyFile("a.txt", "b.txt")` |
 | `renameFile(old, new)` | Rename/move file | `await renameFile("old.txt", "new.txt")` |
 
-### Directory Operations
+### Directory operations
 
 | Function | Description | Example |
 |----------|-------------|---------|
 | `mkdir(path, recursive?)` | Create directory | `await mkdir("a/b/c")` |
 | `rmdir(path, recursive?)` | Remove directory | `await rmdir("temp", true)` |
 
-### File Metadata
+### File metadata
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -350,7 +350,7 @@ today() /> formatDate("locale") /> print
 
 File stats returns a record with: `size`, `isFile`, `isDirectory`, `isSymlink`, `createdAt`, `modifiedAt`, `accessedAt`, `mode`.
 
-### Path Utilities
+### Path utilities
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -398,7 +398,7 @@ let result = await fetch("https://api.example.com/users", {
 
 Response is a record with: `status`, `ok`, `statusText`, `body`, `headers`.
 
-## Async Functions
+## Async functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -407,7 +407,7 @@ Response is a record with: `status`, `ok`, `statusText`, `body`, `headers`.
 | `race(fns)` | First to complete | `race([fn1, fn2])` |
 | `then(promise, fn)` | Chain transformation | `then(promise, (x) -> x * 2)` |
 
-## Special Functions
+## Special functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -417,7 +417,7 @@ Response is a record with: `status`, `ok`, `statusText`, `body`, `headers`.
 
 ## Decorators
 
-### Function Decorators
+### Function decorators
 
 | Decorator | Description | Example |
 |-----------|-------------|---------|
@@ -432,7 +432,7 @@ Response is a record with: `status`, `ok`, `statusText`, `body`, `headers`.
 | `#async` | Mark as async | `() -> delay(100) #async` |
 | `#trace` | Deep call logging | `(x) -> recurse(x) #trace` |
 
-### Type Coercion Decorators
+### Type coercion decorators
 
 | Decorator | Description | Example |
 |-----------|-------------|---------|
@@ -441,7 +441,7 @@ Response is a record with: `status`, `ok`, `statusText`, `body`, `headers`.
 | `#stringify` | Convert output to string | `(x) -> x #stringify` |
 | `#tease(Type)` | Best-effort extraction | `(x) -> x #tease(Int)` extracts `42` from `"42px"` |
 
-### Pipeline Decorators
+### Pipeline decorators
 
 | Decorator | Description | Example |
 |-----------|-------------|---------|

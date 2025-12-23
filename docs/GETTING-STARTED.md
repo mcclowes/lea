@@ -1,10 +1,10 @@
-# Getting Started with Lea
+# Getting started with Lea
 
 Welcome to Lea, a pipe-oriented functional programming language! This guide will help you go from zero to writing your first Lea programs.
 
 ## Installation
 
-### Quick Start (via npx)
+### Quick start (via npx)
 
 No installation required! Run Lea files directly:
 
@@ -12,7 +12,7 @@ No installation required! Run Lea files directly:
 npx lea-lang hello.lea
 ```
 
-### Global Installation
+### Global installation
 
 For frequent use, install globally:
 
@@ -25,7 +25,7 @@ lea --repl
 lea --help
 ```
 
-### From Source (for development)
+### From source (for development)
 
 ```bash
 # Clone the repository
@@ -39,7 +39,7 @@ npm install
 npm run lea examples/01-basics.lea
 ```
 
-## Your First Lea Program
+## Your first Lea program
 
 Create a file called `hello.lea`:
 
@@ -92,7 +92,7 @@ You'll see:
 lea>
 ```
 
-### Interactive Tutorial
+### Interactive tutorial
 
 The best way to learn Lea is through the built-in tutorial:
 
@@ -102,7 +102,7 @@ lea> .tutorial
 
 This will guide you through the basics step by step.
 
-### REPL Commands
+### REPL commands
 
 | Command | Description |
 |---------|-------------|
@@ -117,9 +117,9 @@ This will guide you through the basics step by step.
 | `.reset` | Reset interpreter state |
 | `.exit` | Exit the REPL |
 
-## Core Concepts
+## Core concepts
 
-### 1. Variables and Bindings
+### 1. Variables and bindings
 
 ```
 -- Immutable binding (cannot be changed)
@@ -131,7 +131,7 @@ maybe counter = 0
 counter = 1    -- OK
 ```
 
-### 2. The Pipe Operator
+### 2. The pipe operator
 
 The pipe operator `/>` is the heart of Lea. It passes a value as the first argument to the next function:
 
@@ -159,7 +159,7 @@ let add = (a, b) -> a + b
 5 /> add(3) /> print      -- Output: 8
 ```
 
-### 4. Lists and Transformations
+### 4. Lists and transformations
 
 ```
 let numbers = [1, 2, 3, 4, 5]
@@ -174,7 +174,7 @@ numbers /> filter((x) -> x > 2)   -- [3, 4, 5]
 numbers /> reduce(0, (acc, x) -> acc + x)  -- 15
 ```
 
-### 5. Records (Objects)
+### 5. Records (objects)
 
 ```
 let user = {
@@ -190,7 +190,7 @@ let { name, age } = user
 name /> print         -- Output: Alice
 ```
 
-## Building Your First Real Program
+## Building your first real program
 
 Let's build a simple data processing pipeline:
 
@@ -218,14 +218,14 @@ users /> processUsers /> print
 -- Output: Alice, Diana
 ```
 
-## Next Steps
+## Next steps
 
 1. **Explore the examples**: `examples/` directory has progressive examples
 2. **Read the docs**: `docs/` has detailed documentation on each feature
 3. **Try the REPL**: Use `.examples` to see runnable code snippets
 4. **Check the cheat sheet**: `docs/CHEATSHEET.md` for quick reference
 
-### Learning Path
+### Learning path
 
 | Level | Topics | Examples |
 |-------|--------|----------|
@@ -234,9 +234,9 @@ users /> processUsers /> print
 | Advanced | Async, pipelines, pattern matching | 07-16 |
 | Expert | Reactives, reversibles, complex examples | 17-20, complex/ |
 
-## Common Patterns
+## Common patterns
 
-### Pipeline Composition
+### Pipeline composition
 
 ```
 -- Define reusable pipelines
@@ -249,7 +249,7 @@ let processInput = /> normalize /> validate
 -- ["hello", "world"]
 ```
 
-### Error Handling with Decorators
+### Error handling with decorators
 
 ```
 -- Retry failed operations
@@ -259,7 +259,7 @@ let fetchData = (url) -> fetch(url) #retry(3)
 let fib = (n) -> n <= 1 ? n : fib(n-1) + fib(n-2) #memo
 ```
 
-### Async Operations
+### Async operations
 
 ```
 -- Sequential async
@@ -271,7 +271,7 @@ let urls = ["url1", "url2", "url3"]
 urls /> parallel((url) -> fetch(url)) /> print
 ```
 
-## Getting Help
+## Getting help
 
 - **REPL Help**: Type `.help` in the REPL
 - **Topic Help**: `.help pipes`, `.help functions`, etc.
@@ -279,7 +279,7 @@ urls /> parallel((url) -> fetch(url)) /> print
 - **Tutorial**: `.tutorial` for interactive learning
 - **Documentation**: See `docs/` directory
 
-## VS Code Support
+## VS Code support
 
 Install the Lea VS Code extension for syntax highlighting:
 
