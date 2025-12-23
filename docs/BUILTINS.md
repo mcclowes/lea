@@ -405,7 +405,8 @@ Response is a record with: `status`, `ok`, `statusText`, `body`, `headers`.
 | `delay(ms, value?)` | Resolve after delay | `delay(100)` |
 | `parallel(list, fn, opts?)` | Concurrent map | `parallel(urls, fetch, { limit: 3 })` |
 | `race(fns)` | First to complete | `race([fn1, fn2])` |
-| `then(promise, fn)` | Chain transformation | `then(promise, (x) -> x * 2)` |
+
+> **Note:** Promise chaining is handled automatically by the pipe operator `/>`. Use `delay(100, 5) /> (x) -> x * 2` instead of explicit `then()`.
 
 ## Special functions
 

@@ -214,7 +214,7 @@ await delay(100, "done")
 parallel(lst, fn)
 parallel(lst, fn, { limit: 2 })
 race([promise1, promise2])
-p /> then((x) -> x * 2)
+p /> (x) -> x * 2                -- pipes auto-chain promises
 ```
 
 ## I/O

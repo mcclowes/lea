@@ -87,15 +87,15 @@ let c = () -> delay(30, "c")
 let racers2 = [a, b, c]
 racers2 /> race /> print  -- "b"
 
-"=== Testing then() Builtin ===" /> print
+"=== Testing Promise Chaining with Pipes ===" /> print
 
--- then() for chaining promises
-delay(30, 5) /> then((x) -> x * 2) /> print  -- 10
+-- Pipes automatically handle promise chaining (no need for then())
+delay(30, 5) /> (x) -> x * 2 /> print  -- 10
 
--- Chained thens
+-- Chained pipes with promises
 delay(20, 3)
-  /> then((x) -> x + 1)
-  /> then((x) -> x * 2)
+  /> (x) -> x + 1
+  /> (x) -> x * 2
   /> print  -- 8
 
 "=== Testing Combined Patterns ===" /> print

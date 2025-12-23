@@ -1480,22 +1480,6 @@ export const builtins: Record<string, BuiltinFn> = {
     return Promise.race(promises);
   },
 
-  then: (args) => {
-    const promise = args[0];
-    const fn = asFunction(args[1]);
-
-    if (isLeaPromise(promise)) {
-      return wrapPromise(
-        promise.promise.then((val) => {
-          const result = fn([val]);
-          return unwrapPromise(result);
-        })
-      );
-    }
-    // If not a promise, just apply the function
-    return fn([promise]);
-  },
-
   // ===== JSON Builtins =====
 
   // Parse a JSON string into a Lea value

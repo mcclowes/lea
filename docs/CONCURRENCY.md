@@ -103,14 +103,14 @@ let fastest = [
 ] /> race
 ```
 
-## `then` builtin
+## Promise chaining with pipes
 
-Chain promise transformations:
+The pipe operator `/>` automatically handles promise chaining:
 
 ```lea
 fetchUser("123")
-  /> then((user) -> fetchPosts(user.id))
-  /> then((posts) -> posts.length)
+  /> (user) -> fetchPosts(user.id)
+  /> (posts) -> posts.length
   /> print
 ```
 
@@ -151,7 +151,7 @@ await fetchAllUsers(["1", "2", "3", "4", "5"])
 let fetchWithFallback = (id) ->
   [
     () -> fetchFromPrimary(id),
-    () -> delay(1000) /> then((_) -> fetchFromBackup(id))
+    () -> delay(1000) /> (_) -> fetchFromBackup(id)
   ] /> race
 #async
 ```
