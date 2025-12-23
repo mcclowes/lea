@@ -14,11 +14,19 @@ export interface ParserContext {
   inPipeOperand: boolean;
   inPipelineLiteral: boolean;
 
+  // Pipe parsing control flags - these control which pipe operators are consumed
+  // during expression parsing. Used to prevent function bodies from consuming
+  // pipes that should be handled by outer expressions.
+  allowParallelPipes: boolean;  // Can consume \> operators
+  allowRegularPipes: boolean;   // Can consume /> operators
+
   // State mutators
   setCurrent(pos: number): void;
   setInParallelPipeBranch(value: boolean): void;
   setInPipeOperand(value: boolean): void;
   setInPipelineLiteral(value: boolean): void;
+  setAllowParallelPipes(value: boolean): void;
+  setAllowRegularPipes(value: boolean): void;
 
   // Utility methods
   match(...types: TokenType[]): boolean;
@@ -39,6 +47,8 @@ export function createParserContext(tokens: Token[]): ParserContext {
   let inParallelPipeBranch = false;
   let inPipeOperand = false;
   let inPipelineLiteral = false;
+  let allowParallelPipes = true;
+  let allowRegularPipes = true;
 
   const ctx: ParserContext = {
     get tokens() { return tokens; },
@@ -46,11 +56,15 @@ export function createParserContext(tokens: Token[]): ParserContext {
     get inParallelPipeBranch() { return inParallelPipeBranch; },
     get inPipeOperand() { return inPipeOperand; },
     get inPipelineLiteral() { return inPipelineLiteral; },
+    get allowParallelPipes() { return allowParallelPipes; },
+    get allowRegularPipes() { return allowRegularPipes; },
 
     setCurrent(pos: number) { current = pos; },
     setInParallelPipeBranch(value: boolean) { inParallelPipeBranch = value; },
     setInPipeOperand(value: boolean) { inPipeOperand = value; },
     setInPipelineLiteral(value: boolean) { inPipelineLiteral = value; },
+    setAllowParallelPipes(value: boolean) { allowParallelPipes = value; },
+    setAllowRegularPipes(value: boolean) { allowRegularPipes = value; },
 
     match(...types: TokenType[]): boolean {
       for (const type of types) {

@@ -14,7 +14,7 @@ import {
   blockBody,
 } from "../ast";
 import { ParserContext, ParseError } from "./types";
-import { parseExpression, parseTernary, parseTernaryNoParallelPipe, parseTernaryNoPipes } from "./expressions";
+import { parseExpression, parseTernary } from "./expressions";
 import { parseStatement } from "./statements";
 import { parseDecorators } from "./primaries";
 
@@ -183,24 +183,47 @@ export function parseFunctionBody(ctx: ParserContext): { attachments: string[]; 
   }
 
   // Single expression on same line.
-  // When parsing a function body in a regular expression context (not a pipeline literal),
-  // we reset inPipeOperand because the function creates a new expression context.
-  // However, in pipeline literals, we keep inPipeOperand true so pipes are stage separators.
-  // We always respect inParallelPipeBranch to avoid consuming parallel pipes.
-  let body: Expr;
+  // When parsing a function body, we control pipe consumption using context flags:
+  // - In pipeline literals or parallel branches: don't consume any pipes
+  // - In pipe operand: allow regular pipes but not parallel pipes
+  // - Normal context: allow regular pipes but not parallel pipes
+  //
+  // Save current pipe flags
+  const savedAllowParallelPipes = ctx.allowParallelPipes;
+  const savedAllowRegularPipes = ctx.allowRegularPipes;
+
   if (ctx.inPipelineLiteral || ctx.inParallelPipeBranch) {
     // In pipeline literal or parallel branch: don't consume any pipes
-    body = parseTernaryNoPipes(ctx);
+    ctx.setAllowParallelPipes(false);
+    ctx.setAllowRegularPipes(false);
   } else if (ctx.inPipeOperand) {
-    // In pipe operand but not pipeline literal: allow pipes in function body
+    // In pipe operand but not pipeline literal: allow regular pipes in function body
+    // Reset inPipeOperand so the function body parses normally
     const wasInPipeOperand = ctx.inPipeOperand;
     ctx.setInPipeOperand(false);
-    body = parseTernaryNoParallelPipe(ctx);
+    ctx.setAllowParallelPipes(false);
+    ctx.setAllowRegularPipes(true);
+    const body = parseTernary(ctx);
     ctx.setInPipeOperand(wasInPipeOperand);
+    ctx.setAllowParallelPipes(savedAllowParallelPipes);
+    ctx.setAllowRegularPipes(savedAllowRegularPipes);
+
+    // For single-line, type signature comes after body
+    if (!typeSignature && ctx.check(TokenType.DOUBLE_COLON)) {
+      typeSignature = parseTypeSignature(ctx);
+    }
+    return { attachments: [], body, typeSignature };
   } else {
     // Normal context: allow regular pipes but not parallel pipes
-    body = parseTernaryNoParallelPipe(ctx);
+    ctx.setAllowParallelPipes(false);
+    ctx.setAllowRegularPipes(true);
   }
+
+  const body = parseTernary(ctx);
+
+  // Restore pipe flags
+  ctx.setAllowParallelPipes(savedAllowParallelPipes);
+  ctx.setAllowRegularPipes(savedAllowRegularPipes);
 
   // For single-line, type signature comes after body
   if (!typeSignature && ctx.check(TokenType.DOUBLE_COLON)) {
