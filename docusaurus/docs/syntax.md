@@ -311,7 +311,7 @@ Maps over each element:
 
 ### Parallel Pipe `\>`
 
-See [CONCURRENCY.md](./CONCURRENCY.md) for details.
+See [Concurrency](./concurrency.md) for details.
 
 ```lea
 value
@@ -334,7 +334,7 @@ and double = (x) <- x / 2
 
 ## Pipelines (First-Class)
 
-See [PIPELINES.md](./PIPELINES.md) for details.
+See [Pipelines](./pipelines.md) for details.
 
 ```lea
 let processNumbers = /> double /> addOne
@@ -350,7 +350,7 @@ let logged = (x) -> x * 2 #log #memo #time
 let retryable = (x) -> riskyOp(x) #retry(3)
 ```
 
-See [BUILTINS.md](./BUILTINS.md#decorators) for all available decorators.
+See [Built-in Functions](./builtins.md#decorators) for all available decorators.
 
 ## Context System
 
@@ -382,7 +382,7 @@ let y = 20
 
 ## Async/Await
 
-See [CONCURRENCY.md](./CONCURRENCY.md) for details.
+See [Concurrency](./concurrency.md) for details.
 
 ```lea
 let fetchData = () -> delay(100) #async

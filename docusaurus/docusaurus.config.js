@@ -14,7 +14,10 @@ const config = {
   projectName: 'lea',
 
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+
+  markdown: {
+    preprocessor: undefined,
+  },
 
   i18n: {
     defaultLocale: 'en',
