@@ -38,10 +38,20 @@ export function evaluateBinaryOp(
       return asNumber(left) - asNumber(right);
     case TokenType.STAR:
       return asNumber(left) * asNumber(right);
-    case TokenType.SLASH:
-      return asNumber(left) / asNumber(right);
-    case TokenType.PERCENT:
-      return asNumber(left) % asNumber(right);
+    case TokenType.SLASH: {
+      const rightNum = asNumber(right);
+      if (rightNum === 0) {
+        throw new RuntimeError("Division by zero");
+      }
+      return asNumber(left) / rightNum;
+    }
+    case TokenType.PERCENT: {
+      const rightNum = asNumber(right);
+      if (rightNum === 0) {
+        throw new RuntimeError("Modulo by zero");
+      }
+      return asNumber(left) % rightNum;
+    }
     case TokenType.CONCAT:
       return coerceToString(left) + coerceToString(right);
     case TokenType.EQEQ:

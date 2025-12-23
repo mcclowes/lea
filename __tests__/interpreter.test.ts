@@ -1136,4 +1136,80 @@ describe('Interpreter', () => {
       expect(error.message).toContain('Test error');
     });
   });
+
+  describe('safety features', () => {
+    describe('recursion depth limit', () => {
+      it('should throw on infinite recursion', () => {
+        expect(() => evaluate(`
+          let bomb = (x) -> bomb(x)
+          bomb(1)
+        `)).toThrow(/Maximum call stack depth.*exceeded/);
+      });
+
+      it('should throw on deeply nested mutual recursion', () => {
+        // Use globals object approach for mutual recursion
+        expect(() => evaluate(`
+          let ping = (x) -> pong(x)
+          let pong = (x) -> ping(x)
+          ping(1)
+        `)).toThrow(/Maximum call stack depth.*exceeded/);
+      });
+
+      it('should allow reasonable recursion depth', () => {
+        // Factorial of 10 requires only 10 stack frames
+        expect(evaluate(`
+          let fact = (n) -> n == 0 ? 1 : n * fact(n - 1)
+          fact(10)
+        `)).toBe(3628800);
+      });
+    });
+
+    describe('division by zero', () => {
+      it('should throw on division by zero', () => {
+        expect(() => evaluate('10 / 0')).toThrow(/Division by zero/);
+      });
+
+      it('should throw on modulo by zero', () => {
+        expect(() => evaluate('10 % 0')).toThrow(/Modulo by zero/);
+      });
+
+      it('should allow division by non-zero', () => {
+        expect(evaluate('10 / 2')).toBe(5);
+        expect(evaluate('10 % 3')).toBe(1);
+      });
+
+      it('should throw on division by zero with float', () => {
+        expect(() => evaluate('10 / 0.0')).toThrow(/Division by zero/);
+      });
+    });
+
+    describe('regex input length limit', () => {
+      it('should reject overly long strings in regexTest', () => {
+        // Create a string longer than 100,000 chars
+        expect(() => evaluate(`
+          let longStr = "a" /> repeat(150000)
+          regexTest(longStr, "a+")
+        `)).toThrow(/input string too long/);
+      });
+
+      it('should allow normal length strings in regex operations', () => {
+        expect(evaluate('regexTest("hello world", "world")')).toBe(true);
+        expect(evaluate('regexTest("hello", "xyz")')).toBe(false);
+      });
+
+      it('should reject overly long strings in regexMatch', () => {
+        expect(() => evaluate(`
+          let longStr = "a" /> repeat(150000)
+          regexMatch(longStr, "a+")
+        `)).toThrow(/input string too long/);
+      });
+
+      it('should reject overly long strings in regexReplace', () => {
+        expect(() => evaluate(`
+          let longStr = "a" /> repeat(150000)
+          regexReplace(longStr, "a", "b")
+        `)).toThrow(/input string too long/);
+      });
+    });
+  });
 });

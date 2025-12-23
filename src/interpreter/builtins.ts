@@ -28,6 +28,22 @@ import {
 
 export type BuiltinFn = (args: LeaValue[]) => LeaValue | Promise<LeaValue>;
 
+// Maximum string length for regex operations to mitigate ReDoS attacks
+const MAX_REGEX_INPUT_LENGTH = 100_000;
+
+/**
+ * Validate regex input to mitigate ReDoS attacks.
+ * Throws if the input string is too long.
+ */
+function validateRegexInput(str: string, operation: string): void {
+  if (str.length > MAX_REGEX_INPUT_LENGTH) {
+    throw new RuntimeError(
+      `${operation}: input string too long (${str.length} chars, max ${MAX_REGEX_INPUT_LENGTH}). ` +
+      `This limit exists to prevent regex denial-of-service attacks.`
+    );
+  }
+}
+
 export const builtins: Record<string, BuiltinFn> = {
   // Identity function - returns its argument unchanged (used by Pipeline.identity)
   __identity__: (args) => args[0] ?? null,
@@ -918,6 +934,7 @@ export const builtins: Record<string, BuiltinFn> = {
     if (typeof pattern !== "string") {
       throw new RuntimeError("regexTest requires a string pattern");
     }
+    validateRegexInput(str, "regexTest");
     const flagStr = flags !== undefined ? String(flags) : "";
     try {
       const regex = new RegExp(pattern, flagStr);
@@ -938,6 +955,7 @@ export const builtins: Record<string, BuiltinFn> = {
     if (typeof pattern !== "string") {
       throw new RuntimeError("regexMatch requires a string pattern");
     }
+    validateRegexInput(str, "regexMatch");
     const flagStr = flags !== undefined ? String(flags) : "";
     try {
       const regex = new RegExp(pattern, flagStr);
@@ -966,6 +984,7 @@ export const builtins: Record<string, BuiltinFn> = {
     if (typeof pattern !== "string") {
       throw new RuntimeError("regexMatchAll requires a string pattern");
     }
+    validateRegexInput(str, "regexMatchAll");
     // Always add global flag for matchAll
     let flagStr = flags !== undefined ? String(flags) : "";
     if (!flagStr.includes("g")) flagStr += "g";
@@ -1000,6 +1019,7 @@ export const builtins: Record<string, BuiltinFn> = {
     if (typeof replacement !== "string") {
       throw new RuntimeError("regexReplace requires a string replacement");
     }
+    validateRegexInput(str, "regexReplace");
     const flagStr = flags !== undefined ? String(flags) : "g";
 
     try {
@@ -1021,6 +1041,7 @@ export const builtins: Record<string, BuiltinFn> = {
     if (typeof pattern !== "string") {
       throw new RuntimeError("regexSplit requires a string pattern");
     }
+    validateRegexInput(str, "regexSplit");
     const flagStr = flags !== undefined ? String(flags) : "";
 
     try {

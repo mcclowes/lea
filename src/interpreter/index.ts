@@ -123,6 +123,10 @@ import { ModuleLoader } from "./module-loader";
 /**
  * Interpreter class - evaluates Lea programs
  */
+// Maximum call stack depth to prevent stack overflow from infinite recursion.
+// Set conservatively to catch infinite recursion before JavaScript's stack limit.
+const MAX_CALL_DEPTH = 500;
+
 export class Interpreter implements InterpreterContext {
   globals: Environment;
   memoCache = new Map<string, Map<string, LeaValue>>();
@@ -130,6 +134,7 @@ export class Interpreter implements InterpreterContext {
   contextRegistry = new Map<string, { default: LeaValue; current: LeaValue }>();
   customDecorators = new Map<string, LeaFunction>();
   strictMode: boolean;
+  private callDepth = 0;
 
   // Module system - extracted to separate class
   private moduleLoader: ModuleLoader;
@@ -1149,6 +1154,22 @@ export class Interpreter implements InterpreterContext {
   }
 
   callFunction(fn: LeaFunction, args: LeaValue[]): LeaValue {
+    // Check recursion depth to prevent stack overflow
+    if (this.callDepth >= MAX_CALL_DEPTH) {
+      throw new RuntimeError(
+        `Maximum call stack depth (${MAX_CALL_DEPTH}) exceeded. Check for infinite recursion.`
+      );
+    }
+
+    this.callDepth++;
+    try {
+      return this.callFunctionImpl(fn, args);
+    } finally {
+      this.callDepth--;
+    }
+  }
+
+  private callFunctionImpl(fn: LeaFunction, args: LeaValue[]): LeaValue {
     const isAsync = fn.decorators.some((d) => d.name === "async");
     const hasValidateDecorator = fn.decorators.some((d) => d.name === "validate");
 
@@ -1949,6 +1970,22 @@ export class Interpreter implements InterpreterContext {
   }
 
   async callFunctionAsync(fn: LeaFunction, args: LeaValue[]): Promise<LeaValue> {
+    // Check recursion depth to prevent stack overflow
+    if (this.callDepth >= MAX_CALL_DEPTH) {
+      throw new RuntimeError(
+        `Maximum call stack depth (${MAX_CALL_DEPTH}) exceeded. Check for infinite recursion.`
+      );
+    }
+
+    this.callDepth++;
+    try {
+      return await this.callFunctionAsyncImpl(fn, args);
+    } finally {
+      this.callDepth--;
+    }
+  }
+
+  private async callFunctionAsyncImpl(fn: LeaFunction, args: LeaValue[]): Promise<LeaValue> {
     const hasValidateDecorator = fn.decorators.some((d) => d.name === "validate");
 
     // Create executor that does the actual work
