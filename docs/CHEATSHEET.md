@@ -18,7 +18,6 @@ y = 30                  -- reassign mutable
 "hello"                 -- String
 `Hello {name}`          -- Template String
 true, false             -- Bool
-null                    -- Null
 [1, 2, 3]               -- List
 (1, "a")                -- Tuple
 { name: "Max" }         -- Record

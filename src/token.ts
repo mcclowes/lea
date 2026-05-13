@@ -68,8 +68,8 @@ export enum TokenType {
   PIPE_CHAR = "PIPE_CHAR", // | (for pattern matching)
 
   // Codeblocks
-  CODEBLOCK_OPEN = "CODEBLOCK_OPEN",   // <>
-  CODEBLOCK_CLOSE = "CODEBLOCK_CLOSE", // </>
+  CODEBLOCK_OPEN = "CODEBLOCK_OPEN",   // {-- label --}
+  CODEBLOCK_CLOSE = "CODEBLOCK_CLOSE", // {/--}
 
   // Reversible functions and bidirectional pipelines
   BIDIRECTIONAL_PIPE = "BIDIRECTIONAL_PIPE", // </>

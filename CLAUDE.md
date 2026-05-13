@@ -25,10 +25,12 @@ Source → Lexer → Tokens → Parser → AST → Interpreter → Result
 
 ### Key Files
 
-- `src/lexer.ts` — Tokenization (TokenType enum, KEYWORDS map)
-- `src/parser.ts` — Recursive descent parser
+- `src/token.ts` — TokenType enum, KEYWORDS map, Token interface
+- `src/lexer.ts` — Tokenization
+- `src/parser.ts` + `src/parser/` — Recursive descent parser (`parser.ts` re-exports from `parser/index.ts`; logic is split across `statements.ts`, `expressions.ts`, `primaries.ts`, `functions.ts`, `types.ts`)
 - `src/ast.ts` — AST node types (Expr, Stmt, Program)
-- `src/interpreter.ts` — Tree-walk interpreter, Environment class
+- `src/interpreter.ts` + `src/interpreter/` — Tree-walk interpreter (`interpreter.ts` re-exports from `interpreter/index.ts`; logic split across `eval-core.ts`, `builtins.ts`, `decorators.ts`, `pipelines.ts`, `context.ts`, `overloads.ts`, `module-loader.ts`, `helpers.ts`, `types.ts`)
+- `src/cli/lea.ts` — CLI entry point (published as `lea` binary)
 - `src/lsp/` — Language Server Protocol implementation
 
 ## Token Types
@@ -59,7 +61,7 @@ NEWLINE, EOF
 3. Comparison (`<`, `>`, `<=`, `>=`)
 4. Term (`+`, `-`, `++`)
 5. Factor (`*`, `/`, `%`)
-6. Pipe (`/>`, `/>>>`, `\>`, `</`)
+6. Pipe (`/>`, `/>>>`, `\>`, `</`, `@>`)
 7. Unary (`-`)
 8. Call
 9. Primary
