@@ -4,33 +4,39 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     open-pull-requests-limit: 10
     groups:
-      dev-dependencies:
-        dependency-type: "development"
+      # One PR/month for all minor + patch bumps. Majors stay separate so
+      # breaking changes are reviewed individually.
+      npm-minor-patch:
         patterns:
-          - "@types/*"
-          - "jest"
-          - "ts-*"
-          - "typescript"
-      production-dependencies:
-        dependency-type: "production"
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   # VSCode extension dependencies
   - package-ecosystem: "npm"
     directory: "/vscode-lea"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     open-pull-requests-limit: 5
     groups:
-      all-dependencies:
+      vscode-lea-minor-patch:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
