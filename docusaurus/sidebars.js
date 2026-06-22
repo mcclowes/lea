@@ -5,6 +5,7 @@ const sidebars = {
   tutorialSidebar: [
     'intro',
     'getting-started',
+    'playground',
     'cheatsheet',
     {
       type: 'category',
