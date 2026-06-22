@@ -30,6 +30,20 @@ updates:
           - "minor"
           - "patch"
 
+  # Docs site (Docusaurus) dependencies
+  - package-ecosystem: "npm"
+    directory: "/docusaurus"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      docusaurus-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
