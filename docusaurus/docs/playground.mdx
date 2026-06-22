@@ -1,0 +1,62 @@
+---
+id: playground
+title: Playground
+description: Try Lea in your browser, and embed the playground in your own site.
+---
+
+# Playground
+
+Run Lea right here — edit the code and press **Run** (or `Cmd`/`Ctrl`+`Enter`).
+The full playground lives at [lea.playground.mcclowes.com](https://lea.playground.mcclowes.com/).
+
+<iframe
+  src="https://lea.playground.mcclowes.com/embed"
+  title="Lea Playground"
+  style={{ width: '100%', height: '460px', border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '8px' }}
+  loading="lazy"
+/>
+
+## Embed it in your own site
+
+The playground exposes a slim `/embed` route designed to be dropped into any page
+via an `<iframe>`. Embed mode hides the site header and persistence, leaving just
+the editor, output, and a Run button.
+
+```html
+<iframe
+  src="https://lea.playground.mcclowes.com/embed"
+  title="Lea Playground"
+  style="width: 100%; height: 460px; border: 0; border-radius: 8px;"
+  loading="lazy">
+</iframe>
+```
+
+Every response sends `Content-Security-Policy: frame-ancestors *`, so any site
+may embed it.
+
+### Preset the code
+
+Pass a `code` query parameter (URL-encoded) to seed the editor:
+
+```html
+<iframe
+  src="https://lea.playground.mcclowes.com/embed?code=%5B1%2C2%2C3%5D%20%2F%3E%20map((x)%20-%3E%20x%20*%20x)%20%2F%3E%20print"
+  title="Lea Playground"
+  style="width: 100%; height: 460px; border: 0;">
+</iframe>
+```
+
+For source with awkward characters, use `code64` with URL-safe base64 instead.
+
+### Options
+
+| Param | Values | Default | Description |
+|-------|--------|---------|-------------|
+| `code` | URL-encoded source | welcome snippet | Initial editor contents |
+| `code64` | URL-safe base64 source | — | Initial contents (alternative to `code`) |
+| `theme` | `light` \| `dark` | site/system | Force a theme to match your page |
+| `toolbar` | `full` \| `min` | `min` | `full` shows Examples / Syntax / Download |
+| `examples` | `0` \| `1` | follows `toolbar` | Toggle the Examples button |
+| `syntax` | `0` \| `1` | follows `toolbar` | Toggle the Syntax button |
+| `download` | `0` \| `1` | follows `toolbar` | Toggle the Download button |
+| `open` | `0` \| `1` | `1` | Toggle the "Open in playground" link |
