@@ -86,13 +86,15 @@ racers /> race /> print  -- "fast"
 
 {/--}
 
-{-- then() Builtin --}
+{-- Promise Chaining --}
 
--- then() chains promise transformations
-"then() chaining:" /> print
+-- Pipes chain promise transformations automatically
+let doubled = (x) -> x * 2
+let plusOne = (x) -> x + 1
+"Promise chaining:" /> print
 delay(20, 5)
-  /> then((x) -> x * 2)
-  /> then((x) -> x + 1)
+  /> doubled
+  /> plusOne
   /> print  -- 11
 
 {/--}
