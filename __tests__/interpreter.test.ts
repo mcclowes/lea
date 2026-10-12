@@ -355,6 +355,15 @@ describe('Interpreter', () => {
       expect(result).toBe(50); // 9 + 16 + 25
     });
 
+    it('should let lambda bodies inside call arguments use pipes in pipeline literal', () => {
+      const result = evaluate(`
+        let inc = (x) -> x + 1
+        let p = /> map((x) -> x /> inc) /> filter((x) -> x > 2)
+        [1, 2, 3] /> p
+      `);
+      expect(result).toEqual([3, 4]);
+    });
+
     it('should pass index to spread pipe callback in pipeline literal', () => {
       const result = evaluate(`
         let addIndex = (x, i) -> x + i
